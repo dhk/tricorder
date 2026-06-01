@@ -261,6 +261,17 @@ OUTPUT SCHEMA:
 }"""
 
 
+def strip_fences(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        if text.endswith("```"):
+            text = text.rsplit("```", 1)[0]
+        if text.startswith("json"):
+            text = text[4:]
+    return text.strip()
+
+
 def call_claude(client, system: str, user: str, retries: int = 2) -> dict:
     for attempt in range(retries + 1):
         try:
@@ -270,7 +281,7 @@ def call_claude(client, system: str, user: str, retries: int = 2) -> dict:
                 system=system,
                 messages=[{"role": "user", "content": user}],
             )
-            text = msg.content[0].text.strip()
+            text = strip_fences(msg.content[0].text)
             return json.loads(text)
         except json.JSONDecodeError as e:
             if attempt < retries:
