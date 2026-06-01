@@ -1,0 +1,95 @@
+// profiles.jsx — Tab 3: Author Profiles
+
+const TRAJECTORY = {
+  improving:  { glyph: "↑", label: "improving",  color: "var(--accent)" },
+  stable:     { glyph: "→", label: "stable",     color: "var(--text-dim)" },
+  regressing: { glyph: "↓", label: "regressing", color: "var(--accent-orange)" },
+};
+
+function AuthorCard({ a }) {
+  const [hover, setHover] = useState(false);
+  const traj = TRAJECTORY[a.trajectory] || TRAJECTORY.stable;
+  return (
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: "#fff",
+        border: "1px solid var(--border)",
+        borderLeft: `3px solid ${hover ? "var(--accent)" : "transparent"}`,
+        borderRadius: "var(--border-radius)",
+        padding: "20px 22px 22px",
+        transition: "border-left-color 140ms ease, box-shadow 140ms ease, transform 140ms ease",
+        boxShadow: hover ? "0 6px 18px rgba(10,10,9,0.06)" : "none",
+        transform: hover ? "translateY(-1px)" : "none",
+      }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 16, borderBottom: "1px solid var(--border)" }}>
+        <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 24, lineHeight: 1 }}>{a.login}</div>
+        <Mono style={{ fontSize: 12.5, color: traj.color, display: "flex", alignItems: "center", gap: 5 }}>
+          <span style={{ fontSize: 15 }}>{traj.glyph}</span>{traj.label}
+        </Mono>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 18, marginTop: 16 }}>
+        <div>
+          <CardHeading style={{ color: "var(--accent)" }}>Strengths</CardHeading>
+          <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            {a.strengths.map((s, i) => (
+              <li key={i} style={{ display: "flex", gap: 9, alignItems: "baseline" }}>
+                <span style={{ color: "var(--accent)", fontSize: 13, lineHeight: 1.5 }}>▪</span>
+                <div>
+                  <span style={{ fontSize: 14.5, lineHeight: 1.45 }}>{s.area}</span>
+                  <Mono dim style={{ fontSize: 11, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{s.persistence}</Mono>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <CardHeading style={{ color: "var(--accent-orange)" }}>Growth Areas</CardHeading>
+          <ul style={{ listStyle: "none", margin: "10px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+            {a.growth_areas.map((g, i) => (
+              <li key={i} style={{ display: "flex", gap: 9, alignItems: "baseline" }}>
+                <span style={{ color: "var(--accent-orange)", fontSize: 13, lineHeight: 1.5 }}>▪</span>
+                <div>
+                  <div>
+                    <span style={{ fontSize: 14.5, lineHeight: 1.45 }}>{g.area}</span>
+                    <Mono dim style={{ fontSize: 11, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.persistence}</Mono>
+                  </div>
+                  <div style={{ marginTop: 5, display: "flex", gap: 6 }}>
+                    <Mono dim style={{ fontSize: 11.5, fontWeight: 500, flexShrink: 0 }}>Support:</Mono>
+                    <span style={{ color: "var(--text-dim)", fontSize: 13, lineHeight: 1.45, fontStyle: "italic" }}>{g.support_recommendation}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfilesTab() {
+  return (
+    <div style={{ padding: "28px 32px 48px", animation: "fadeIn 200ms ease" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0 }}>Author Profiles</h2>
+          <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, maxWidth: 640 }}>
+            What each contributor does well and where review feedback keeps recurring — with a concrete way to support each growth area.
+          </p>
+        </div>
+        <div style={{
+          display: "grid", gap: 18,
+          gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))",
+        }}>
+          {DATA.authors.map((a, i) => <AuthorCard key={i} a={a} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.ProfilesTab = ProfilesTab;
