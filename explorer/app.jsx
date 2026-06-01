@@ -27,8 +27,11 @@ function TopBar() {
       padding: "16px 32px 14px", borderBottom: "1px solid var(--border)",
       background: "var(--bg)", flexWrap: "wrap",
     }}>
-      <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 26, letterSpacing: "0.005em", lineHeight: 1 }}>
-        tricorder
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+        <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 26, letterSpacing: "0.005em", lineHeight: 1 }}>
+          tricorder
+        </div>
+        <WipMark />
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap", marginLeft: "auto" }}>
         <Mono dim style={{ fontSize: 13, whiteSpace: "nowrap" }}>{DATA.repo}</Mono>
@@ -36,6 +39,14 @@ function TopBar() {
         <Mono dim style={{ fontSize: 13, whiteSpace: "nowrap" }}>{DATA.window}</Mono>
         <span style={{ color: "var(--border)" }}>·</span>
         <Mono dim style={{ fontSize: 13, whiteSpace: "nowrap" }}>{DATA.pr_count} PRs</Mono>
+        <span style={{ color: "var(--border)" }}>·</span>
+        <a href={REPO_URL} target="_blank" rel="noopener" style={{
+          fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--accent)",
+          textDecoration: "none", whiteSpace: "nowrap", borderBottom: "1px solid transparent",
+        }}
+          onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = "var(--accent)"}
+          onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = "transparent"}
+        >GitHub ↗</a>
       </div>
     </header>
   );
@@ -86,6 +97,7 @@ function App() {
       <main style={{ flex: 1, minHeight: 0, overflowY: needsFullHeight ? "hidden" : "auto", display: "flex", flexDirection: "column" }}>
         <tab.Comp />
       </main>
+      <Onboarding active={active} setActive={setActive} />
     </div>
   );
 }
