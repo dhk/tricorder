@@ -2,27 +2,20 @@
 // Wired in as a global const for the explorer to read.
 window.TRICORDER_DATA = (function () {
 
-  // The 15 categories shown on the heatmap X-axis.
+  // The 9 categories shown on the Pattern Coverage grid X-axis
+  // and on the Reviewer Fingerprint radar axes.
   const CATEGORIES = [
     "grain", "naming", "testing", "documentation", "style",
-    "performance", "modeling", "schema", "business-logic", "incremental",
-    "exposure-contract", "source-freshness", "macro-complexity", "test-pyramid", "other"
+    "performance", "modeling", "schema", "business-logic"
   ];
-
-  // The 9 "main" categories used on the reviewer radar charts.
-  const RADAR_CATEGORIES = [
-    "grain", "naming", "testing", "documentation", "modeling",
-    "performance", "incremental", "source-freshness", "test-pyramid"
-  ];
+  const RADAR_CATEGORIES = CATEGORIES;
 
   // Category -> content-type tag color family.
-  // patterns -> green, tools/reviewers -> purple, data/analysis -> blue, team/gaps -> orange
+  // patterns -> green, reviewers/tools -> purple, data/analysis -> blue, team/gaps -> orange
   const CATEGORY_GROUP = {
-    grain: "data", naming: "pattern", testing: "data", documentation: "pattern",
+    grain: "data", naming: "pattern", testing: "tool", documentation: "pattern",
     style: "pattern", performance: "data", modeling: "data", schema: "data",
-    "business-logic": "pattern", incremental: "data", "exposure-contract": "team",
-    "source-freshness": "data", "macro-complexity": "tool", "test-pyramid": "data",
-    other: "pattern"
+    "business-logic": "pattern"
   };
 
   const patterns = [
@@ -37,14 +30,14 @@ window.TRICORDER_DATA = (function () {
       evidence: [
         { pr: "#4877", date: "2026-03-18", author: "tihuang02", quote: "stg_trips is one row per trip but dim_trips fans out per stop — this changes the grain silently. Either rename or collapse upstream." }
       ] },
-    { signal: "Missing primary key tests on staging models", category: "test-pyramid", maturity: "rule",
+    { signal: "Missing primary key tests on staging models", category: "testing", maturity: "rule",
       standard_citation: "dbt-project-evaluator: fct_model_has_primary_key_tests", reviewer: "erikamov", author: "tihuang02",
       evidence: [
         { pr: "#4830", date: "2026-03-11", author: "tihuang02", quote: "Every staging model needs a unique+not_null on its PK. dbt-project-evaluator will flag this in CI — let's not merge red." },
         { pr: "#4905", date: "2026-03-24", author: "vevetron", quote: "PK test missing on stg_gtfs_routes. Add unique_combination_of_columns if it's a compound key." },
         { pr: "#5012", date: "2026-04-15", author: "jparr", quote: "Still no PK test here. Blocking until it's added." }
       ] },
-    { signal: "Incremental predicates not scoped to partition column", category: "incremental", maturity: "guidance",
+    { signal: "Incremental predicates not scoped to partition column", category: "modeling", maturity: "guidance",
       standard_citation: "dbt Labs incremental models guide", reviewer: "ohrite", author: "jparr",
       evidence: [
         { pr: "#4858", date: "2026-03-15", author: "jparr", quote: "The is_incremental() filter scans the whole table — scope it to the partition column (service_date) or this gets expensive fast." }
@@ -66,10 +59,10 @@ window.TRICORDER_DATA = (function () {
         { pr: "#4889", date: "2026-03-21", author: "jparr", quote: "New columns have no descriptions in schema.yml — coverage drops below our 90% threshold. Can you fill these in?" },
         { pr: "#5031", date: "2026-04-19", author: "vevetron", quote: "Docs coverage check is failing — three undocumented columns on the new mart." }
       ] },
-    { signal: "Model lacks a description / purpose doc", category: "documentation", maturity: "convention",
-      standard_citation: "dbt-project-evaluator: documentation_coverage", reviewer: "lauriemerrell", author: "tihuang02",
+    { signal: "Model descriptions missing from schema.yml", category: "documentation", maturity: "convention",
+      standard_citation: "dbt Labs style guide §4.1", reviewer: "lauriemerrell", author: "erikamov",
       evidence: [
-        { pr: "#4933", date: "2026-03-27", author: "tihuang02", quote: "What does this model actually do? Add a one-paragraph description so the catalog is useful." }
+        { pr: "#4933", date: "2026-03-27", author: "erikamov", quote: "What does this model actually do? Add a one-paragraph description so the catalog is useful." }
       ] },
     { signal: "CTE not named after its purpose", category: "style", maturity: "guidance",
       standard_citation: "dbt Labs style guide §3.1", reviewer: "lauriemerrell", author: "jparr",
@@ -80,6 +73,11 @@ window.TRICORDER_DATA = (function () {
       standard_citation: "dbt Labs style guide §3.4", reviewer: "ohrite", author: "vevetron",
       evidence: [
         { pr: "#4951", date: "2026-03-28", author: "vevetron", quote: "SELECT * in a mart hides schema drift. Enumerate columns explicitly here." }
+      ] },
+    { signal: "Macro with deeply nested conditional logic", category: "style", maturity: "judgment",
+      standard_citation: "dbt Labs Jinja & macros guide", reviewer: "ohrite", author: "vevetron",
+      evidence: [
+        { pr: "#5008", date: "2026-04-14", author: "vevetron", quote: "Three levels of nested {% if %} in this macro — hard to follow and untested. Can we flatten or break it up?" }
       ] },
     { signal: "Window function over full table scan", category: "performance", maturity: "judgment",
       standard_citation: "internal: warehouse-cost runbook", reviewer: "ohrite", author: "jparr",
@@ -111,20 +109,30 @@ window.TRICORDER_DATA = (function () {
       evidence: [
         { pr: "#4995", date: "2026-04-08", author: "vevetron", quote: "Mart references source() directly — go through a staging model so lineage stays clean. Evaluator flags this." }
       ] },
-    { signal: "source freshness blocks missing on new source", category: "source-freshness", maturity: "convention",
+    { signal: "Unused column carried through every layer", category: "modeling", maturity: "judgment",
+      standard_citation: "dbt-project-evaluator: unused_columns", reviewer: "charlie-costanzo", author: "vevetron",
+      evidence: [
+        { pr: "#5034", date: "2026-04-20", author: "vevetron", quote: "raw_blob_payload is selected the whole way up but never used downstream. Drop it at staging to save scan cost." }
+      ] },
+    { signal: "Source freshness blocks missing on new source", category: "schema", maturity: "convention",
       standard_citation: "dbt source freshness docs", reviewer: "erikamov", author: "tihuang02",
       evidence: [
         { pr: "#4982", date: "2026-04-05", author: "tihuang02", quote: "New GTFS-RT source has no freshness block — add warn_after/error_after so we catch stale feeds." }
       ] },
-    { signal: "Freshness thresholds set unrealistically tight", category: "source-freshness", maturity: "judgment",
+    { signal: "Freshness thresholds set unrealistically tight", category: "schema", maturity: "judgment",
       standard_citation: "dbt source freshness docs", reviewer: "charlie-costanzo", author: "jparr",
       evidence: [
         { pr: "#5020", date: "2026-04-17", author: "jparr", quote: "1-hour error_after on a daily feed will page us every night. Loosen to match the actual cadence." }
       ] },
-    { signal: "Macro with deeply nested conditional logic", category: "macro-complexity", maturity: "judgment",
-      standard_citation: "dbt Labs Jinja & macros guide", reviewer: "ohrite", author: "vevetron",
+    { signal: "Exposure missing description and owner", category: "schema", maturity: "convention",
+      standard_citation: "dbt-project-evaluator: check_exposure_has_description", reviewer: "charlie-costanzo", author: "jparr",
       evidence: [
-        { pr: "#5008", date: "2026-04-14", author: "vevetron", quote: "Three levels of nested {% if %} in this macro — hard to follow and untested. Can we flatten or break it up?" }
+        { pr: "#5018", date: "2026-04-16", author: "jparr", quote: "This exposure has no owner or description — if it breaks, nobody knows who to ping. Fill in the contract." }
+      ] },
+    { signal: "Schema change without a deprecation note", category: "schema", maturity: "guidance",
+      standard_citation: "internal: breaking-change policy", reviewer: "ohrite", author: "tihuang02",
+      evidence: [
+        { pr: "#5026", date: "2026-04-18", author: "tihuang02", quote: "Renaming this column is breaking for the Metabase dashboards — add a deprecation alias for one release cycle." }
       ] },
     { signal: "Singular test could be a generic test", category: "testing", maturity: "guidance",
       standard_citation: "dbt testing best practices", reviewer: "erikamov", author: "vevetron",
@@ -135,21 +143,6 @@ window.TRICORDER_DATA = (function () {
       standard_citation: "dbt-project-evaluator: test_coverage", reviewer: "lauriemerrell", author: "tihuang02",
       evidence: [
         { pr: "#5040", date: "2026-04-21", author: "tihuang02", quote: "total_fare_revenue has zero tests. For a revenue-facing column we need at least a not_null and a sane-range check." }
-      ] },
-    { signal: "Exposure missing description and owner", category: "exposure-contract", maturity: "convention",
-      standard_citation: "dbt-project-evaluator: check_exposure_has_description", reviewer: "charlie-costanzo", author: "jparr",
-      evidence: [
-        { pr: "#5018", date: "2026-04-16", author: "jparr", quote: "This exposure has no owner or description — if it breaks, nobody knows who to ping. Fill in the contract." }
-      ] },
-    { signal: "Schema change without a deprecation note", category: "schema", maturity: "guidance",
-      standard_citation: "internal: breaking-change policy", reviewer: "ohrite", author: "tihuang02",
-      evidence: [
-        { pr: "#5026", date: "2026-04-18", author: "tihuang02", quote: "Renaming this column is breaking for the Metabase dashboards — add a deprecation alias for one release cycle." }
-      ] },
-    { signal: "Unused column carried through every layer", category: "other", maturity: "judgment",
-      standard_citation: "dbt-project-evaluator: unused_columns", reviewer: "charlie-costanzo", author: "vevetron",
-      evidence: [
-        { pr: "#5034", date: "2026-04-20", author: "vevetron", quote: "raw_blob_payload is selected the whole way up but never used downstream. Drop it at staging to save scan cost." }
       ] }
   ];
 
@@ -166,7 +159,7 @@ window.TRICORDER_DATA = (function () {
         { area: "Documentation coverage", basis: "never comments on schema.yml completeness across 22 PRs" },
         { area: "Source freshness", basis: "no freshness-related comments observed" }
       ],
-      category_freq: { grain: 95, naming: 55, testing: 40, documentation: 10, modeling: 80, performance: 65, incremental: 90, "source-freshness": 5, "test-pyramid": 45 } },
+      category_freq: { grain: 95, naming: 55, testing: 40, documentation: 10, style: 50, performance: 65, modeling: 80, schema: 35, "business-logic": 45 } },
     { login: "erikamov", review_style: "advisory", signal_quality: "medium",
       primary_focus_areas: [
         { area: "Test pyramid", frequency: "often" },
@@ -177,7 +170,7 @@ window.TRICORDER_DATA = (function () {
         { area: "Performance / query optimization", basis: "no comments on query patterns across 14 PRs" },
         { area: "Grain declaration", basis: "defers grain questions to other reviewers" }
       ],
-      category_freq: { grain: 20, naming: 40, testing: 85, documentation: 70, modeling: 35, performance: 5, incremental: 30, "source-freshness": 75, "test-pyramid": 90 } },
+      category_freq: { grain: 20, naming: 40, testing: 90, documentation: 70, style: 35, performance: 8, modeling: 35, schema: 70, "business-logic": 40 } },
     { login: "lauriemerrell", review_style: "blocking", signal_quality: "high",
       primary_focus_areas: [
         { area: "Naming conventions", frequency: "always" },
@@ -187,7 +180,7 @@ window.TRICORDER_DATA = (function () {
       apparent_blind_spots: [
         { area: "Performance / cost", basis: "rarely flags query cost; defers to ohrite" }
       ],
-      category_freq: { grain: 60, naming: 95, testing: 50, documentation: 85, modeling: 75, performance: 15, incremental: 35, "source-freshness": 30, "test-pyramid": 60 } },
+      category_freq: { grain: 60, naming: 95, testing: 50, documentation: 85, style: 70, performance: 15, modeling: 75, schema: 55, "business-logic": 45 } },
     { login: "charlie-costanzo", review_style: "advisory", signal_quality: "medium",
       primary_focus_areas: [
         { area: "Query performance", frequency: "often" },
@@ -198,7 +191,7 @@ window.TRICORDER_DATA = (function () {
         { area: "Naming conventions", basis: "no style/naming comments across 11 PRs" },
         { area: "Test coverage", basis: "leaves testing feedback to erikamov" }
       ],
-      category_freq: { grain: 30, naming: 10, testing: 35, documentation: 40, modeling: 55, performance: 90, incremental: 50, "source-freshness": 70, "test-pyramid": 30 } }
+      category_freq: { grain: 30, naming: 10, testing: 35, documentation: 40, style: 25, performance: 90, modeling: 55, schema: 75, "business-logic": 50 } }
   ];
 
   const authors = [
@@ -233,30 +226,30 @@ window.TRICORDER_DATA = (function () {
 
   const gaps = [
     // coverage_gap
-    { area: "Source freshness thresholds", gap_type: "coverage_gap", criticality: 3,
+    { area: "Source freshness thresholds", gap_type: "coverage_gap", criticality: 2,
       standard_citation: "dbt source freshness docs",
       recommendation: "Add freshness blocks to all source definitions" },
-    { area: "Primary key tests on staging layer", gap_type: "coverage_gap", criticality: 2,
+    { area: "Primary key tests on staging layer", gap_type: "coverage_gap", criticality: 1,
       standard_citation: "dbt-project-evaluator: fct_model_has_primary_key_tests",
       recommendation: "Backfill unique+not_null tests across staging models" },
-    { area: "Revenue metric test coverage", gap_type: "coverage_gap", criticality: 1,
+    { area: "Revenue metric test coverage", gap_type: "coverage_gap", criticality: 3,
       standard_citation: "dbt-project-evaluator: test_coverage",
       recommendation: "Define range and not_null tests on all revenue-facing columns" },
     // knowledge_gap
+    { area: "Kimball grain consistency", gap_type: "knowledge_gap", criticality: 1,
+      standard_citation: "Kimball dimensional modeling techniques",
+      recommendation: "Run a grain declaration workshop before next sprint" },
     { area: "Incremental model best practices", gap_type: "knowledge_gap", criticality: 2,
       standard_citation: "dbt Labs incremental models guide",
       recommendation: "Run an internal brown-bag on partition-scoped incremental predicates" },
     { area: "Jinja & macro hygiene", gap_type: "knowledge_gap", criticality: 3,
       standard_citation: "dbt Labs Jinja & macros guide",
       recommendation: "Document approved macro patterns in the team wiki" },
-    { area: "Query cost / warehouse tuning", gap_type: "knowledge_gap", criticality: 1,
-      standard_citation: "internal: warehouse-cost runbook",
-      recommendation: "Share the cost runbook in onboarding; only ohrite & charlie-costanzo flag cost today" },
     // blind_spot
     { area: "Exposure contract validation", gap_type: "blind_spot", criticality: 1,
       standard_citation: "dbt-project-evaluator: check_exposure_has_description",
       recommendation: "Add dbt-project-evaluator check to CI" },
-    { area: "Documentation coverage", gap_type: "blind_spot", criticality: 2,
+    { area: "Documentation coverage ownership", gap_type: "blind_spot", criticality: 2,
       standard_citation: "dbt-project-evaluator: documentation_coverage",
       recommendation: "No reviewer consistently owns docs; assign a rotating docs-gate reviewer" },
     { area: "Performance review on staging PRs", gap_type: "blind_spot", criticality: 3,
@@ -267,7 +260,8 @@ window.TRICORDER_DATA = (function () {
   return {
     repo: "cal-itp/data-infra",
     window: "2026-03-01 → 2026-05-31",
-    pr_count: 87,
+    pr_count: 190,
+    visibility: "private",
     CATEGORIES,
     RADAR_CATEGORIES,
     CATEGORY_GROUP,

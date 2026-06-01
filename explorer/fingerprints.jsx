@@ -63,7 +63,7 @@ function ReviewerCard({ r }) {
               tick={{ fontFamily: "DM Mono, monospace", fontSize: 10, fill: "#5a5850" }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
             <Radar dataKey="value" stroke="#16a34a" strokeWidth={2}
-              fill="#16a34a" fillOpacity={0.22} isAnimationActive={true} animationDuration={500} />
+              fill="#16a34a" fillOpacity={0.15} isAnimationActive={true} animationDuration={500} />
           </RadarChart>
         </ResponsiveContainer>
       </div>

@@ -9,38 +9,43 @@ function PatternCard({ p }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: "#fff",
+        background: hover ? "var(--bg3)" : "var(--bg2)",
         border: "1px solid var(--border)",
-        borderLeft: `3px solid ${hover ? "var(--accent)" : "var(--border)"}`,
+        borderLeft: `3px solid ${hover ? "var(--accent)" : "transparent"}`,
         borderRadius: "var(--border-radius)",
         padding: "12px 13px 13px",
-        transition: "border-color 120ms ease, box-shadow 120ms ease",
-        boxShadow: hover ? "0 4px 12px rgba(10,10,9,0.06)" : "none",
+        transition: "background 120ms ease, border-left-color 120ms ease",
       }}>
-      <div style={{ marginBottom: 9 }}>
-        <Tag group={grp}>{p.category}</Tag>
-      </div>
       <div style={{
         fontFamily: "var(--font-cond)", fontWeight: 600, fontSize: 17, lineHeight: 1.18,
         letterSpacing: "0.005em", color: "var(--text)",
       }}>{p.signal}</div>
-      <div style={{ marginTop: 10, display: "flex", gap: 7, alignItems: "flex-start" }}>
+      <div style={{ marginTop: 9 }}>
+        <Tag group={grp} size="xs">{p.category}</Tag>
+      </div>
+      <div style={{ marginTop: 9, display: "flex", gap: 7, alignItems: "flex-start" }}>
         <span style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: 11, marginTop: 1 }}>§</span>
-        <Mono dim style={{ fontSize: 11.5, lineHeight: 1.45 }}>{p.standard_citation}</Mono>
+        <Mono dim style={{ fontSize: 11, lineHeight: 1.45 }}>{p.standard_citation}</Mono>
       </div>
     </div>
   );
 }
 
-function PipelineColumn({ stage, items }) {
-  const meta = MATURITY[stage];
+function PipelineColumn({ stage, items, actionable }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, height: "100%" }}>
+    <div style={{
+      display: "flex", flexDirection: "column", minWidth: 0, height: "100%",
+      background: actionable ? "rgba(22,163,74,0.04)" : "transparent",
+      borderRadius: "var(--border-radius)",
+      padding: actionable ? "0 8px" : "0",
+      margin: actionable ? "0 -8px" : "0",
+    }}>
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 4px 10px", borderBottom: "2px solid var(--border)", marginBottom: 12,
+        marginTop: actionable ? 0 : 0,
       }}>
-        <Mono style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 500 }}>{stage}</Mono>
+        <Mono dim style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 500 }}>{stage}</Mono>
         <span style={{
           fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-dim)",
           background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
@@ -85,7 +90,8 @@ function PipelineTab() {
           flex: 1, minHeight: 0, alignItems: "stretch",
         }}>
           {MATURITY_ORDER.map(stage => (
-            <PipelineColumn key={stage} stage={stage} items={byStage[stage]} />
+            <PipelineColumn key={stage} stage={stage} items={byStage[stage]}
+              actionable={stage === "rule" || stage === "deterministic"} />
           ))}
         </div>
       </div>

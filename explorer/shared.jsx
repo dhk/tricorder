@@ -20,6 +20,7 @@ function groupForCategory(cat) {
 function Tag({ children, group = "pattern", size = "sm", style }) {
   const c = GROUP_COLORS[group] || GROUP_COLORS.pattern;
   const sizes = {
+    xs: { fontSize: 9,    padding: "2px 6px", letterSpacing: "0.07em" },
     sm: { fontSize: 10.5, padding: "2px 7px", letterSpacing: "0.06em" },
     md: { fontSize: 12,   padding: "3px 9px", letterSpacing: "0.05em" },
   };

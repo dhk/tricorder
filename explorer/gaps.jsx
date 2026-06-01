@@ -3,7 +3,7 @@
 const GAP_PANELS = [
   { key: "coverage_gap",  title: "Coverage Gaps",  tagGroup: "data",
     blurb: "Standards that exist but aren't enforced everywhere." },
-  { key: "knowledge_gap", title: "Knowledge Gaps", tagGroup: "tool",
+  { key: "knowledge_gap", title: "Knowledge Gaps", tagGroup: "pattern",
     blurb: "Areas where team understanding is thin or uneven." },
   { key: "blind_spot",    title: "Blind Spots",    tagGroup: "team",
     blurb: "Risks no reviewer is consistently catching.", tinted: true },
@@ -13,7 +13,7 @@ function GapItem({ g, tagGroup }) {
   return (
     <div style={{ padding: "14px 0", borderBottom: "1px solid var(--border)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>{g.area}</div>
+        <div style={{ fontFamily: "var(--font-cond)", fontWeight: 600, fontSize: 18, lineHeight: 1.2 }}>{g.area}</div>
         <Tag group={tagGroup} style={{ flexShrink: 0 }}>{g.gap_type.replace("_", " ")}</Tag>
       </div>
       <div style={{ marginTop: 8, display: "flex", gap: 7, alignItems: "flex-start" }}>
@@ -25,7 +25,7 @@ function GapItem({ g, tagGroup }) {
           fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--accent)",
           textTransform: "uppercase", letterSpacing: "0.05em", flexShrink: 0,
         }}>Fix →</span>
-        <span style={{ color: "var(--text-dim)", fontSize: 13.5, lineHeight: 1.5 }}>{g.recommendation}</span>
+        <span style={{ color: "var(--text-dim)", fontSize: 13.5, fontWeight: 300, lineHeight: 1.5 }}>{g.recommendation}</span>
       </div>
     </div>
   );

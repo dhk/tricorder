@@ -58,8 +58,8 @@ function AuthorCard({ a }) {
                     <Mono dim style={{ fontSize: 11, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.persistence}</Mono>
                   </div>
                   <div style={{ marginTop: 5, display: "flex", gap: 6 }}>
-                    <Mono dim style={{ fontSize: 11.5, fontWeight: 500, flexShrink: 0 }}>Support:</Mono>
-                    <span style={{ color: "var(--text-dim)", fontSize: 13, lineHeight: 1.45, fontStyle: "italic" }}>{g.support_recommendation}</span>
+                    <Mono dim style={{ fontSize: 11.5, fontWeight: 500, flexShrink: 0 }}>→ Support:</Mono>
+                    <span style={{ color: "var(--text-dim)", fontSize: 13, lineHeight: 1.45, fontWeight: 300 }}>{g.support_recommendation}</span>
                   </div>
                 </div>
               </li>
@@ -71,22 +71,43 @@ function AuthorCard({ a }) {
   );
 }
 
+function VisibilityNotice() {
+  return (
+    <div style={{
+      maxWidth: 560, margin: "40px auto 0", background: "var(--bg2)",
+      border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
+      padding: "28px 30px", textAlign: "center",
+    }}>
+      <div style={{ fontFamily: "var(--font-cond)", fontWeight: 600, fontSize: 19, marginBottom: 8 }}>
+        Author profiles withheld
+      </div>
+      <p style={{ margin: 0, color: "var(--text-dim)", fontSize: 14, fontWeight: 300, lineHeight: 1.55 }}>
+        Individual author profiles are omitted in team-visibility reports. Run with
+        {" "}<Mono style={{ fontSize: 13, color: "var(--text)" }}>--visibility private</Mono>{" "}to include them.
+      </p>
+    </div>
+  );
+}
+
 function ProfilesTab() {
+  const isPrivate = DATA.visibility === "private";
   return (
     <div style={{ padding: "28px 32px 48px", animation: "fadeIn 200ms ease" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ marginBottom: 20 }}>
           <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0 }}>Author Profiles</h2>
-          <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, maxWidth: 640 }}>
+          <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, fontWeight: 300, maxWidth: 640 }}>
             What each contributor does well and where review feedback keeps recurring — with a concrete way to support each growth area.
           </p>
         </div>
-        <div style={{
-          display: "grid", gap: 18,
-          gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))",
-        }}>
-          {DATA.authors.map((a, i) => <AuthorCard key={i} a={a} />)}
-        </div>
+        {!isPrivate ? <VisibilityNotice /> : (
+          <div style={{
+            display: "grid", gap: 18,
+            gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))",
+          }}>
+            {DATA.authors.map((a, i) => <AuthorCard key={i} a={a} />)}
+          </div>
+        )}
       </div>
     </div>
   );

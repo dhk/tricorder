@@ -1,15 +1,16 @@
 # tricorder — explorer
 
 The interactive React artifact for a synthesis run. Five tabs over the output of
-`tricorder synthesize`:
+`tricorder synthesize`, in priority order (maturity pipeline is the action output, so
+it leads):
 
 | Tab | Reads | Shows |
 |-----|-------|-------|
-| Pattern Heatmap | `patterns[]` | reviewer × category comment frequency; click a cell for quoted evidence |
-| Maturity Pipeline | `patterns[]` | read-only kanban, `judgment → guidance → convention → rule → deterministic` |
-| Author Profiles | `authors[]` | strengths, growth areas, support recommendation, trajectory |
+| Maturity Pipeline | `patterns[]` | read-only kanban, `judgment → guidance → convention → rule → deterministic`; the two actionable columns carry a green wash |
+| Pattern Coverage | `patterns[]` | reviewer × 9-dimension coverage grid (discrete green steps, not a heat map); click a cell for quoted evidence |
 | Team Gaps | `gaps[]` | coverage / knowledge / blind-spot panels, most-critical first |
-| Reviewer Fingerprints | `reviewers[]` | Recharts radar over the 9 main categories, focus areas, blind spots |
+| Reviewer Fingerprints | `reviewers[]` | Recharts radar over the 9 categories, focus areas, blind spots |
+| Author Profiles `PRIVATE` | `authors[]` | strengths / growth areas / support; gated on `visibility` |
 
 ## Running it
 
@@ -22,25 +23,30 @@ cd explorer && python -m http.server 8000   # then open http://localhost:8000
 
 ## Wiring in a real run
 
-All five tabs are data-driven from one global, `window.TRICORDER_DATA`, defined in
-`data.js`. The synthesize step should overwrite `data.js` (or inject the same global)
-with the run's output. Shape:
+All tabs are data-driven from one global, `window.TRICORDER_DATA`, defined in `data.js`.
+The synthesize step should overwrite `data.js` (or inject the same global) with the
+run's output. Shape:
 
 ```js
 window.TRICORDER_DATA = {
   repo: "owner/name",
   window: "YYYY-MM-DD → YYYY-MM-DD",
-  pr_count: 87,
+  pr_count: 190,
+  visibility: "private",                    // private -> Author Profiles render; team|public -> withheld notice
 
-  // taxonomy — controls heatmap columns + radar axes
-  CATEGORIES: [ /* 15 category slugs, X-axis of the heatmap */ ],
-  RADAR_CATEGORIES: [ /* 9 main category slugs, radar axes */ ],
-  CATEGORY_GROUP: { grain: "data", naming: "pattern", /* … */ }, // tag color family per category
+  // taxonomy — the 9 categories drive BOTH the coverage grid columns and the radar axes
+  CATEGORIES: [
+    "grain","naming","testing","documentation","style",
+    "performance","modeling","schema","business-logic"
+  ],
+  RADAR_CATEGORIES: [ /* same 9, or a subset */ ],
+  CATEGORY_GROUP: { grain: "data", naming: "pattern", testing: "tool", /* … */ }, // tag color family per category
+                                                                                  // pattern=green tool=purple data=blue team=orange
 
   patterns: [{
-    signal, category, maturity,            // maturity ∈ judgment|guidance|convention|rule|deterministic
+    signal, category, maturity,             // maturity ∈ judgment|guidance|convention|rule|deterministic
     standard_citation, reviewer, author,
-    evidence: [{ pr, date, author, quote }] // drives heatmap intensity + the evidence drawer
+    evidence: [{ pr, date, author, quote }] // drives coverage depth + the evidence drawer
   }],
 
   reviewers: [{
@@ -63,7 +69,7 @@ window.TRICORDER_DATA = {
 };
 ```
 
-Tag colors follow the content-type convention: patterns → green, tools/reviewers →
+Tag colors follow the content-type convention: patterns → green, reviewers/tools →
 purple, data/analysis → blue, team/gaps → orange.
 
 The `data.js` currently checked in is a sample run against `cal-itp/data-infra` for
