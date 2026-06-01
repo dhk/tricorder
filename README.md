@@ -2,6 +2,9 @@
 
 > *"A room full of data people and you named it tricorder instead of data. Yes, on purpose."*
 
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/106d5cca-03eb-47ee-a5fe-281ca98063d2" />
+
+
 Software repositories contain two kinds of content. Code is the obvious one. Everything else — the pull request reviews, the inline comments, the back-and-forth before a merge — is the other kind. That second kind is largely untapped as signal.
 
 Tricorder reads it. Returns a structured map of what the team actually knows, what it misses, and what is ready to institutionalize. The output is a document, not a dashboard.
