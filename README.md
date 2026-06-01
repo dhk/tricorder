@@ -2,9 +2,9 @@
 
 > *"A room full of data people and you named it tricorder instead of data. Yes, on purpose."*
 
-Scans the ambient signal your team generates every day. Returns a structured map of what they actually know, and what they don't.
+Software repositories contain two kinds of content. Code is the obvious one. Everything else — the pull request reviews, the inline comments, the back-and-forth before a merge — is the other kind. That second kind is largely untapped as signal.
 
-Code review is your team's most honest knowledge base. More current than runbooks, less curated than wikis. The problem is it's buried in threads. Tricorder reads those threads and extracts the signal.
+Tricorder reads it. Returns a structured map of what the team actually knows, what it misses, and what is ready to institutionalize. The output is a document, not a dashboard.
 
 ---
 
@@ -16,6 +16,12 @@ Four questions, one report:
 2. **What does each reviewer actually care about?** Focus fingerprints across the full review record.
 3. **Where does each author excel, and where do they consistently struggle?** Growth profiles backed by specific evidence.
 4. **Where is the team collectively blind?** Coverage gaps against named dbt and SQL standards.
+
+---
+
+## What it isn't
+
+Not a metrics dashboard. Not a performance review tool. Not a replacement for live code review. Not a GitHub Analytics competitor. Those tools answer questions about activity. Tricorder answers questions about knowledge.
 
 ---
 
@@ -64,7 +70,7 @@ Expected: roughly $0.02 per PR. A 60-PR run lands around $1.50.
 
 ## Standards
 
-Where a pattern maps to a named standard, tricorder cites it by name.
+Patterns are grounded against named standards, not vibes. Where a review comment maps to a documented convention, tricorder cites it by name.
 
 - [dbt Labs style guide](https://docs.getdbt.com/best-practices/how-we-style/0-how-we-style-our-dbt-projects)
 - [dbt-project-evaluator](https://github.com/dbt-labs/dbt-project-evaluator)
@@ -77,9 +83,9 @@ Where a pattern maps to a named standard, tricorder cites it by name.
 
 ## Status
 
-Early and experimental. Architecture and prompts are complete. Validation in progress against `cal-itp/data-infra`.
+Early and experimental. First harvest complete against a public dbt/BigQuery analytics team — 190 PRs, 15 contributors, March–May 2026. First synthesis run in progress.
 
-`SKILL.md` in this repo is the full specification: harvest schema, synthesis prompts, visibility model, and the maturity path taxonomy.
+`SKILL.md` is the full technical specification: harvest schema, synthesis prompts, visibility model, and the maturity path taxonomy. `DESIGN.md` is the design document: thesis, architecture decisions, limitations, and roadmap.
 
 ---
 
