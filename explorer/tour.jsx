@@ -109,8 +109,11 @@ function Onboarding({ active, setActive }) {
   const [step, setStep] = useState(-1);
   const [rect, setRect] = useState(null);
 
-  // auto-start once for first-time visitors
+  // auto-start once for first-time visitors; ?tour=1 forces it every time
   useEffect(() => {
+    let forced = false;
+    try { forced = new URLSearchParams(window.location.search).get("tour") === "1"; } catch (e) {}
+    if (forced) { setStep(0); return; }
     let seen = false;
     try { seen = localStorage.getItem(TOUR_KEY) === "1"; } catch (e) {}
     if (!seen) setStep(0);
