@@ -86,7 +86,7 @@ Patterns are grounded against named standards, not vibes. Where a review comment
 
 ## Status
 
-Early and experimental. First harvest complete against a public dbt/BigQuery analytics team — 190 PRs, 15 contributors, March–May 2026. First synthesis run in progress.
+Early and experimental. First synthesis run complete against a public dbt/BigQuery analytics team — 190 PRs, 15 contributors, March–May 2026. Output: 5 institutionalization candidates, 14 reviewer fingerprints, 15 author growth profiles, 11 team gaps. Report in `adventures-in-ai`.
 
 `SKILL.md` is the full technical specification: harvest schema, synthesis prompts, visibility model, and the maturity path taxonomy. `DESIGN.md` is the design document: thesis, architecture decisions, limitations, and roadmap.
 

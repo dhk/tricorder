@@ -242,8 +242,15 @@ First synthesis run against a public dbt/BigQuery analytics team (190 PRs, March
 
 ## Status
 
-Tricorder is early and experimental. The harvest pipeline and synthesis prompts are complete and validated. The cost model has been confirmed against real data. The first full synthesis run is in progress.
+Tricorder is early and experimental. The harvest pipeline, synthesis prompts, and Markdown report renderer are complete and validated against production data.
+
+**First synthesis run complete** — cal-itp/data-infra, 2026-06-02.
+- 190 PRs harvested (March–May 2026), 184 with review activity
+- 15 contributors, 14 reviewers with fingerprint profiles
+- 5 institutionalization candidates identified (maturity: judgment → convention → rule)
+- 11 team gaps classified (5 coverage gaps, 3 blind spots, 3 knowledge gaps)
+- Output report: `adventures-in-ai/tricorder/2026-06-02-cal-itp__data-infra.md`
+
+Key validation finding: the four synthesis prompts produced coherent, specific, actionable output. The reviewer fingerprint and author growth profile sections are the strongest — Claude read 184 PR threads and returned named-pattern findings with evidence quotes and concrete support recommendations, not generic advice. The team gap section correctly identified that review quality is concentrated in one reviewer (chrisyamas) while the broader team defaults to low-signal LGTM approvals — a finding that matched informal prior knowledge about the team.
 
 The implementation lives in two places: this repo (`dhk/tricorder`) contains the specification, cost probe, and synthesis script. The `adventures-in-ai` repo contains synthesis outputs as they are produced.
-
-Findings from the first run will update the status section and the validation narrative in this document.

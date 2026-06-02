@@ -272,12 +272,12 @@ def strip_fences(text: str) -> str:
     return text.strip()
 
 
-def call_claude(client, system: str, user: str, retries: int = 2) -> dict:
+def call_claude(client, system: str, user: str, retries: int = 2, max_tokens: int = MAX_TOKENS) -> dict:
     for attempt in range(retries + 1):
         try:
             msg = client.messages.create(
                 model=MODEL,
-                max_tokens=MAX_TOKENS,
+                max_tokens=max_tokens,
                 system=system,
                 messages=[{"role": "user", "content": user}],
             )
@@ -629,7 +629,7 @@ def main():
             json.dumps([{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles], indent=2)[:4000],
         ]
 
-        team_gaps = call_claude(client, SYSTEM_P4, "\n".join(team_prompt_lines))
+        team_gaps = call_claude(client, SYSTEM_P4, "\n".join(team_prompt_lines), max_tokens=8192)
         with open(team_gaps_path, "w") as f:
             json.dump(team_gaps, f, indent=2)
         status = "⚠ error" if team_gaps.get("_error") else f"{len(team_gaps.get('gaps',[]))} gaps identified"
