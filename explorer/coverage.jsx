@@ -1,40 +1,77 @@
 // coverage.jsx — Tab: Pattern Coverage
-// Reviewers (Y) × 9 categories (X). Cell fill = coverage depth (discrete green shades).
-// Click a cell -> drawer with quoted evidence.
+// Reviewers (Y) × 9 categories (X).
+//
+// Cell fill comes from two sources, merged:
+//   1. category_freq on reviewer fingerprints (0-100 score from Phase 2 synthesis)
+//      — reliable signal for ALL reviewers regardless of pattern selection.
+//   2. Evidence quotes from DATA.patterns — populates the click-through drawer.
+//
+// Using only patterns caused empty rows for reviewers whose patterns weren't
+// selected in the top-20 (e.g. Spock reviewed 40 PRs but had low-count signals).
 
 function buildCoverage() {
   const cats = DATA.CATEGORIES;
   const revs = DATA.reviewers.map(r => r.login);
-  const m = {};
-  revs.forEach(r => { m[r] = {}; cats.forEach(c => { m[r][c] = { count: 0, items: [] }; }); });
+
+  // Index reviewer fingerprints by login for O(1) lookup
+  const freqIndex = {};
+  DATA.reviewers.forEach(r => { freqIndex[r.login] = r.category_freq || {}; });
+
+  // Build evidence items from patterns (for drawer)
+  const evidenceIndex = {};  // reviewer → category → [{...}]
+  revs.forEach(r => { evidenceIndex[r] = {}; cats.forEach(c => { evidenceIndex[r][c] = []; }); });
   DATA.patterns.forEach(p => {
-    if (!m[p.reviewer] || !m[p.reviewer][p.category]) return;
-    const cell = m[p.reviewer][p.category];
+    if (!evidenceIndex[p.reviewer] || !evidenceIndex[p.reviewer][p.category]) return;
     const ev = p.evidence || [];
-    cell.count += ev.length;
-    ev.forEach(e => cell.items.push({ ...e, signal: p.signal, category: p.category, citation: p.standard_citation }));
+    ev.forEach(e => evidenceIndex[p.reviewer][p.category].push(
+      { ...e, signal: p.signal, category: p.category, citation: p.standard_citation }
+    ));
   });
+
+  // Merge: cell value is category_freq score (0-100); items come from pattern evidence
+  const m = {};
+  revs.forEach(r => {
+    m[r] = {};
+    cats.forEach(c => {
+      const freq = freqIndex[r]?.[c] ?? 0;
+      m[r][c] = { freq, items: evidenceIndex[r]?.[c] ?? [] };
+    });
+  });
+
   return { m, revs, cats };
 }
 
+// Map category_freq (0-100) → discrete shade level.
+// Matches the original 4-level palette but driven by synthesis score.
+function freqToLevel(freq) {
+  if (freq <= 0)  return 0;
+  if (freq < 30)  return 1;
+  if (freq < 60)  return 2;
+  return 3;
+}
+
 // Discrete coverage shades — not a continuous heat map.
-// white -> 0.12 -> 0.30 -> 0.55 green.
-function coverageStep(count) {
-  if (count <= 0) return { fill: "#ffffff", border: "var(--border)", on: false, level: 0 };
-  if (count === 1) return { fill: "rgba(22,163,74,0.12)", border: "rgba(22,163,74,0.22)", on: true, level: 1 };
-  if (count === 2) return { fill: "rgba(22,163,74,0.30)", border: "rgba(22,163,74,0.34)", on: true, level: 2 };
+function coverageStep(freq) {
+  const level = freqToLevel(freq);
+  if (level === 0) return { fill: "#ffffff", border: "var(--border)", on: false, level: 0 };
+  if (level === 1) return { fill: "rgba(22,163,74,0.12)", border: "rgba(22,163,74,0.22)", on: true, level: 1 };
+  if (level === 2) return { fill: "rgba(22,163,74,0.30)", border: "rgba(22,163,74,0.34)", on: true, level: 2 };
   return { fill: "rgba(22,163,74,0.55)", border: "rgba(22,163,74,0.50)", on: true, level: 3 };
 }
 
 function CoverageCell({ data, label, onClick }) {
   const [hover, setHover] = useState(false);
-  const step = coverageStep(data.count);
+  const step = coverageStep(data.freq);
+  const hasEvidence = data.items && data.items.length > 0;
+  const clickable = step.on && hasEvidence;
   return (
     <button
-      onClick={step.on ? onClick : undefined}
+      onClick={clickable ? onClick : undefined}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      title={step.on ? `${label} — ${data.count} reviewed for this dimension` : `${label} — no coverage`}
+      title={step.on
+        ? `${label} — score ${data.freq}${hasEvidence ? " · click for evidence" : ""}`
+        : `${label} — no coverage`}
       style={{
         all: "unset",
         position: "relative",
@@ -42,22 +79,22 @@ function CoverageCell({ data, label, onClick }) {
         borderRadius: "var(--border-radius)",
         background: step.fill,
         border: `1px solid ${step.border}`,
-        cursor: step.on ? "pointer" : "default",
+        cursor: clickable ? "pointer" : "default",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: hover && step.on ? "0 0 0 2px var(--accent)" : "none",
+        boxShadow: hover && clickable ? "0 0 0 2px var(--accent)" : "none",
         transition: "box-shadow 120ms ease, transform 120ms ease",
-        transform: hover && step.on ? "translateY(-1px)" : "none",
-        zIndex: hover && step.on ? 2 : 1,
+        transform: hover && clickable ? "translateY(-1px)" : "none",
+        zIndex: hover && clickable ? 2 : 1,
       }}>
       {step.on && (
         <span style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: 500,
           color: step.level >= 3 ? "#fff" : "var(--text-dim)",
-        }}>{data.count}</span>
+        }}>{data.freq}</span>
       )}
     </button>
   );
@@ -99,7 +136,7 @@ function CoverageDrawer({ payload, onClose }) {
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
             <Tag group={grp} size="md">{category}</Tag>
-            <Mono dim style={{ fontSize: 12 }}>{cell.count} reviewed for this dimension</Mono>
+            <Mono dim style={{ fontSize: 12 }}>focus score {cell.freq} / 100</Mono>
           </div>
         </div>
         <div style={{ overflowY: "auto", padding: "8px 24px 32px", flex: 1 }}>

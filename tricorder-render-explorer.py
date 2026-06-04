@@ -168,15 +168,14 @@ def aggregate_patterns(pr_dir: Path, name_map: dict, top_n: int = 20) -> list:
 
             if key not in signal_groups:
                 signal_groups[key] = {
-                    "signal":           signal,
-                    "category":         pat.get("category", "modeling"),
-                    "maturity":         pat.get("maturity", "guidance"),
+                    "signal":            signal,
+                    "category":          pat.get("category", "modeling"),
+                    "maturity":          pat.get("maturity", "guidance"),
                     "standard_citation": pat.get("standard_citation"),
-                    "reviewer":         data.get("reviewer_signals", [{}])[0].get("login", "")
-                                        if data.get("reviewer_signals") else "",
-                    "author":           data.get("author_signals", {}).get("login", ""),
-                    "count":            0,
-                    "evidence":         [],
+                    "reviewer":          pat.get("reviewer", ""),
+                    "author":            pat.get("author", "") or data.get("_author", ""),
+                    "count":             0,
+                    "evidence":          [],
                 }
 
             entry = signal_groups[key]
@@ -202,18 +201,64 @@ def aggregate_patterns(pr_dir: Path, name_map: dict, top_n: int = 20) -> list:
                         "quote":  quote[:300],
                     })
 
-    # Select top-per-level: pick the top (top_n // 5) most-recurring patterns
-    # from each maturity level so all five pipeline columns are populated.
+    # Grid-based selection: balances BOTH maturity (pipeline tab) and reviewer
+    # (coverage grid).
+    #
+    # For each (maturity × reviewer) pair, keep the best pattern by count.
+    # Then score each grid cell by count and greedily select up to top_n patterns,
+    # capping each maturity at max_per_maturity and each reviewer at max_per_reviewer.
+
     maturity_levels = ["judgment", "guidance", "convention", "rule", "deterministic"]
-    per_level = max(2, top_n // len(maturity_levels))
+    max_per_maturity = max(2, (top_n + len(maturity_levels) - 1) // len(maturity_levels))  # ceil(top_n/5) = 4
+    max_per_reviewer = 3
+
+    def alias(login: str) -> str:
+        login = login or ""
+        return (name_map.get(login, login) if name_map else login) or ""
+
+    # Build (maturity, reviewer_alias) → best pattern
+    grid: dict[tuple, dict] = {}
+    for p in signal_groups.values():
+        rev = alias(p.get("reviewer", ""))
+        key = (p["maturity"], rev)
+        if key not in grid or p["count"] > grid[key]["count"]:
+            grid[key] = p
+
+    # Sort grid cells by count descending and select greedily
+    maturity_quota: dict[str, int] = {m: 0 for m in maturity_levels}
+    reviewer_quota: dict[str, int] = {}
     selected = []
-    for level in maturity_levels:
-        level_pats = sorted(
-            [p for p in signal_groups.values() if p["maturity"] == level],
-            key=lambda p: p["count"],
-            reverse=True,
-        )[:per_level]
-        selected.extend(level_pats)
+    seen_signals = set()
+
+    for p in sorted(grid.values(), key=lambda x: x["count"], reverse=True):
+        if len(selected) >= top_n:
+            break
+        m = p["maturity"]
+        rev = alias(p.get("reviewer", ""))
+        if maturity_quota.get(m, 0) >= max_per_maturity:
+            continue
+        if reviewer_quota.get(rev, 0) >= max_per_reviewer:
+            continue
+        if p["signal"] in seen_signals:
+            continue
+        selected.append(p)
+        seen_signals.add(p["signal"])
+        maturity_quota[m] = maturity_quota.get(m, 0) + 1
+        reviewer_quota[rev] = reviewer_quota.get(rev, 0) + 1
+
+    # Fill any remaining slots (quota full but top_n not reached) with
+    # highest-count unseen patterns, ignoring reviewer cap but respecting maturity cap
+    if len(selected) < top_n:
+        for p in sorted(signal_groups.values(), key=lambda x: x["count"], reverse=True):
+            if len(selected) >= top_n:
+                break
+            if p["signal"] in seen_signals:
+                continue
+            if maturity_quota.get(p["maturity"], 0) >= max_per_maturity:
+                continue
+            selected.append(p)
+            seen_signals.add(p["signal"])
+            maturity_quota[p["maturity"]] = maturity_quota.get(p["maturity"], 0) + 1
 
     # Strip internal count field; apply name map
     for p in selected:
