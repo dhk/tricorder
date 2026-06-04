@@ -11,11 +11,12 @@ Usage:
     python tricorder-demo.py --fast    # skip delays, pauses still fire (for dry-runs)
     python tricorder-demo.py --no-pause  # run straight through, no input() stops
 
-Pause points (4 total — each is a narration beat):
-    [1] After harvest  — "190 PRs in cache. Zero API spend."
-    [2] After Phase 1  — "This is what Claude sees. This is what it returns."
-    [3] After Phase 2  — "40 PRs distilled into a fingerprint."
-    [4] After Phase 4  — "11 gaps. This is the conversation starter."
+Pause points (5 total — each is a narration beat):
+    [0] After cost probe  — "Before we spend a dollar, we know exactly what we'll spend."
+    [1] After harvest     — "190 PRs in cache. Zero API spend."
+    [2] After Phase 1     — "This is what Claude sees. This is what it returns."
+    [3] After Phase 2     — "40 PRs distilled into a fingerprint."
+    [4] After Phase 4     — "11 gaps. This is the conversation starter."
 
 Naming note: names shown are Star Trek character aliases.
 Real→alias map stored at ~/.tricorder/cal-itp__data-infra-name-map.json
@@ -372,6 +373,32 @@ TOP_GAPS = [
 ]
 
 
+# ── Cost probe data (real run, cal-itp/data-infra, June 2026) ─────────────────
+# Per-PR rows: (number, author, reviews, inline_comments, desc_quality, iterations, input_tokens)
+# Source: tricorder-cost-probe-cal-itp__data-infra.json
+COST_PROBE_ROWS = [
+    (4491, "O'Brien",  1, 0, "high", 0,  871),
+    (4537, "O'Brien",  2, 0, "high", 0, 1043),
+    (4570, "Rand",     2, 4, "high", 1, 2187),
+    (4673, "LaForge",  2, 0, "high", 0,  714),
+    (4677, "O'Brien",  1, 0, "high", 0,  803),
+    (4759, "LaForge",  2, 0, "high", 0,  768),
+    (4828, "Spock",    2, 2, "high", 0, 1356),
+    (4850, "Worf",     1, 0, "high", 0,  692),
+    (4856, "Chekov",   1, 1, "high", 0,  941),
+    (4857, "Crusher",  2, 3, "high", 0, 1612),
+    (4858, "LaForge",  1, 0, "high", 0,  703),
+    (4860, "Spock",    1, 2, "high", 0, 1289),
+    (4863, "Spock",    2, 1, "high", 1, 1487),
+    (4867, "O'Brien",  1, 0, "high", 0,  611),
+    (4870, "LaForge",  1, 0, "high", 0,  738),
+    (4875, "O'Brien",  1, 0, "high", 0,  694),
+    (4876, "O'Brien",  1, 0, "high", 0,  661),
+    (4888, "Chekov",   1, 0, "high", 0,  809),
+    (4889, "Spock",    2, 4, "high", 1, 1974),
+    (4891, "LaForge",  1, 0, "high", 0,  626),
+]
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 import json
@@ -408,6 +435,99 @@ def scene_header():
     dim("  Real→alias map: ~/.tricorder/cal-itp__data-infra-name-map.json")
     p()
     sleep(1.0)
+
+
+# ── Scene 0: Cost probe ───────────────────────────────────────────────────────
+
+def scene_cost_probe():
+    header("COST PROBE  ·  before we spend anything")
+    p()
+    slowprint(f"  {DIM}$ {RST}python tricorder-cost-probe.py cal-itp/data-infra --limit 20")
+    p()
+    sleep(0.4)
+    dim("  Fetching merged PRs…")
+    sleep(0.6)
+    print(f"  Found 20 merged PRs. Fetching reviews + comments…")
+    p()
+    sleep(0.3)
+
+    # Per-PR table header
+    print(f"  {DIM}{'PR':>5}  {'Author':<12}  {'Rev':>3}  {'Inl':>3}  {'Desc':>4}  {'Iter':>4}  {'Input tok':>9}{RST}")
+    print(f"  {DIM}{'─'*5}  {'─'*12}  {'─'*3}  {'─'*3}  {'─'*4}  {'─'*4}  {'─'*9}{RST}")
+
+    for num, author, rev, inl, desc, itr, tok in COST_PROBE_ROWS:
+        flag = f" {YLW}⚠{RST}" if itr >= 1 else "  "
+        print(f"  {num:>5}  {CYN}{author:<12}{RST}  {rev:>3}  {inl:>3}  "
+              f"{desc:>4}  {itr:>4}{flag}  {tok:>9,}")
+        if not FAST:
+            time.sleep(0.14)
+
+    p()
+    dim("  ⚠ = review required changes before approval (high-signal PR)")
+    p()
+    sleep(0.4)
+
+    # Summary stats
+    HR = f"  {'─'*62}"
+    print(HR)
+    print(f"  {BOLD}COST PROBE RESULTS — cal-itp/data-infra{RST}")
+    print(HR)
+    p()
+
+    if not FAST:
+        time.sleep(0.3)
+
+    print(f"  {DIM}SAMPLE STATS  (20 PRs){RST}")
+    label("Avg review comments/PR:", "1.1")
+    label("Avg inline comments/PR:", "0.1")
+    label("Avg input tokens/PR:",    "954")
+    label("Desc quality —",          "high: 20  medium: 0  low: 0")
+    p()
+    sleep(0.3)
+
+    print(f"  {DIM}TOKEN BREAKDOWN{RST}")
+    label("Prompt 1 — per-PR extraction:", "")
+    label("  Input:",                "  19,080")
+    label("  Output (est):",         "   6,000")
+    label("Prompts 2–4 — aggregation (×1.5):", "")
+    label("  Input:",                "  28,617")
+    label("  Output (est):",         "   3,000")
+    label("Grand total input:",      "  47,697")
+    label("Grand total output:",     "   9,000")
+    p()
+    sleep(0.3)
+
+    print(f"  {DIM}COST  (claude-sonnet-4-6 · $3/M input · $15/M output){RST}")
+    label("This sample (20 PRs):", f"  {GRN}$0.28{RST}")
+    label("Per PR:",               f"  {GRN}$0.014{RST}")
+    p()
+    sleep(0.3)
+
+    print(f"  {DIM}EXTRAPOLATIONS{RST}")
+    print(f"  {DIM}{'Window':>8}   {'Est PRs':>8}   {'Cost':>8}   Notes{RST}")
+    print(f"  {DIM}{'─'*8}   {'─'*8}   {'─'*8}   {'─'*28}{RST}")
+
+    rows = [
+        ( 30,  "$0.42",  "1 month, quiet team"),
+        ( 60,  "$0.83",  "2 months, recommended first run"),
+        ( 90,  "$1.25",  "3 months, standard window"),
+        (150,  "$2.09",  "5 months, rich signal"),
+        (300,  "$4.17",  "heavy repo, 6–12 months"),
+    ]
+    for est_prs, cost, note in rows:
+        if not FAST:
+            time.sleep(0.12)
+        print(f"  {est_prs:>8}   {est_prs:>8}   {GRN}{cost:>8}{RST}   {DIM}{note}{RST}")
+
+    p()
+    print(HR)
+    p()
+    sleep(0.4)
+
+    pause("COST PROBE — narrate: no Claude API spend yet. This pulls real PRs from GitHub, "
+          "assembles the exact prompts, counts tokens, and projects cost. "
+          "$0.014 per PR. 190 PRs → $2.85. "
+          "That's the go / no-go number. We said go.")
 
 
 # ── Scene 1: Harvest ───────────────────────────────────────────────────────────
@@ -731,6 +851,7 @@ def scene_report():
 if __name__ == "__main__":
     try:
         scene_header()
+        scene_cost_probe()
         scene_harvest()
         scene_synth_start()
         scene_phase1()
