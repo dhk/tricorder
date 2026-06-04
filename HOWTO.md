@@ -9,7 +9,7 @@ Step-by-step from zero to a finished report. Assumes Python 3.9+ is installed. N
 ```bash
 git clone https://github.com/dhk/tricorder.git
 cd tricorder
-pip install anthropic requests
+pip install -e .
 ```
 
 ---
@@ -80,7 +80,7 @@ Public or private repos both work. Private repos require `repo` scope on your PA
 Before spending any API credits, run the cost probe. It pulls a sample of real PRs, assembles the exact prompts, counts tokens, and prints a cost table — no Claude API spend.
 
 ```bash
-python tricorder-cost-probe.py OWNER/REPO --limit 20
+tricorder probe OWNER/REPO --limit 20
 ```
 
 Read the output:
@@ -97,7 +97,7 @@ If the projected cost looks right, proceed. If the per-PR cost is much higher th
 Pull merged PRs from GitHub into a local cache. No Claude API spend.
 
 ```bash
-python tricorder-harvest.py OWNER/REPO --since 2026-01-01
+tricorder harvest OWNER/REPO --since 2026-01-01
 ```
 
 **Flags:**
@@ -131,7 +131,7 @@ python tricorder-harvest.py OWNER/REPO --since 2026-01-01
 Run the four-phase Claude analysis. This is where the API spend happens.
 
 ```bash
-python tricorder-synthesize.py OWNER/REPO --visibility private
+tricorder synthesize OWNER/REPO --visibility private
 ```
 
 **Flags:**
@@ -177,7 +177,7 @@ The report is at the path printed at the end of synthesis. Open it on GitHub or 
 Generate and open the local explorer:
 
 ```bash
-python tricorder-render-explorer.py OWNER/REPO
+tricorder render OWNER/REPO
 open explorer/index.html
 ```
 
@@ -202,7 +202,7 @@ If you want to share results without exposing contributor names, create a name m
 
 Then re-render:
 ```bash
-python tricorder-render-explorer.py OWNER/REPO
+tricorder render OWNER/REPO
 ```
 
 The renderer auto-detects the map and applies it to all names in `data.js`. Push `explorer/data.js` to GitHub and Pages updates automatically.
@@ -222,7 +222,7 @@ The repo includes a devcontainer. Open it in Codespaces or VS Code:
 Use `--out ./output` since the default output path (`~/Documents/dev/adventures-in-ai/tricorder/`) won't exist in a Codespace:
 
 ```bash
-python tricorder-synthesize.py OWNER/REPO --out ./output
+tricorder synthesize OWNER/REPO --out ./output
 ```
 
 ---
@@ -235,7 +235,7 @@ export GITHUB_TOKEN=$(security find-generic-password -a "$USER" -s "github-trico
 ```
 
 **`No harvest cache found`**
-Run `tricorder-harvest.py` first. Synthesis requires the cache.
+Run `tricorder harvest` first. Synthesis requires the cache.
 
 **Synthesis stops mid-run**
 Re-run the same command. It skips completed phases and picks up from where it stopped.
@@ -248,13 +248,13 @@ for f in ~/.learn-from-work/cache/OWNER__REPO/synthesis/pr/*.json; do
   python3 -c "import json,sys; d=json.load(open('$f')); sys.exit(0 if not d.get('_error') else 1)" 2>/dev/null || rm "$f"
 done
 # Re-run
-python tricorder-synthesize.py OWNER/REPO
+tricorder synthesize OWNER/REPO
 ```
 
 **Explorer shows only rule/deterministic patterns in pipeline**
 Re-render — an older version of the renderer had a sorting bug. Fixed in v1.2+:
 ```bash
-python tricorder-render-explorer.py OWNER/REPO
+tricorder render OWNER/REPO
 ```
 
 ---
@@ -264,21 +264,21 @@ python tricorder-render-explorer.py OWNER/REPO
 ```bash
 # 1. Install
 git clone https://github.com/dhk/tricorder && cd tricorder
-pip install anthropic requests
+pip install -e .
 export GITHUB_TOKEN=ghp_...
 export ANTHROPIC_API_KEY=sk-ant-...
 
 # 2. Cost check
-python tricorder-cost-probe.py OWNER/REPO --limit 20
+tricorder probe OWNER/REPO --limit 20
 
 # 3. Harvest
-python tricorder-harvest.py OWNER/REPO --since 2026-01-01
+tricorder harvest OWNER/REPO --since 2026-01-01
 
 # 4. Synthesize
-python tricorder-synthesize.py OWNER/REPO
+tricorder synthesize OWNER/REPO
 
 # 5. View
-python tricorder-render-explorer.py OWNER/REPO
+tricorder render OWNER/REPO
 open explorer/index.html
 ```
 
