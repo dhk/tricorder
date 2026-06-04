@@ -20,7 +20,88 @@ function PrivateBadge() {
   );
 }
 
-function TopBar() {
+function AboutModal({ onClose }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        background: "rgba(10,10,9,0.35)",
+        display: "flex", alignItems: "flex-start", justifyContent: "flex-end",
+        padding: "60px 32px 0",
+        animation: "fadeIn 120ms ease",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--bg)", border: "1px solid var(--border)",
+          borderRadius: 6, padding: "28px 32px 24px",
+          width: 340, boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+          animation: "fadeIn 150ms ease",
+        }}
+      >
+        {/* wordmark */}
+        <div style={{
+          fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 20,
+          letterSpacing: "0.005em", marginBottom: 12,
+        }}>tricorder</div>
+
+        {/* one-liner */}
+        <p style={{
+          margin: "0 0 20px", fontSize: 14, lineHeight: 1.6,
+          color: "var(--text)", fontFamily: "var(--font-sans)",
+        }}>
+          Reads a team's merged PR history and returns a structured map of what the team knows, what it misses, and what's ready to institutionalize.
+        </p>
+
+        {/* divider */}
+        <div style={{ borderTop: "1px solid var(--border)", margin: "0 0 18px" }} />
+
+        {/* contact */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { label: "email",     value: "tricorder@dhk.io",  href: "mailto:tricorder@dhk.io" },
+            { label: "portfolio", value: "www.dhk.io",        href: "https://www.dhk.io"      },
+          ].map(({ label, value, href }) => (
+            <div key={label} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-dim)",
+                textTransform: "uppercase", letterSpacing: "0.07em", minWidth: 62,
+              }}>{label}</span>
+              <a href={href} target={href.startsWith("http") ? "_blank" : undefined}
+                rel="noopener"
+                style={{
+                  fontFamily: "var(--font-mono)", fontSize: 12.5,
+                  color: "var(--accent)", textDecoration: "none",
+                  borderBottom: "1px solid transparent", transition: "border-color 120ms",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = "var(--accent)"}
+                onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = "transparent"}
+              >{value}</a>
+            </div>
+          ))}
+        </div>
+
+        {/* close */}
+        <button onClick={onClose} style={{
+          all: "unset", cursor: "pointer", position: "absolute",
+          top: 14, right: 16,
+          fontFamily: "var(--font-mono)", fontSize: 18,
+          color: "var(--text-dim)", lineHeight: 1,
+        }}>×</button>
+      </div>
+    </div>
+  );
+}
+
+function TopBar({ onAbout }) {
   return (
     <header style={{
       display: "flex", alignItems: "baseline", gap: 18,
@@ -47,6 +128,16 @@ function TopBar() {
           onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = "var(--accent)"}
           onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = "transparent"}
         >GitHub ↗</a>
+        <span style={{ color: "var(--border)" }}>·</span>
+        <button onClick={onAbout} style={{
+          all: "unset", cursor: "pointer",
+          fontFamily: "var(--font-mono)", fontSize: 12.5,
+          color: "var(--text-dim)", whiteSpace: "nowrap",
+          borderBottom: "1px solid transparent", transition: "color 120ms, border-color 120ms",
+        }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderBottomColor = "var(--border)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-dim)"; e.currentTarget.style.borderBottomColor = "transparent"; }}
+        >about</button>
       </div>
     </header>
   );
@@ -84,6 +175,7 @@ function TabBar({ active, onSelect }) {
 function App() {
   const initial = (window.location.hash || "").replace("#", "");
   const [active, setActive] = useState(TABS.some(t => t.id === initial) ? initial : "pipeline");
+  const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => { window.location.hash = active; }, [active]);
 
@@ -92,12 +184,13 @@ function App() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", minHeight: 0 }}>
-      <TopBar />
+      <TopBar onAbout={() => setShowAbout(true)} />
       <TabBar active={active} onSelect={setActive} />
       <main style={{ flex: 1, minHeight: 0, overflowY: needsFullHeight ? "hidden" : "auto", display: "flex", flexDirection: "column" }}>
         <tab.Comp />
       </main>
       <Onboarding active={active} setActive={setActive} />
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </div>
   );
 }
