@@ -142,7 +142,11 @@ def infer_category_freq(primary_focus_areas: list) -> dict:
 def aggregate_patterns(pr_dir: Path, name_map: dict, top_n: int = 20) -> list:
     """
     Load all Phase 1 PR extraction files, de-duplicate patterns by signal text,
-    return the top_n most-recurring patterns with best evidence.
+    then select the top top_n // 5 most-recurring patterns from EACH maturity
+    level so all five pipeline columns are populated.
+
+    Sorting by raw recurrence count across all levels caused only rule/deterministic
+    patterns to be selected (they repeat most exactly), starving judgment/guidance/convention.
     """
     signal_groups: dict[str, dict] = {}  # signal_key → best pattern record
 
@@ -189,19 +193,24 @@ def aggregate_patterns(pr_dir: Path, name_map: dict, top_n: int = 20) -> list:
                         "quote":  quote[:300],
                     })
 
-    # Sort by recurrence; break ties by maturity severity
-    maturity_rank = {"deterministic": 5, "rule": 4, "convention": 3, "guidance": 2, "judgment": 1}
-    sorted_pats = sorted(
-        signal_groups.values(),
-        key=lambda p: (p["count"], maturity_rank.get(p["maturity"], 0)),
-        reverse=True,
-    )[:top_n]
+    # Select top-per-level: pick the top (top_n // 5) most-recurring patterns
+    # from each maturity level so all five pipeline columns are populated.
+    maturity_levels = ["judgment", "guidance", "convention", "rule", "deterministic"]
+    per_level = max(2, top_n // len(maturity_levels))
+    selected = []
+    for level in maturity_levels:
+        level_pats = sorted(
+            [p for p in signal_groups.values() if p["maturity"] == level],
+            key=lambda p: p["count"],
+            reverse=True,
+        )[:per_level]
+        selected.extend(level_pats)
 
     # Strip internal count field; apply name map
-    for p in sorted_pats:
+    for p in selected:
         del p["count"]
 
-    return apply_map(sorted_pats, name_map)
+    return apply_map(selected, name_map)
 
 
 # ── Reviewer profiles ─────────────────────────────────────────────────────────
