@@ -48,11 +48,19 @@ function AboutModal({ onClose }) {
           animation: "fadeIn 150ms ease",
         }}
       >
-        {/* wordmark */}
-        <div style={{
-          fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 20,
-          letterSpacing: "0.005em", marginBottom: 12,
-        }}>tricorder</div>
+        {/* wordmark + version */}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
+          <div style={{
+            fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 20,
+            letterSpacing: "0.005em",
+          }}>tricorder</div>
+          {DATA.version && (
+            <span style={{
+              fontFamily: "var(--font-mono)", fontSize: 10.5,
+              color: "var(--text-dim)", letterSpacing: "0.04em",
+            }}>v{DATA.version}</span>
+          )}
+        </div>
 
         {/* one-liner */}
         <p style={{
