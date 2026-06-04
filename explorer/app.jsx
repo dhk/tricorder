@@ -41,6 +41,7 @@ function AboutModal({ onClose }) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
+          position: "relative",
           background: "var(--bg)", border: "1px solid var(--border)",
           borderRadius: 6, padding: "28px 32px 24px",
           width: 340, boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
