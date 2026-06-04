@@ -1,0 +1,2 @@
+[console_scripts]
+tricorder = tricorder.cli:main

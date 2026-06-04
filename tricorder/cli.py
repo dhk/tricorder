@@ -15,6 +15,7 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).parent.parent
 
 SUBCOMMANDS = {
+    "ready":      "tricorder-readiness.py",
     "harvest":    "tricorder-harvest.py",
     "synthesize": "tricorder-synthesize.py",
     "probe":      "tricorder-cost-probe.py",
@@ -26,8 +27,9 @@ USAGE = """\
 tricorder — PR review analysis for dbt/SQL teams
 
 Usage:
+  tricorder ready      OWNER/REPO [--days 90]
+  tricorder probe      OWNER/REPO [--limit 20]
   tricorder harvest    OWNER/REPO [--since YYYY-MM-DD] [--limit N] [--force]
-  tricorder probe      OWNER/REPO [--limit N] [--since YYYY-MM-DD]
   tricorder synthesize OWNER/REPO [--visibility private|team|public] [--out DIR]
   tricorder render     OWNER/REPO [--out PATH] [--name-map PATH]
   tricorder demo       [--fast] [--no-pause]
@@ -35,10 +37,11 @@ Usage:
 Run any subcommand with --help for full flag reference.
 
 Recommended order for a new repo:
-  1. tricorder probe      OWNER/REPO --limit 20   # cost estimate, no API spend
-  2. tricorder harvest    OWNER/REPO --since YYYY-MM-DD
-  3. tricorder synthesize OWNER/REPO
-  4. tricorder render     OWNER/REPO
+  1. tricorder ready      OWNER/REPO          # is this repo a good candidate?
+  2. tricorder probe      OWNER/REPO          # confirm cost before spending
+  3. tricorder harvest    OWNER/REPO --since YYYY-MM-DD
+  4. tricorder synthesize OWNER/REPO
+  5. tricorder render     OWNER/REPO
 """
 
 

@@ -99,6 +99,69 @@ function ReviewerCard({ r }) {
   );
 }
 
+// ── Composite radar ───────────────────────────────────────────────────────────
+// All reviewers on one chart. High/medium signal = bold stroke + fill.
+// Low signal = faint outline. Immediately shows who covers what and the gaps.
+
+const COMPOSITE_PALETTE = [
+  "#16a34a", "#2970d6", "#7c5ce0", "#d94f2a", "#0ea5e9",
+  "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4",
+  "#84cc16", "#f97316", "#6366f1", "#14b8a6",
+];
+
+function CompositeRadar() {
+  const {
+    RadarChart, PolarGrid, PolarAngleAxis, Radar,
+    ResponsiveContainer, PolarRadiusAxis, Legend,
+  } = Recharts;
+
+  const revs = DATA.reviewers.filter(r => r.category_freq);
+
+  const chartData = DATA.RADAR_CATEGORIES.map(cat => {
+    const row = { category: cat };
+    revs.forEach(r => { row[r.login] = r.category_freq[cat] ?? 0; });
+    return row;
+  });
+
+  return (
+    <div style={{
+      background: "#fff", border: "1px solid var(--border)",
+      borderRadius: "var(--border-radius)", padding: "20px 24px 16px",
+      marginBottom: 28,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+        <CardHeading>Team overview</CardHeading>
+        <Mono dim style={{ fontSize: 10.5 }}>bold = high / medium signal &nbsp; faint = low signal</Mono>
+      </div>
+      <div style={{ height: 380, margin: "0 -6px" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={chartData} outerRadius="68%" margin={{ top: 16, right: 32, bottom: 0, left: 32 }}>
+            <PolarGrid stroke="#e8e6e1" />
+            <PolarAngleAxis dataKey="category"
+              tick={{ fontFamily: "DM Mono, monospace", fontSize: 10, fill: "#5a5850" }} />
+            <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+            {revs.map((r, i) => {
+              const isHigh = r.signal_quality === "high";
+              const isMed  = r.signal_quality === "medium";
+              const color  = COMPOSITE_PALETTE[i % COMPOSITE_PALETTE.length];
+              return (
+                <Radar key={r.login} name={r.login} dataKey={r.login}
+                  stroke={color} strokeWidth={isHigh ? 2.5 : isMed ? 1.8 : 1}
+                  strokeOpacity={isHigh ? 1 : isMed ? 0.75 : 0.28}
+                  fill={color}
+                  fillOpacity={isHigh ? 0.13 : isMed ? 0.07 : 0.02}
+                  isAnimationActive={false} />
+              );
+            })}
+            <Legend iconType="line" iconSize={16}
+              wrapperStyle={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, paddingTop: 10 }} />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 function FingerprintsTab() {
   return (
     <div style={{ padding: "28px 32px 48px", animation: "fadeIn 200ms ease" }}>
@@ -106,9 +169,10 @@ function FingerprintsTab() {
         <div style={{ marginBottom: 20 }}>
           <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0 }}>Reviewer Fingerprints</h2>
           <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, maxWidth: 640 }}>
-            The shape of each reviewer's attention across the nine main categories, with their focus areas and apparent blind spots.
+            The shape of each reviewer's attention across nine categories. Team overview first, then individual fingerprints.
           </p>
         </div>
+        <CompositeRadar />
         <div style={{
           display: "grid", gap: 18,
           gridTemplateColumns: "repeat(auto-fill, minmax(420px, 1fr))",

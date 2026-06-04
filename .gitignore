@@ -1,0 +1,4 @@
+tricorder.egg-info/
+tricorder/__pycache__/
+__pycache__/
+*.pyc

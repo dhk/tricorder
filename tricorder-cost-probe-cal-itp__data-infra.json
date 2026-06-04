@@ -1,0 +1,29 @@
+{
+  "repo": "cal-itp/data-infra",
+  "prs_sampled": 20,
+  "skipped_no_reviews": 0,
+  "per_pr_cost_usd": 0.013905,
+  "sample_cost_usd": 0.2781,
+  "grand_input_tokens": 47697,
+  "grand_output_tokens": 9000,
+  "avg_tokens_per_pr": 954.0,
+  "avg_reviews_per_pr": 1.1,
+  "avg_inline_per_pr": 0.1,
+  "avg_iterations": 0.0,
+  "desc_quality": {
+    "high": 20,
+    "medium": 0,
+    "low": 0
+  },
+  "extrapolations_usd": {
+    "30": 0.42,
+    "60": 0.83,
+    "90": 1.25,
+    "150": 2.09,
+    "300": 4.17
+  },
+  "warnings": [
+    "Average 1.1 reviews/PR \u2014 team may be reviewing in Slack rather than GitHub. Signal could be systematically thin."
+  ],
+  "insights": []
+}
