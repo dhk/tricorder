@@ -34,10 +34,11 @@ except ImportError:
 
 
 # ── config ────────────────────────────────────────────────────────────────────
-CACHE_BASE   = Path.home() / ".learn-from-work" / "cache"
-OUTPUT_BASE  = Path.home() / "Documents" / "dev" / "adventures-in-ai" / "tricorder"
-MODEL        = "claude-sonnet-4-6"
-MAX_TOKENS   = 2048
+CACHE_BASE       = Path.home() / ".learn-from-work" / "cache"
+_DEFAULT_OUT     = Path.home() / "Documents" / "dev" / "adventures-in-ai" / "tricorder"
+OUTPUT_BASE      = _DEFAULT_OUT if _DEFAULT_OUT.exists() else Path("output")
+MODEL            = "claude-sonnet-4-6"
+MAX_TOKENS       = 2048
 
 
 # ── auth ──────────────────────────────────────────────────────────────────────

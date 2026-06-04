@@ -186,9 +186,18 @@ def aggregate_patterns(pr_dir: Path, name_map: dict, top_n: int = 20) -> list:
             for quote in pat.get("comment_evidence", []):
                 if len(quote) > 20 and len(entry["evidence"]) < 2:
                     pr_num = f.stem
+                    # Pull mergedAt from the PR cache file if available
+                    pr_meta_path = f.parent.parent.parent / "prs" / f"{pr_num}.json"
+                    date = ""
+                    if pr_meta_path.exists():
+                        try:
+                            pr_meta = json.loads(pr_meta_path.read_text())
+                            date = pr_meta.get("mergedAt", "")[:10]
+                        except Exception:
+                            pass
                     entry["evidence"].append({
                         "pr":     f"#{pr_num}",
-                        "date":   "",   # not stored at this granularity in Phase 1
+                        "date":   date,
                         "author": entry["author"],
                         "quote":  quote[:300],
                     })
