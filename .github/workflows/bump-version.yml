@@ -1,0 +1,53 @@
+name: Bump build number
+
+# Runs on every push to main EXCEPT version-bump commits (which contain [skip ci]).
+# Reads VERSION, increments the 4th component (build), writes back, commits.
+#
+# Version format: MAJOR.MINOR.PATCH.BUILD
+#   BUILD — auto-incremented here on every merge
+#   PATCH  — bump manually when a collection of fixes warrants a patch release (1.0.1.0)
+#   MINOR  — bump manually for meaningful new features (1.1.0.0)
+#   MAJOR  — bump manually for large structural changes (2.0.0.0)
+#
+# To bump MAJOR/MINOR/PATCH: edit VERSION manually, reset BUILD to 0, commit.
+# Example: echo "1.1.0.0" > VERSION && git commit VERSION -m "chore: bump to 1.1.0.0"
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    # Skip if this is already a version-bump commit
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a PAT so the push triggers Pages deployment.
+          # Falls back to GITHUB_TOKEN (won't re-trigger workflows, but Pages still deploys).
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Read and increment build number
+        id: version
+        run: |
+          VERSION=$(cat VERSION)
+          IFS='.' read -r major minor patch build <<< "$VERSION"
+          NEW_BUILD=$((build + 1))
+          NEW_VERSION="${major}.${minor}.${patch}.${NEW_BUILD}"
+          echo "$NEW_VERSION" > VERSION
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Bumped: $VERSION → $NEW_VERSION"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          git commit -m "chore: build ${{ steps.version.outputs.version }} [skip ci]"
+          git push
