@@ -426,7 +426,11 @@ def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, te
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("repo", help="OWNER/REPO")
-    parser.add_argument("--visibility", default="private", choices=["private", "team", "public"])
+    parser.add_argument("--visibility", default="private",
+                        choices=["private", "team", "public"])
+    parser.add_argument("--out-dir", default=None,
+                        help="Directory for the Markdown report "
+                             f"(default: {OUTPUT_BASE})")
     args = parser.parse_args()
 
     owner, repo_name = args.repo.split("/", 1)
@@ -637,11 +641,12 @@ def main():
 
     # ── render report ─────────────────────────────────────────────────────────
     print("Rendering Markdown report...")
-    OUTPUT_BASE.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(args.out_dir) if args.out_dir else OUTPUT_BASE
+    out_dir.mkdir(parents=True, exist_ok=True)
     today     = datetime.now(timezone.utc).date().isoformat()
-    out_file  = OUTPUT_BASE / f"{today}-cal-itp__data-infra.md"
+    out_file  = out_dir / f"{today}-{repo_slug}.md"
 
-    md = render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, args.visibility, "cal-itp/data-infra")
+    md = render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, args.visibility, args.repo)
     with open(out_file, "w") as f:
         f.write(md)
 
