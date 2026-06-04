@@ -104,9 +104,9 @@ function CoverageCell({ data, label, onClick }) {
 
 function CoverageDrawer({ payload, onClose }) {
   useEffect(() => {
-    const onKey = (e) => { if (e.key === “Escape”) onClose(); };
-    window.addEventListener(“keydown”, onKey);
-    return () => window.removeEventListener(“keydown”, onKey);
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   if (!payload) return null;
   const { reviewer, category, cell } = payload;
@@ -115,53 +115,53 @@ function CoverageDrawer({ payload, onClose }) {
   // Find this reviewer's fingerprint focus areas relevant to this category
   const reviewerData = DATA.reviewers.find(r => r.login === reviewer);
   const catKeywords = {
-    grain: [“grain”,”dedup”,”fan-out”,”fanout”,”partition”],
-    naming: [“naming”,”convention”,”snake”,”prefix”],
-    testing: [“test”,”fixture”,”uniqueness”,”not_null”,”primary key”],
-    documentation: [“documentation”,”docs”,”description”,”readme”,”runbook”],
-    style: [“style”,”cte”,”qualify”,”readability”,”formatting”],
-    performance: [“performance”,”cost”,”scan”,”partition”,”cluster”],
-    modeling: [“incremental”,”microbatch”,”materialization”,”model layer”,”staging”,”mart”,”scd”,”exposure”],
-    schema: [“source freshness”,”schema change”,”breaking change”,”exposure”,”freshness”],
-    “business-logic”: [“spec”,”business logic”,”gtfs”,”derived field”,”conditional”],
+    grain: ["grain","dedup","fan-out","fanout","partition"],
+    naming: ["naming","convention","snake","prefix"],
+    testing: ["test","fixture","uniqueness","not_null","primary key"],
+    documentation: ["documentation","docs","description","readme","runbook"],
+    style: ["style","cte","qualify","readability","formatting"],
+    performance: ["performance","cost","scan","partition","cluster"],
+    modeling: ["incremental","microbatch","materialization","model layer","staging","mart","scd","exposure"],
+    schema: ["source freshness","schema change","breaking change","exposure","freshness"],
+    "business-logic": ["spec","business logic","gtfs","derived field","conditional"],
   };
   const relevantFocus = reviewerData?.primary_focus_areas?.filter(f =>
     (catKeywords[category] || []).some(kw => f.area.toLowerCase().includes(kw))
   ) || [];
 
   return (
-    <div style={{ position: “fixed”, inset: 0, zIndex: 50 }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 50 }}>
       <div onClick={onClose}
-        style={{ position: “absolute”, inset: 0, background: “rgba(10,10,9,0.28)”, animation: “fadeIn 160ms ease” }} />
+        style={{ position: "absolute", inset: 0, background: "rgba(10,10,9,0.28)", animation: "fadeIn 160ms ease" }} />
       <aside style={{
-        position: “absolute”, top: 0, right: 0, height: “100%”, width: “min(460px, 92vw)”,
-        background: “var(--bg)”, borderLeft: “1px solid var(--border)”,
-        boxShadow: “-18px 0 40px rgba(10,10,9,0.10)”,
-        animation: “drawerIn 220ms cubic-bezier(0.22,1,0.36,1)”,
-        display: “flex”, flexDirection: “column”,
+        position: "absolute", top: 0, right: 0, height: "100%", width: "min(460px, 92vw)",
+        background: "var(--bg)", borderLeft: "1px solid var(--border)",
+        boxShadow: "-18px 0 40px rgba(10,10,9,0.10)",
+        animation: "drawerIn 220ms cubic-bezier(0.22,1,0.36,1)",
+        display: "flex", flexDirection: "column",
       }}>
         {/* header */}
-        <div style={{ padding: “20px 24px 16px”, borderBottom: “1px solid var(--border)” }}>
-          <div style={{ display: “flex”, justifyContent: “space-between”, alignItems: “flex-start” }}>
+        <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--border)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <Mono dim style={{ fontSize: 11, letterSpacing: “0.06em”, textTransform: “uppercase” }}>Coverage detail</Mono>
-              <div style={{ fontFamily: “var(--font-cond)”, fontWeight: 700, fontSize: 26, lineHeight: 1.05, marginTop: 4 }}>
+              <Mono dim style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>Coverage detail</Mono>
+              <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 26, lineHeight: 1.05, marginTop: 4 }}>
                 {reviewer}
               </div>
             </div>
             <button onClick={onClose} style={{
-              all: “unset”, cursor: “pointer”, fontFamily: “var(--font-mono)”, fontSize: 18,
-              color: “var(--text-dim)”, padding: “2px 8px”, borderRadius: “var(--border-radius)”,
+              all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 18,
+              color: "var(--text-dim)", padding: "2px 8px", borderRadius: "var(--border-radius)",
               lineHeight: 1,
-            }} title=”Close (Esc)”>✕</button>
+            }} title="Close (Esc)">✕</button>
           </div>
-          <div style={{ display: “flex”, gap: 8, marginTop: 12, alignItems: “center” }}>
-            <Tag group={grp} size=”md”>{category}</Tag>
+          <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>
+            <Tag group={grp} size="md">{category}</Tag>
             <Mono dim style={{ fontSize: 12 }}>focus score {cell.freq} / 100</Mono>
           </div>
         </div>
 
-        <div style={{ overflowY: “auto”, padding: “8px 24px 32px”, flex: 1 }}>
+        <div style={{ overflowY: "auto", padding: "8px 24px 32px", flex: 1 }}>
 
           {/* fingerprint focus areas for this category */}
           {relevantFocus.length > 0 && (
@@ -169,13 +169,13 @@ function CoverageDrawer({ payload, onClose }) {
               <CardHeading style={{ marginBottom: 10 }}>What this reviewer focuses on</CardHeading>
               {relevantFocus.map((f, i) => (
                 <div key={i} style={{
-                  padding: “11px 0”,
-                  borderBottom: i < relevantFocus.length - 1 ? “1px solid var(--border)” : “none”,
+                  padding: "11px 0",
+                  borderBottom: i < relevantFocus.length - 1 ? "1px solid var(--border)" : "none",
                 }}>
-                  <div style={{ display: “flex”, alignItems: “baseline”, gap: 8, marginBottom: 4 }}>
-                    <Mono dim style={{ fontSize: 10, textTransform: “uppercase”, letterSpacing: “0.07em” }}>{f.frequency}</Mono>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                    <Mono dim style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em" }}>{f.frequency}</Mono>
                   </div>
-                  <div style={{ fontSize: 13.5, lineHeight: 1.5, color: “var(--text)” }}>{f.area}</div>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text)" }}>{f.area}</div>
                 </div>
               ))}
             </div>
@@ -183,7 +183,7 @@ function CoverageDrawer({ payload, onClose }) {
 
           {/* divider between focus areas and evidence */}
           {relevantFocus.length > 0 && cell.items.length > 0 && (
-            <div style={{ borderTop: “1px solid var(--border)”, margin: “18px 0 4px” }}>
+            <div style={{ borderTop: "1px solid var(--border)", margin: "18px 0 4px" }}>
               <CardHeading style={{ marginTop: 14, marginBottom: 10 }}>Review quotes</CardHeading>
             </div>
           )}
@@ -191,25 +191,25 @@ function CoverageDrawer({ payload, onClose }) {
           {/* pattern evidence quotes */}
           {cell.items.length > 0 ? cell.items.map((it, i) => (
             <div key={i} style={{
-              padding: “16px 0”,
-              borderBottom: i < cell.items.length - 1 ? “1px solid var(--border)” : “none”,
+              padding: "16px 0",
+              borderBottom: i < cell.items.length - 1 ? "1px solid var(--border)" : "none",
             }}>
-              <div style={{ display: “flex”, justifyContent: “space-between”, alignItems: “baseline”, marginBottom: 8, gap: 10 }}>
-                <Mono style={{ fontSize: 12.5, color: “var(--accent-blue)” }}>{it.pr}</Mono>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, gap: 10 }}>
+                <Mono style={{ fontSize: 12.5, color: "var(--accent-blue)" }}>{it.pr}</Mono>
                 <Mono dim style={{ fontSize: 11.5 }}>{it.date}</Mono>
               </div>
               <div style={{
-                fontFamily: “var(--font-sans)”, fontWeight: 400, fontSize: 14.5, lineHeight: 1.55,
-                color: “var(--text)”, paddingLeft: 14, borderLeft: “2px solid var(--accent)”,
-              }}>”{it.quote}”</div>
-              <div style={{ marginTop: 10, display: “flex”, gap: 8, alignItems: “center”, flexWrap: “wrap” }}>
+                fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 14.5, lineHeight: 1.55,
+                color: "var(--text)", paddingLeft: 14, borderLeft: "2px solid var(--accent)",
+              }}>"{it.quote}"</div>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <Mono dim style={{ fontSize: 11.5 }}>on {it.author}'s PR</Mono>
-                {it.citation && <><span style={{ color: “var(--border)” }}>·</span>
+                {it.citation && <><span style={{ color: "var(--border)" }}>·</span>
                 <Mono dim style={{ fontSize: 11.5 }}>{it.citation}</Mono></>}
               </div>
             </div>
           )) : relevantFocus.length === 0 ? (
-            <div style={{ paddingTop: 24, color: “var(--text-dim)”, fontSize: 13.5, lineHeight: 1.6 }}>
+            <div style={{ paddingTop: 24, color: "var(--text-dim)", fontSize: 13.5, lineHeight: 1.6 }}>
               Focus score {cell.freq}/100 — no specific quotes for this category in the current pattern sample.
             </div>
           ) : null}
