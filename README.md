@@ -41,20 +41,25 @@ Two phases. They run independently.
 ## Quick start
 
 ```bash
-# 1. Set your GitHub token (classic PAT, public_repo scope)
+# 1. Clone and install
+git clone https://github.com/dhk/tricorder.git && cd tricorder
+pip install -e .
+
+# 2. Set credentials
 export GITHUB_TOKEN=ghp_your_token
+export ANTHROPIC_API_KEY=sk-ant-...
 
-# 2. Install the one dependency
-pip install requests
-
-# 3. Run the cost probe first — no Claude API spend until you decide to go
-python tricorder-cost-probe.py OWNER/REPO --limit 20
+# 3. Cost probe — no Claude API spend until you decide to go
+tricorder probe OWNER/REPO --limit 20
 
 # 4. Harvest
 tricorder harvest OWNER/REPO --since 2026-01-01
 
 # 5. Synthesize
 tricorder synthesize OWNER/REPO
+
+# 6. Explore
+tricorder render OWNER/REPO && open explorer/index.html
 ```
 
 ---
