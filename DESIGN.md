@@ -54,14 +54,16 @@ Tricorder earns access incrementally.
 
 Every increase in access must unlock a visibly better class of insight. Users encounter something interesting before being asked to invest more. The interaction model is a ratchet: trust increases, signal increases, artifacts accumulate, and the next action is always obvious.
 
-```
-Level 0   Local filesystem     →  Repository Profile
-Level 1   Local git history    →  Evolution Timeline
-Level 2   GitHub read access   →  Review Patterns
-Level 3   LLM API              →  Organizational Learnings
-Level 4   LLM API + lens       →  Interpretation
-Level 5   LLM API              →  Improvement Plan
-```
+| Level | Command | Data sources | Network | Credentials required | Writes | Value delivered |
+|-------|---------|-------------|---------|---------------------|--------|----------------|
+| 0 | `discover` | Local filesystem | None | None | None | Repository profile + archetype |
+| 1 | `discover --history` | Local git history | None | None | None | Evolution timeline, hotspots |
+| 2 | `analyze` | GitHub REST API | GitHub only | `GITHUB_TOKEN` | None | Review patterns, expertise map |
+| 3 | `learn` | Artifact store | LLM API | LLM API key | `.tricorder/` artifacts | Organizational learnings |
+| 4 | `interpret` | Artifact store | LLM API | LLM API key | `.tricorder/` artifacts | Domain-specific recommendations |
+| 5 | `improve` | Artifact store | LLM API | LLM API key | `.tricorder/` artifacts | Improvement roadmap |
+
+If a level's required credential is absent, tricorder exits with an explicit message naming the missing credential and the command to run once it is available. No partial results are written.
 
 At every level, tricorder states clearly what access it used, what it did not access, what it found, and what the next step is.
 
@@ -341,6 +343,8 @@ For demos and sharing, real GitHub logins can be replaced with aliases. Create `
 
 Installed via `pip install -e .`. Entry point: `tricorder`.
 
+> **Current shipped interface** remains the v1 commands in `tricorder/cli.py` (`ready`, `probe`, `harvest`, `synthesize`, `render`, `demo`). The interface below is the **v2 design target** — not yet implemented.
+
 ```
 tricorder discover    OWNER/REPO [--lens NAME]
 tricorder discover    OWNER/REPO --history [--lens NAME]
@@ -356,7 +360,9 @@ tricorder demo        [--fast] [--no-pause]
 tricorder --version
 ```
 
-**v1 command aliases (still functional):**
+**v1 command aliases (planned — not yet implemented):**
+
+When v2 ships, v1 commands will remain functional as aliases. No breaking changes.
 
 ```
 tricorder harvest     →  tricorder analyze
@@ -504,7 +510,7 @@ Patterns are grounded against named standards:
 
 ### Completed (v1.0.1.x)
 
-- ✓ First synthesis run — cal-itp/data-infra, 190 PRs, March–May 2026
+- ✓ First synthesis run — cal-itp/data-infra, 190 PRs fetched (172 retained, 154 with review activity), March–May 2026
 - ✓ Interactive HTML explorer deployed to GitHub Pages
 - ✓ Composite radar chart (all reviewers overlaid)
 - ✓ Readiness check (`tricorder ready`)
@@ -546,9 +552,11 @@ Patterns are grounded against named standards:
 **v2.0** — In design. Design decisions finalized in issue #22 and documented in [BRIEF.md](BRIEF.md) and [docs/EVOLUTION.md](docs/EVOLUTION.md). Implementation pending.
 
 **First synthesis run — cal-itp/data-infra, June 2026:**
-- 172 PRs harvested (March–May 2026), 154 with review activity
+- 190 PRs fetched from GitHub; 172 retained after bot/noise filtering; 154 with substantive review activity
 - 15 contributors, 14 reviewer profiles, 15 author growth profiles
 - 5 institutionalization candidates (maturity: judgment → convention/rule)
 - 11 team gaps (5 coverage, 4 blind spots, 2 knowledge)
+
+*Note: README.md cites 190 PRs (total fetched). DESIGN.md uses 172 (post-filter) and 154 (with review activity) as the analysis baseline. These are the same run.*
 
 Key validation finding: review quality is concentrated in one reviewer (high signal) while the broader team defaults to low-signal approvals — including on breaking SQL changes. The composite radar makes this visible at a glance. The finding matched informal prior knowledge about the team, confirming that the synthesis is reading real signal, not producing plausible-sounding noise.

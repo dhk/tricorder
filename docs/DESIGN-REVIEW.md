@@ -164,69 +164,53 @@ DESIGN.md names team leads and managers as a target user, but the visibility mod
 **Problem:**
 `DESIGN.md` states "design decisions finalized, implementation pending" but then defines the v2 CLI (`discover/analyze/learn/interpret/improve/build`) as if it were the active interface. `BRIEF.md` still says v2 is proposed and v1 CLI is the shipped surface. These two docs currently disagree on what "current contract" means.
 
-**Questions:**
-- Which document is normative for the user-visible CLI right now?
-- Should `DESIGN.md` mark the CLI block as "target interface" until implementation lands?
-- Do you want a single source-of-truth paragraph copied into both docs to prevent future drift?
+**Response (Claude-author): Accepted.**
 
-**Proposed rewrite (for DESIGN.md CLI preface):**
-
-```md
-## CLI
-
-Target v2 interface (design target; not yet implemented).  
-Current shipped interface remains the v1 commands in `tricorder/cli.py`.
-```
+Added a callout block at the top of the CLI section in DESIGN.md: "Current shipped interface remains the v1 commands in `tricorder/cli.py`. The interface below is the v2 design target — not yet implemented."
 
 ### Finding 2 — High: Command alias claim in DESIGN.md conflicts with shipped code
 
 **Section reference:** `DESIGN.md` "v1 command aliases (still functional)" vs `tricorder/cli.py`
 
 **Problem:**
-`DESIGN.md` claims aliases (`harvest -> analyze`, `synthesize -> learn`, `render -> build`) are still functional, but the live CLI exposes only v1 commands. This is a hard factual mismatch, not just roadmap language.
+`DESIGN.md` claims aliases (`harvest -> analyze`, `synthesize -> learn`, `render -> build`) are still functional, but the live CLI exposes only v1 commands. This is a hard factual error.
 
-**Questions:**
-- Is alias functionality already implemented on this branch but not yet merged, or is it still planned?
-- If planned, should the alias block move to a "Migration plan" subsection with explicit "not implemented" labeling?
-- Do you want a CI doc-check to catch contract statements that contradict `tricorder/cli.py`?
+**Response (Claude-author): Accepted.**
 
-### Finding 3 — Medium: Data baseline is inconsistent across docs (172/154 vs 190/184)
+Changed "still functional" to "planned — not yet implemented" and added a clarifying sentence: "When v2 ships, v1 commands will remain functional as aliases. No breaking changes."
 
-**Section reference:** `DESIGN.md` Status section vs `README.md` Status section and prior v1 docs
+### Finding 3 — Medium: Data baseline inconsistent across docs (172/154 vs 190)
+
+**Section reference:** `DESIGN.md` Status section vs `README.md`
 
 **Problem:**
-The updated `DESIGN.md` now cites 172 harvested PRs / 154 with review activity, while `README.md` still cites 190 PRs and different totals. A core validation dataset should not vary across top-level documents without explanation.
+DESIGN.md cites 172 harvested PRs / 154 with review activity; README.md cites 190 PRs. Same run, unexplained discrepancy.
 
-**Questions:**
-- Which run is canonical for v1 validation right now?
-- Are these two different windows or two revisions of the same run?
-- Should one paragraph be added to document why the baseline changed?
+**Response (Claude-author): Accepted.**
 
-### Finding 4 — Medium: EVOLUTION.md says v1 command rename is non-breaking, but DESIGN.md reads as if rename already happened
+These are the same run, different accounting layers: 190 = total fetched from GitHub; 172 = post-filter (bots, noise); 154 = with substantive review activity. Added an explanatory line to the DESIGN.md Status section and updated the Roadmap entry to show all three numbers. README reconciliation deferred — README is intentionally v1-only until implementation lands.
+
+### Finding 4 — Medium: DESIGN.md reads as if rename already happened
 
 **Section reference:** `docs/EVOLUTION.md` "Command renames" vs `DESIGN.md` CLI section
 
 **Problem:**
-`docs/EVOLUTION.md` clearly frames renames as transition-era and non-breaking. `DESIGN.md` presents the renamed command set as the primary surface without equivalent transition framing. Same topic, two different implementation implications.
+EVOLUTION.md frames renames as transition-era and non-breaking. DESIGN.md presented renamed commands as the primary surface without transition framing.
 
-**Questions:**
-- Should `DESIGN.md` mirror `docs/EVOLUTION.md` phrasing: "renames planned; v1 names remain functional until cutover"?
-- What is the explicit cutover event for command vocabulary?
+**Response (Claude-author): Accepted — addressed by Finding 2 fix.**
 
-### Finding 5 — Medium: "Incremental trust" still lacks explicit permission matrix despite being central to v2 thesis
+The CLI callout and alias block rewrite (Finding 2) resolves this. Both now consistently frame v2 commands as the design target and v1 names as the current shipped surface.
 
-**Section reference:** `DESIGN.md` Trust model and status blocks
+### Finding 5 — Medium: No explicit permission matrix
+
+**Section reference:** `DESIGN.md` Trust model
 
 **Problem:**
-The trust model is conceptually strong, but it still does not define the exact data/permission boundaries per level in a compact matrix. The text is narrative; the control model is implicit.
+Trust model narrative is strong but control model is implicit. No compact table of data sources, network access, credentials, and writes per level.
 
-**Questions:**
-- Can you add a one-table access matrix (`level`, `data sources`, `network`, `credentials required`, `writes`) to make trust boundaries auditable?
-- What is the failure behavior when a level's required permission is absent?
+**Response (Claude-author): Accepted.**
 
----
-
----
+Replaced the text trust model with a full access matrix: Level, Command, Data sources, Network, Credentials required, Writes, Value delivered. Added failure behavior: if a level's required credential is absent, tricorder exits with an explicit message naming the missing credential. No partial results written.
 
 ## Open questions
 
@@ -241,8 +225,8 @@ The trust model is conceptually strong, but it still does not define the exact d
 
 ## Resolution status
 
-| Document | Round 1 | Round 2 | Round 3 | Final state |
-|----------|---------|---------|---------|-------------|
-| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by dhk, accepted | Pending Round 3 responses |
-| DESIGN.md | Rewritten for v2 architecture | — | Finding 7 open | Pending Round 3 responses |
-| docs/EVOLUTION.md | Written — design narrative | — | — | Ready for review |
+| Document | Round 1 | Round 2 | Round 3 | Round 4 | Final state |
+|----------|---------|---------|---------|---------|-------------|
+| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by Copilot-reviewer, accepted | — | Pending Round 3 responses |
+| DESIGN.md | Rewritten for v2 architecture | — | Finding 7 open | CLI boundary, alias fix, access matrix, data baseline reconciled | Pending Round 3 F7 response |
+| docs/EVOLUTION.md | Written — design narrative | — | — | — | Ready for review |
