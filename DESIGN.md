@@ -2,8 +2,8 @@
 
 > *"A room full of data people and you named it tricorder instead of data. Yes, on purpose."*
 
-**Version:** 1.0.1.0  
-**Status:** Active — validated against one production dbt/BigQuery team  
+**Version:** 2.0 (in design)  
+**Status:** Specification — design decisions finalized, implementation pending  
 **Repo:** [dhk/tricorder](https://github.com/dhk/tricorder)
 
 ---
@@ -24,123 +24,281 @@ The broader thesis: non-code repository content — reviews, comments, discussio
 
 ## What tricorder is
 
-Tricorder is a CLI tool that analyzes the merged pull request history of a dbt/SQL analytics repository and returns a structured map of what the team knows, what it misses, and what is ready to institutionalize.
+Tricorder is a repository learning system.
 
-It runs in five steps:
+It reads evidence already present in a repository — code, git history, and review discussions — and progressively extracts organizational knowledge: what the team has learned, what it consistently misses, and where that knowledge can create the most leverage.
 
-```bash
-tricorder ready      OWNER/REPO          # is this repo a good candidate?
-tricorder probe      OWNER/REPO          # what will it cost?
-tricorder harvest    OWNER/REPO          # pull PR data from GitHub
-tricorder synthesize OWNER/REPO          # run four LLM calls
-tricorder render     OWNER/REPO          # generate the interactive explorer
-```
+The core insight:
 
-The output is a Markdown report and a static HTML explorer — both designed to be read, discussed, and acted on.
+> Every recurring review comment is evidence that the organization is paying the same cost repeatedly.
+
+Tricorder discovers those costs, identifies patterns, and recommends ways to move learning upstream — so the same problems occur less frequently over time.
 
 ---
 
 ## What it is not
 
-**Not a metrics dashboard.** Tricorder does not count PRs, measure review cycle time, or report on merge frequency. Those numbers exist elsewhere. Tricorder answers: what is the team actually learning from code review?
+**Not a code review tool.** Tricorder reads historical review data. It does not participate in live review, suggest inline comments, or generate feedback on individual PRs.
 
-**Not a performance review tool.** Author growth profiles describe patterns in the review feedback an author receives — where reviewers consistently intervene, and where they consistently do not. This is material for a growth conversation, not an HR system. It is not a ranking or an evaluation.
+**Not a metrics dashboard.** Tricorder does not count PRs, measure review cycle time, or report on merge frequency. It answers: what is the team actually learning from code review?
 
-**Not a replacement for code review.** Tricorder reads historical review data. It does not participate in live review, suggest inline comments, or generate feedback. It looks backward, not forward.
+**Not a performance review tool.** Author growth profiles describe patterns in the review feedback an author receives. This is material for a growth conversation, not an HR system.
 
-**Not a GitHub Analytics competitor.** GitHub's analytics tools answer questions about activity. Tricorder answers questions about knowledge: what does the team understand, and what does it consistently miss?
+**Not a GitHub Analytics competitor.** GitHub's analytics answer questions about activity. Tricorder answers questions about knowledge: what does the team understand, and what does it consistently miss?
 
 ---
 
-## The problem in detail
+## Trust model
 
-Consider what happens to a substantive code review comment. A senior engineer writes three sentences explaining why a staging model should not expose primary keys directly. The author addresses it. The PR merges. Those three sentences exist in a thread that no one will read again.
+Tricorder earns access incrementally.
 
-If the same issue comes up in the next PR, the reviewer writes it again — or doesn't, because they are tired of repeating themselves, or because they are not assigned to review that PR. The comment either recurs, fades, or gets enforced inconsistently.
+Every increase in access must unlock a visibly better class of insight. Users encounter something interesting before being asked to invest more. The interaction model is a ratchet: trust increases, signal increases, artifacts accumulate, and the next action is always obvious.
 
-This pattern describes the gap between team knowledge and team practice. The knowledge exists — it was written down. But it was written in a format (threaded comments on a closed PR) that makes it nearly impossible to aggregate, analyze, or act on systematically.
+```
+Level 0   Local filesystem     →  Repository Profile
+Level 1   Local git history    →  Evolution Timeline
+Level 2   GitHub read access   →  Review Patterns
+Level 3   LLM API              →  Organizational Learnings
+Level 4   LLM API + lens       →  Interpretation
+Level 5   LLM API              →  Improvement Plan
+```
 
-The second problem is coverage. A team with three active reviewers has three focus fingerprints. One reviewer catches grain issues. One catches test coverage. One catches documentation. The team may believe its review process is comprehensive when in fact it has systematic blind spots — entire dimensions of code quality that nobody reliably checks because nobody was assigned to own them.
-
-Tricorder makes both problems visible.
+At every level, tricorder states clearly what access it used, what it did not access, what it found, and what the next step is.
 
 ---
 
 ## Architecture
 
-**Five scripts. One cache. One explorer.**
+**Six levels. One artifact chain. One explorer.**
 
 ```
-ready → probe → harvest → synthesize → render
-                   ↓              ↓         ↓
-               ~/.learn-from-work/cache/  report.md  explorer/data.js
+discover  →  discover --history  →  analyze  →  learn  →  interpret  →  improve
+    ↓               ↓                  ↓           ↓           ↓            ↓
+.tricorder/     .tricorder/        .tricorder/  .tricorder/  .tricorder/  .tricorder/
+profile.yml   contributors.json   patterns.json learnings.json interpretations.json roadmap.json
 ```
 
-### `tricorder ready`
+### Level 0 — `tricorder discover`
 
-Pre-flight check. Uses only the GitHub REST API — no Claude spend. Checks PR volume, review density, inline comment rate, dbt/SQL markers, description quality, and PR template presence. Returns GO / CAUTION / NO-GO per finding with a recommended action for each. Prevents spending money on a repo that will produce thin output.
+**Access:** Local filesystem only. No network. No credentials.
 
-### `tricorder probe`
+Reads the repository to understand what it is. Detects repository archetype (analytics-engineering, product-engineering, platform-engineering, security), technology fingerprint, tooling gaps, and contributor count. Proposes the most likely discipline lens based on detected evidence. No API calls.
 
-Cost estimator. Pulls a sample of real PRs, assembles the exact prompts, counts tokens, and prints a cost table with extrapolations. No Claude API spend until you decide to proceed. Typical: ~$0.015/PR.
+**Artifacts written:**
+```
+.tricorder/
+├── repository-profile.yml
+└── repository-fingerprint.json
+```
 
-### `tricorder harvest`
+### Level 1 — `tricorder discover --history`
 
-Pulls merged PRs from the GitHub REST API. For each PR: metadata, description, formal review threads, and inline diff comments. Writes structured JSON to `~/.learn-from-work/cache/<owner>__<repo>/`.
+**Access:** Local git history only. No network.
+
+Reads how the repository evolved. Contributor patterns, ownership signals, churn analysis, hotspot map, evolution timeline.
+
+**Artifacts written:**
+```
+.tricorder/
+├── contributors.json
+├── hotspots.json
+└── repository-timeline.json
+```
+
+### Level 2 — `tricorder analyze`
+
+**Access:** GitHub REST API — read only. Pull requests, review comments, commit metadata. No repository contents fetched.
+
+Pulls merged PRs from GitHub. For each PR: metadata, description, formal review threads, and inline diff comments. Writes structured JSON to the artifact store.
 
 The cache is append-only and incremental — re-running only fetches PRs newer than the last harvest. Bot PRs (Dependabot etc.) are filtered before writing.
 
 Five signals are computed and stored with each PR:
+- **Description quality score** (high / medium / low)
+- **Review iteration count** — CHANGES_REQUESTED states before approval
+- **Has-reply flag** — inline comments that received a reply
+- **File type tags** — comments tagged by file touched
+- **Author tenure** — days of cache history for this author
 
-- **Description quality score** (high / medium / low) — word count + presence of why, what, and testing signals
-- **Review iteration count** — CHANGES_REQUESTED states before approval; ≥2 marks the PR as high-signal
-- **Has-reply flag** — inline comments that received a reply; proxy for substantive discussion
-- **File type tags** — comments tagged by file touched (dbt-model, dbt-schema, python, etc.)
-- **Author tenure** — days of cache history for this author; calibrates confidence in growth findings
+Analyze also captures repo context: `dbt_project.yml`, `.sqlfluff` (rules already enforced in CI), and the PR template. Learn uses this context to avoid recommending things already enforced as CI gates.
 
-Harvest also captures repo context: `dbt_project.yml`, `.sqlfluff` (rules already enforced in CI), and the PR template. Synthesis uses this context to avoid recommending things already enforced as CI gates.
+**Artifacts written:**
+```
+.tricorder/
+├── review-observations.json
+├── review-patterns.json
+└── expertise-map.json
+```
 
-### `tricorder synthesize`
+### Level 3 — `tricorder learn`
 
-Loads the cache, resolves the active LLM provider from config or CLI flag, and runs four provider-selected LLM calls:
+**Access:** LLM API. Reads from Level 2 artifacts.
+
+Runs four LLM calls:
 
 1. **Per-PR pattern extraction** — one call per PR. Returns structured JSON: patterns identified, evidence quotes, author signals, reviewer signals. PRs with no review activity are skipped.
 
-2. **Reviewer fingerprints** — one call per reviewer. Returns: primary focus areas with frequency and standard citations, apparent blind spots with basis, review style, and signal quality rating.
+2. **Reviewer fingerprints** — one call per reviewer. Returns: primary focus areas with frequency and standard citations, apparent blind spots with basis, review style, signal quality.
 
-3. **Author growth profiles** — one call per author. Returns: strengths, growth areas with persistence assessment, support recommendations, and trajectory (improving / stable / regressing / insufficient-data).
+3. **Author growth profiles** — one call per author. Returns: strengths, growth areas with persistence assessment, support recommendations, trajectory (improving / stable / regressing / insufficient-data).
 
-4. **Team gap analysis** — one aggregate call. Returns: team strengths, gaps classified by type (coverage_gap / knowledge_gap / blind_spot), institutionalization candidates with maturity path targets, and review culture observation.
+4. **Team gap analysis** — one aggregate call. Returns: team strengths, gaps classified by type (coverage / knowledge / blind spot), institutionalization candidates with maturity path targets, review culture observation.
 
 Intermediate results are cached after each call. A failed run can resume from the last completed phase.
 
-Outputs a Markdown report to `--out DIR` (default: `./output/` if no prior path exists).
+**Artifacts written:**
+```
+.tricorder/
+├── learnings.json
+└── standards-candidates.json
+```
 
-### `tricorder render`
+Also writes a Markdown report to `--out DIR`.
 
-Reads the synthesis cache and writes `explorer/data.js` — the data layer for the static HTML explorer. Applies a name map if one exists at `~/.tricorder/<owner>__<repo>-name-map.json`, replacing real GitHub logins with aliases before writing.
+### Level 4 — `tricorder interpret`
 
-The explorer is deployed to GitHub Pages at `https://OWNER.github.io/tricorder/explorer/`. Pushing `data.js` is the only deploy step.
+**Access:** LLM API. Reads from Level 3 artifacts. Applies the detected (or user-selected) discipline lens.
+
+The lens provides domain-specific interpretation: which standards apply, which authorities to cite, how to read the patterns for this repository type. The `analytics-engineering` lens is the validated lens (built from v1). Other lenses ship as corresponding repository types are validated.
+
+**Artifacts written:**
+```
+.tricorder/
+└── interpretations.json
+```
+
+### Level 5 — `tricorder improve`
+
+**Access:** LLM API. Reads from all prior artifacts.
+
+Synthesizes findings from all levels into a prioritized improvement roadmap.
+
+**Artifacts written:**
+```
+.tricorder/
+├── improvement-plan.md
+└── roadmap.json
+```
+
+### `tricorder probe`
+
+**Access:** GitHub REST API. No LLM spend.
+
+Cost estimator. Pulls a sample of real PRs, assembles the exact prompts, counts tokens, and prints a cost table with extrapolations. Run before `learn` to confirm cost. Typical: ~$0.015/PR.
+
+### `tricorder build`
+
+**Access:** Reads from artifact store only.
+
+Generates the static HTML explorer from the artifact store. Applies a name map if one exists at `~/.tricorder/<owner>__<repo>-name-map.json`. Writes `explorer/data.js`.
+
+The explorer is deployed to GitHub Pages. Pushing `data.js` is the only deploy step.
+
+### `tricorder demo`
+
+Scripted walkthrough using pre-baked cal-itp/data-infra data and Trek aliases. No GitHub or LLM API calls.
+
+---
+
+## Discipline lenses
+
+A lens provides the interpretive framework for Level 4.
+
+Tricorder detects the likely archetype from the repository fingerprint and proposes it. Users can select an alternative at any time with `--lens <name>`.
+
+| Lens | Domain | Authorities |
+|------|--------|-------------|
+| `analytics-engineering` | dbt, SQL, BigQuery/Snowflake | dbt Labs, Kimball, SQLFluff, dbt-project-evaluator |
+| `product-engineering` | Product software | Marty Cagan, Teresa Torres, Shape Up |
+| `platform-engineering` | Infrastructure, SRE | Google SRE, DORA, AWS Well-Architected |
+| `security` | Security engineering | OWASP, NIST, CIS |
+
+The `analytics-engineering` lens is the only validated lens. It carries the category taxonomy, standard citations, and prompt design built in v1 and validated on cal-itp/data-infra. Other lenses ship when corresponding repository types are validated.
+
+---
+
+## The artifact contract
+
+Artifacts are first-class outputs, not implementation details.
+
+Every level writes structured artifacts that subsequent levels read. No level re-fetches data that a prior level already collected.
+
+```
+repository-profile.yml
+    ↓
+contributors.json + hotspots.json
+    ↓
+review-patterns.json + expertise-map.json
+    ↓
+learnings.json + standards-candidates.json
+    ↓
+interpretations.json
+    ↓
+improvement-plan.md + roadmap.json
+```
+
+Artifacts are:
+- **Human-readable** — YAML, JSON, or Markdown
+- **Inspectable** — if a finding looks wrong, the input that produced it is on disk
+- **Reusable** — external tools, MCP servers, and AI agents can consume them without rerunning analysis
+
+---
+
+## Artifact storage
+
+Default: `.tricorder/` inside the repository being analyzed, when tricorder is run from that repository.
+
+Configurable via `~/.learn-from-work/config`. Falls back to XDG cache conventions if the current directory is not writable. The storage location is recorded in `.tricorder/config.yml` on first write.
+
+---
+
+## Status blocks
+
+Every command ends with a status block:
+
+```
+Tricorder — Review Analysis
+
+Access used
+  ✓ Pull requests (read)
+  ✓ Review comments (read)
+  ✓ Commit metadata (read)
+
+  No write operations performed.
+  Repository contents remain local.
+
+Completed
+  ✓ Repository Profile
+  ✓ Technology Fingerprint
+  ✓ Contributor Patterns
+  ✓ Review Patterns
+
+Not yet unlocked
+  ○ Organizational Learnings   →  tricorder learn
+  ○ Interpretation             →  tricorder interpret
+  ○ Improvement Planning       →  tricorder improve
+
+Next
+  tricorder learn
+```
+
+Users should never wonder: what happened, what was analyzed, what access was used, what remains, or what to do next.
 
 ---
 
 ## The maturity path
 
-Every pattern tricorder identifies is tagged with a maturity level:
-
-```
-judgment → guidance → convention → rule → deterministic
-```
+Every pattern is tagged with a maturity level. This is the action signal.
 
 | Level | Meaning | What to do |
 |-------|---------|------------|
 | `judgment` | Too context-dependent to codify | Document the heuristic |
-| `guidance` | Ready for a team norm document | Write it down |
-| `convention` | Ready for a PR checklist or template | Add to template |
-| `rule` | Ready for automated enforcement | SQLFluff or dbt-project-evaluator |
+| `guidance` | Ready for a team norm | Write it down |
+| `convention` | Ready for a PR template | Add to checklist |
+| `rule` | Ready for automated enforcement | SQLFluff, dbt-project-evaluator |
 | `deterministic` | Ready for a CI gate | Block merges that violate it |
 
-The maturity tag is the action signal. Tricorder identifies where patterns currently sit and what the next step is. Promotion is a human decision.
+Promotion is a human decision. Tricorder identifies where patterns sit and what the next step is.
 
 ---
 
@@ -148,21 +306,25 @@ The maturity tag is the action signal. Tricorder identifies where patterns curre
 
 ### Markdown report
 
-Written to `--out DIR/YYYY-MM-DD-<repo-slug>.md`. Four sections:
+Written to `--out DIR/YYYY-MM-DD-<repo-slug>.md` by `tricorder learn`. Four sections:
 
 1. **Patterns ready to institutionalize** — table with current maturity, next step, target maturity, and standard citation
-2. **Reviewer focus fingerprints** — per-reviewer narrative: primary focus areas with evidence quotes, apparent blind spots with basis, review style and signal quality
-3. **Author growth profiles** — per-author narrative: strengths, growth areas with persistence, support recommendations, trajectory
+2. **Reviewer focus fingerprints** — per-reviewer narrative with evidence quotes, blind spots, and signal quality
+3. **Author growth profiles** — per-author trajectory, strengths, growth areas, support recommendations
 4. **Team gap analysis** — team strengths, gaps by type, review culture observation
+
+### Structured artifacts
+
+Written progressively by each level into `.tricorder/`. See artifact contract above.
 
 ### Interactive explorer
 
 A static HTML application served via GitHub Pages. Five tabs:
 
 - **Maturity Pipeline** — patterns arranged in a kanban by maturity level
-- **Pattern Coverage** — reviewer × category grid driven by `category_freq` from fingerprints; cells clickable, drawer shows quotes and focus areas
-- **Team Gaps** — 11-gap analysis with gap type, standard citation, and recommendation
-- **Reviewer Fingerprints** — composite radar (all reviewers overlaid) + individual radar cards with focus areas and blind spots
+- **Pattern Coverage** — reviewer × category grid; cells clickable, drawer shows quotes
+- **Team Gaps** — gap analysis with type, standard citation, and recommendation
+- **Reviewer Fingerprints** — composite radar (all reviewers overlaid) + individual radar cards
 - **Author Profiles** — per-author trajectory, strengths, growth areas, support recommendations
 
 ### Visibility model
@@ -171,7 +333,7 @@ Output files carry a `visibility` field: `private` (all sections), `team` (autho
 
 ### Name maps
 
-For demos and sharing, real GitHub logins can be replaced with aliases. Create `~/.tricorder/<owner>__<repo>-name-map.json` before running `tricorder render`. Applied automatically on render; not stored in the repo.
+For demos and sharing, real GitHub logins can be replaced with aliases. Create `~/.tricorder/<owner>__<repo>-name-map.json` before running `tricorder build`. Applied automatically on build; not stored in the repo.
 
 ---
 
@@ -180,41 +342,55 @@ For demos and sharing, real GitHub logins can be replaced with aliases. Create `
 Installed via `pip install -e .`. Entry point: `tricorder`.
 
 ```
-tricorder ready      OWNER/REPO [--days N]
-tricorder probe      OWNER/REPO [--limit N] [--since YYYY-MM-DD]
-tricorder harvest    OWNER/REPO [--since YYYY-MM-DD] [--limit N] [--force]
-tricorder synthesize OWNER/REPO [--visibility private|team|public] [--out DIR]
-                               [--provider anthropic|gemini] [--model NAME]
-                               [--api-key-env NAME] [--keychain-service NAME]
-tricorder render     OWNER/REPO [--out PATH] [--name-map PATH]
-tricorder demo       [--fast] [--no-pause]
+tricorder discover    OWNER/REPO [--lens NAME]
+tricorder discover    OWNER/REPO --history [--lens NAME]
+tricorder probe       OWNER/REPO [--limit N] [--since YYYY-MM-DD]
+tricorder analyze     OWNER/REPO [--since YYYY-MM-DD] [--limit N] [--force]
+tricorder learn       OWNER/REPO [--visibility private|team|public] [--out DIR]
+                                 [--provider anthropic|gemini] [--model NAME]
+                                 [--api-key-env NAME] [--keychain-service NAME]
+tricorder interpret   OWNER/REPO [--lens NAME]
+tricorder improve     OWNER/REPO [--out DIR]
+tricorder build       OWNER/REPO [--out PATH] [--name-map PATH]
+tricorder demo        [--fast] [--no-pause]
 tricorder --version
 ```
 
-`tricorder demo` runs a scripted 5-scene walkthrough (cost probe → harvest → synthesis phases 1–4 → report) using pre-baked cal-itp/data-infra data and Trek aliases. No GitHub or Claude API calls.
+**v1 command aliases (still functional):**
+
+```
+tricorder harvest     →  tricorder analyze
+tricorder synthesize  →  tricorder learn
+tricorder render      →  tricorder build
+```
+
+---
+
+## LLM provider
+
+The LLM provider is resolved in order: CLI flag → env override (`TRICORDER_LLM_PROVIDER`) → config file → auto-detect from available keys → default (anthropic).
+
+Config at `~/.learn-from-work/config`:
+```
+provider=anthropic
+model=claude-sonnet-4-6
+api_key_env=ANTHROPIC_API_KEY
+```
+
+Supported providers: Anthropic, Gemini. The prompts and output schema are identical across providers.
 
 ---
 
 ## Versioning
 
-Version format: `MAJOR.MINOR.PATCH.BUILD`
+Format: `MAJOR.MINOR.PATCH.BUILD`
 
 - **BUILD** — auto-incremented by GitHub Actions on every push to main
-- **PATCH** — bumped manually when a collection of fixes warrants a label
+- **PATCH** — bumped manually for a collection of fixes
 - **MINOR** — bumped manually for meaningful new features
 - **MAJOR** — bumped manually for structural changes
 
-Current version: `1.0.1.0`. The `VERSION` file is the source of truth; `pyproject.toml` reads from it dynamically.
-
----
-
-## Who should use this
-
-- **Analytics engineering teams** using dbt, SQL, and BigQuery/Snowflake/Databricks, with an active PR review practice on GitHub
-- **Team leads and managers** who want evidence-backed material for growth conversations and coverage gap identification
-- **Platform or tooling engineers** identifying what should move from convention to automated enforcement
-
-The minimum viable input is 30+ merged PRs with substantive inline review activity. Use `tricorder ready` to check before investing.
+The `VERSION` file is the source of truth; `pyproject.toml` reads from it dynamically.
 
 ---
 
@@ -226,16 +402,10 @@ git clone https://github.com/dhk/tricorder && cd tricorder && pip install -e .
 ```
 
 **Credentials:**
-- `GITHUB_TOKEN` — classic PAT, `public_repo` scope for public repos, `repo` for private
-- LLM API key — `ANTHROPIC_API_KEY` (or macOS keychain `anthropic_api_key`) for Anthropic; `GEMINI_API_KEY` for Gemini
+- `GITHUB_TOKEN` — classic PAT, `public_repo` scope for public repos, `repo` for private. Required for `analyze` and above.
+- LLM API key — `ANTHROPIC_API_KEY` (or macOS keychain `anthropic_api_key`) for Anthropic; `GEMINI_API_KEY` for Gemini. Required for `learn` and above.
 
-**LLM provider config** (`~/.learn-from-work/config`):
-```
-provider=anthropic          # anthropic | gemini
-model=claude-sonnet-4-6     # or gemini-2.0-flash, etc.
-api_key_env=ANTHROPIC_API_KEY
-```
-Provider resolves in order: CLI flag → env override (`TRICORDER_LLM_PROVIDER`) → config file → auto-detect from available keys → default (anthropic).
+`tricorder discover` requires no credentials.
 
 **Cost model (Anthropic claude-sonnet-4-6, June 2026):**
 - ~$0.014 per PR (phases 1–4 combined, amortized)
@@ -243,7 +413,17 @@ Provider resolves in order: CLI flag → env override (`TRICORDER_LLM_PROVIDER`)
 - 90-PR run: ~$1.25
 - 190-PR run (3 months, active team): ~$2.65
 
-Always run `tricorder probe` first. The probe assembles the exact prompts from real data, counts tokens, and extrapolates cost. Most useful for Anthropic runs — Gemini uses the same prompts but different billing, so treat the probe as directional there.
+Always run `tricorder probe` before `tricorder learn`.
+
+---
+
+## Who should use this
+
+- **Engineering leads and team leads** who want evidence-backed material for growth conversations and coverage gap identification
+- **Platform or tooling engineers** identifying what should move from convention to automated enforcement
+- **Individual contributors** building a picture of what their team actually values
+
+**Repository requirements:** Active PR review practice on GitHub, 30+ merged PRs in the target window, some inline comment activity. Use `tricorder discover` to assess before investing.
 
 ---
 
@@ -253,41 +433,57 @@ Always run `tricorder probe` first. The probe assembles the exact prompts from r
 - Verbal review culture — conversations in Slack, Zoom, or standups
 - Reviewer availability constraints — a reviewer who never catches testing issues might never be assigned to testing-heavy PRs
 - Domain ownership — a reviewer might not comment on an area they know another reviewer will cover
-- PRs merged without review — the no-review rate is reported; the analysis is silent on what those PRs contained
-- Sentiment and tone — tricorder reads content, not register
+- PRs merged without review
+- Sentiment and tone
 
 **Confidence thresholds:**
-- Low-quality descriptions reduce Claude's ability to infer context; these PRs are flagged in output
-- Author growth findings require at least 5–8 reviewed PRs in the window; shorter histories produce `insufficient-data`
-- Reviewer blind spots are inferred, not observed — a blind spot means this standard never appeared in this reviewer's comments, not that the reviewer is unaware of it
+- Low-quality descriptions reduce the LLM's ability to infer context; flagged in output
+- Author growth findings require at least 5–8 reviewed PRs; shorter histories produce `insufficient-data`
+- Reviewer blind spots are inferred, not observed
 
 **Scope:**
-Tricorder is scoped to dbt/SQL analytics repositories. The category taxonomy, standard citations, and prompt design are calibrated for this domain. Output on other repository types degrades — findings become generic and standard citations stop mapping.
+The `analytics-engineering` lens is the only validated lens. The `discover` and `analyze` commands are designed to be repository-agnostic. The `learn` and `interpret` commands degrade outside the analytics-engineering domain until additional lenses are validated.
 
 ---
 
 ## Key design decisions
 
-**Why Claude, not a keyword classifier?**
-Review comments require interpretation. "This model is doing too much" is a grain issue in one PR and a modeling issue in another. Claude reads the comment alongside the PR description, the file path, and the repo context, and makes the same judgment a human reader would.
+**Why progressive trust?**
+V1 required two credentials before producing anything. Users invested trust before seeing value. The progressive model inverts this: `discover` runs with no credentials and produces something interesting immediately. GitHub access and LLM API access are earned by demonstrating value at each prior level.
 
-**Why a provider layer?**
-Different environments have different keys and different LLM access. Tricorder resolves the active provider from a shared config file or a CLI flag, so a personal Anthropic setup and a work Gemini setup can run the same pipeline without code changes. The prompts and output schema are identical across providers.
+**Why lens detection, not user configuration?**
+Broad scope produces vague output. The lens preserves the domain-specificity that made v1 findings actionable. Auto-detecting the likely lens from the repository fingerprint removes a configuration step that most users would get wrong — and proposes it in a way that is easy to override.
+
+**Why an artifact contract?**
+V1 produced outputs designed for humans. The artifact contract makes every analysis stage the foundation for the next — and for external consumers. The future MCP integration depends on stable, structured artifacts that agents can consume without rerunning analysis.
+
+**Why rename the commands?**
+V1 names described internal pipeline mechanics (harvest, synthesize, render). V2 names describe what users experience and what they get (analyze, learn, build). The v1 names remain as aliases during the transition.
 
 **Why a local cache, not a live API?**
 The cache enables incremental runs, resume-on-failure, and re-synthesis after prompt changes without re-fetching. The raw data is inspectable on disk — if a result looks wrong, the input is there to check.
 
-**Why Markdown output, not a database?**
-The primary consumer of tricorder output is a human reading a document. Markdown commits to git, diffs cleanly, and publishes anywhere.
+**Why Claude, not a keyword classifier?**
+Review comments require interpretation. "This model is doing too much" is a grain issue in one PR and a modeling issue in another. Claude reads the comment alongside the PR description, the file path, and the repo context, and makes the same judgment a human reader would.
 
-**Why static HTML for the explorer, not a React app with a build step?**
-The explorer is a single `index.html` + a handful of `.jsx` files transpiled by Babel in the browser. No build pipeline. Deployable to GitHub Pages with a single `git push`. The data is in `data.js` — swapping repos means swapping one file.
+**Why static HTML for the explorer?**
+No build pipeline. Deployable to GitHub Pages with a single `git push`. The data is in `data.js` — swapping repos means swapping one file.
 
-**Why dbt/SQL scope only?**
-Broad scope produces vague output. Calibrating the category taxonomy and standard citations to a specific domain makes findings specific enough to act on.
+---
 
-**Why a readiness check before the cost probe?**
-The cost probe still makes GitHub API calls and takes 30 seconds. The readiness check answers a prior question — is this repo even a good candidate? — in a way that surfaces rubber-stamp teams and Slack-heavy cultures before any real investment.
+## Future: MCP integration
+
+Artifacts will be exposed as MCP resources:
+
+```
+mcp://repository/profile
+mcp://repository/review-patterns
+mcp://repository/learnings
+mcp://repository/recommendations
+mcp://repository/roadmap
+```
+
+External agents will be able to consume repository knowledge without rerunning analysis.
 
 ---
 
@@ -306,7 +502,7 @@ Patterns are grounded against named standards:
 
 ## Roadmap
 
-### Completed (v1.0.1.0)
+### Completed (v1.0.1.x)
 
 - ✓ First synthesis run — cal-itp/data-infra, 190 PRs, March–May 2026
 - ✓ Interactive HTML explorer deployed to GitHub Pages
@@ -314,34 +510,40 @@ Patterns are grounded against named standards:
 - ✓ Readiness check (`tricorder ready`)
 - ✓ Installable CLI (`pip install -e .`)
 - ✓ Name map anonymization for demos
-- ✓ Version scheme with auto-bump on merge (1.0.0.x)
+- ✓ Version scheme with auto-bump on merge
 - ✓ HOWTO, DEMO, and presenter guide
 - ✓ Codespaces devcontainer
-- ✓ Configurable LLM provider — Anthropic and Gemini, resolved from `~/.learn-from-work/config` or CLI flag (PR #24)
+- ✓ Configurable LLM provider — Anthropic and Gemini
+
+### In design (v2.0)
+
+- Progressive trust model — `discover` with no credentials, access earned by level
+- Discipline lenses — auto-detect archetype, apply domain-specific interpretation
+- Artifact contract — structured outputs consumed by subsequent levels and external tools
+- Command renames — vocabulary describes user outcomes, not pipeline internals
+- Status blocks — access transparency and next-action prompt at every level
 
 ### Open
 
 - Second repo run — validate that findings generalize beyond cal-itp (issue #15)
 - Trend detection — diff pattern maturity across synthesis runs on the same repo (issue #16)
-- Domain expansion — Python data pipelines, infrastructure-as-code (issue #18, broader)
-
-### Under discussion
-
-- Scope expansion: from dbt/SQL analytics to any repository type, with discipline lenses per repo archetype (issue #22)
-- Progressive trust model: start from local filesystem, earn GitHub access, earn Claude API access incrementally
-- Artifact contract: structured outputs consumed by MCP servers and external agents
+- Non-analytics-engineering lenses — Python data pipelines, infrastructure-as-code (issue #18)
+- MCP integration — expose artifacts as resources for AI agents
 
 ### Not planned
 
 - A hosted service or SaaS version
 - GitHub App or webhook-based automation
 - Real-time review assistance
+- Performance evaluation or HR reporting
 
 ---
 
 ## Status
 
-Tricorder is at v1.0.1.0. The full pipeline is validated and working. The explorer is live.
+**v1.0.1.x** — Full pipeline validated and working. Explorer live at [dhk.github.io/tricorder/explorer](https://dhk.github.io/tricorder/explorer/).
+
+**v2.0** — In design. Design decisions finalized in issue #22 and documented in [BRIEF.md](BRIEF.md) and [docs/EVOLUTION.md](docs/EVOLUTION.md). Implementation pending.
 
 **First synthesis run — cal-itp/data-infra, June 2026:**
 - 172 PRs harvested (March–May 2026), 154 with review activity
@@ -350,5 +552,3 @@ Tricorder is at v1.0.1.0. The full pipeline is validated and working. The explor
 - 11 team gaps (5 coverage, 4 blind spots, 2 knowledge)
 
 Key validation finding: review quality is concentrated in one reviewer (high signal) while the broader team defaults to low-signal approvals — including on breaking SQL changes. The composite radar makes this visible at a glance. The finding matched informal prior knowledge about the team, confirming that the synthesis is reading real signal, not producing plausible-sounding noise.
-
-The next strategic question — whether to stay scoped to dbt/SQL or expand to a broader progressive model — is open in issue #22.
