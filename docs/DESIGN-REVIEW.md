@@ -112,43 +112,57 @@ Demoted non-analytics lenses from "Planned" to "Experimental — named, not desi
 
 The validation bar reads like it can be satisfied with a single run and a subjective judgment call. No definition of who decides, how much disagreement is acceptable, or what the rejection criterion is for a mixed verdict. One production run may not be enough to claim a lens generalizes across a domain.
 
-**Status: Open — needs response.**
+**Status: Resolved — response and protocol added.**
+
+Resolution: BRIEF now defines a concrete validation protocol (minimum evidence, scoring threshold, failure conditions, decision outcomes, and status recording requirements).
 
 ### Finding 2 — High: V1→V2 transition not operationally defined
 
 The alias table is a naming map, not a lifecycle plan. Doesn't answer: are v1 commands removed, aliased, or left intact when v2 ships? What is the minimum bar for v2 being a replacement rather than a sidecar? Which command is the canonical entry point during migration?
 
-**Status: Open — needs response.**
+**Status: Resolved — explicit cutover policy added.**
+
+Resolution: BRIEF and DESIGN now describe an in-session weekend cutover target (v2 command surface primary, v1 retired after cutover validation) and include explicit cutover-commit recording language.
 
 ### Finding 3 — Medium: "Repository learning system" broader than evidence supports
 
 The current evidence supports a dbt/SQL tool that can expand. It doesn't yet support the claim that tricorder is a general-purpose repository learning system. Risks overpromising before non-analytics lenses exist.
 
-**Status: Open — needs response.**
+**Status: Resolved — narrowed by lens status and wording.**
+
+Resolution: Analytics lens is now marked `Experimental` with strong evidence; validation remains required before full generalized claims.
 
 ### Finding 4 — Medium: "Incremental trust" under-specified
 
 Trust language used throughout but no concrete definition of what permissions or data access changes across levels. The v1 docs have an explicit access model; the v2 brief needs one.
 
-**Status: Open — needs response.**
+**Status: Resolved — trust model operationalized.**
+
+Resolution: DESIGN now includes a per-level access contract table with data sources, network access, credentials, writes, and failure behavior.
 
 ### Finding 5 — Medium: Lens definition ambiguous
 
 "Lens" is used as if self-evident but never operationally defined. Is it a taxonomy, a prompt pack, a standards set, an output template, or a combination? Without a definition it's hard to tell what's experimental vs an existing prompt configuration with a new name.
 
-**Status: Open — needs response.**
+**Status: Resolved — lens definition added.**
+
+Resolution: BRIEF now defines lens as taxonomy + prompt calibration + authority set, with explicit validation expectations.
 
 ### Finding 6 — Medium: Improvement-plan output has no concrete contract
 
 The brief ends at "Improvement plan" but never says what the artifact contains or how it's produced. If LLM-generated, cost and failure mode should be stated. If post-processing, that should be explicit.
 
-**Status: Open — needs response.**
+**Status: Resolved — output contract specified.**
+
+Resolution: DESIGN defines improvement outputs as `.tricorder/improvement-plan.md` and `.tricorder/roadmap.json`, including command context and prerequisites.
 
 ### Finding 7 — Low-Medium: Visibility model conflicts with main use case
 
 DESIGN.md names team leads and managers as a target user, but the visibility model redacts author profiles in `team` mode. Author profiles are exactly what a manager needs for a growth conversation. Tension not resolved.
 
-**Status: Open — needs response.**
+**Status: Deferred — accepted tradeoff for v2 cutover.**
+
+Resolution note: Current visibility model retained for this cutover window; revisit after v2 command-surface stabilization.
 
 ---
 
@@ -180,6 +194,10 @@ Target v2 interface (design target; not yet implemented).
 Current shipped interface remains the v1 commands in `tricorder/cli.py`.
 ```
 
+**Status: Resolved.**
+
+Resolution: BRIEF and DESIGN now include explicit shipped-v1 vs target-v2 interface lines and cutover-commit switch language.
+
 ### Finding 2 — High: Command alias claim in DESIGN.md conflicts with shipped code
 
 **Section reference:** `DESIGN.md` "v1 command aliases (still functional)" vs `tricorder/cli.py`
@@ -191,6 +209,10 @@ Current shipped interface remains the v1 commands in `tricorder/cli.py`.
 - Is alias functionality already implemented on this branch but not yet merged, or is it still planned?
 - If planned, should the alias block move to a "Migration plan" subsection with explicit "not implemented" labeling?
 - Do you want a CI doc-check to catch contract statements that contradict `tricorder/cli.py`?
+
+**Status: Resolved.**
+
+Resolution: Alias section now says "Planned aliases (not yet implemented)" and no longer claims active alias support.
 
 ### Finding 3 — Medium: Data baseline is inconsistent across docs (172/154 vs 190/184)
 
@@ -204,6 +226,10 @@ The updated `DESIGN.md` now cites 172 harvested PRs / 154 with review activity, 
 - Are these two different windows or two revisions of the same run?
 - Should one paragraph be added to document why the baseline changed?
 
+**Status: Resolved.**
+
+Resolution: DESIGN and EVOLUTION now use `~172` and include an active-repository variability note.
+
 ### Finding 4 — Medium: EVOLUTION.md says v1 command rename is non-breaking, but DESIGN.md reads as if rename already happened
 
 **Section reference:** `docs/EVOLUTION.md` "Command renames" vs `DESIGN.md` CLI section
@@ -215,6 +241,10 @@ The updated `DESIGN.md` now cites 172 harvested PRs / 154 with review activity, 
 - Should `DESIGN.md` mirror `docs/EVOLUTION.md` phrasing: "renames planned; v1 names remain functional until cutover"?
 - What is the explicit cutover event for command vocabulary?
 
+**Status: Resolved.**
+
+Resolution: DESIGN now frames alias mappings as planned/not-yet-implemented and states explicit cutover conditions.
+
 ### Finding 5 — Medium: "Incremental trust" still lacks explicit permission matrix despite being central to v2 thesis
 
 **Section reference:** `DESIGN.md` Trust model and status blocks
@@ -225,6 +255,10 @@ The trust model is conceptually strong, but it still does not define the exact d
 **Questions:**
 - Can you add a one-table access matrix (`level`, `data sources`, `network`, `credentials required`, `writes`) to make trust boundaries auditable?
 - What is the failure behavior when a level's required permission is absent?
+
+**Status: Resolved.**
+
+Resolution: Access matrix added under trust model with explicit failure behavior per level.
 
 ---
 
@@ -243,6 +277,6 @@ The trust model is conceptually strong, but it still does not define the exact d
 
 | Document | Round 1 | Round 2 | Round 3 | Final state |
 |----------|---------|---------|---------|-------------|
-| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by dhk, accepted | Updated in-session for weekend v2 cutover |
-| DESIGN.md | Rewritten for v2 architecture | — | Finding 7 open | Updated in-session for trust matrix, cutover framing, and alias status |
+| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Findings reconciled | Updated in-session for weekend v2 cutover; review statuses reconciled |
+| DESIGN.md | Rewritten for v2 architecture | — | Findings reconciled | Updated in-session for trust matrix, cutover framing, and alias status |
 | docs/EVOLUTION.md | Written — design narrative | — | — | Ready for review |
