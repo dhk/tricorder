@@ -1,10 +1,15 @@
 # Tricorder — Product Brief
 
-**Status:** v2 design specification  
 **Current shipped version:** 1.0.1.2  
 **Repo:** [dhk/tricorder](https://github.com/dhk/tricorder)
 
-> This document describes where tricorder is today (v1) and what it is proposed to become (v2). It is a design brief, not a description of current behavior. Source of truth for v1 is [DESIGN.md](DESIGN.md) and the README.
+---
+
+> **This is a design brief, not a description of current behavior.**
+>
+> Part 1 describes what is shipped today. Part 2 describes what is proposed — none of it is implemented. Part 3 is the migration plan.
+>
+> Source of truth for what works right now: [README.md](README.md) and [DESIGN.md](DESIGN.md) (v1 sections).
 
 ---
 
@@ -52,6 +57,11 @@ No structured artifact files. No `.tricorder/` directory. Cache is internal, not
 ### Current scope (v1 — shipped)
 
 Scoped to dbt/SQL analytics repositories only. Category taxonomy, standard citations, and prompt design are calibrated for analytics engineering. Output on other repository types degrades.
+
+---
+
+> **Everything below this line is proposed, not implemented.**
+> The codebase still exposes the v1 CLI. None of the commands, artifacts, or behaviors described in Part 2 exist yet.
 
 ---
 
@@ -132,14 +142,27 @@ Default location: `.tricorder/` inside the repository being analyzed. Configurab
 
 A lens provides domain-specific interpretation for Level 4. Tricorder detects the likely lens from the repository fingerprint and proposes it.
 
+#### What "validated" means
+
+A lens is validated when:
+1. A full synthesis run completes on a real production repository of that type
+2. The findings are legible and actionable to someone who knows that domain
+3. The category taxonomy and standard citations map accurately to real patterns in the output — findings are specific, not generic
+
+The `analytics-engineering` lens met this bar on the cal-itp/data-infra run (172 PRs, June 2026). A key test: the composite radar matched informal prior knowledge about the team, confirming the synthesis was reading real signal rather than producing plausible-sounding noise.
+
+No other lens has been through this process.
+
+#### Lens status
+
 | Lens | Status | Domain | Authorities |
 |------|--------|--------|-------------|
-| `analytics-engineering` | **Validated** | dbt, SQL, BigQuery/Snowflake | dbt Labs, Kimball, SQLFluff |
-| `product-engineering` | Planned | Product software | Cagan, Torres, Shape Up |
-| `platform-engineering` | Planned | Infrastructure, SRE | Google SRE, DORA, AWS Well-Architected |
-| `security` | Planned | Security engineering | OWASP, NIST, CIS |
+| `analytics-engineering` | **Validated** — 1 production run | dbt, SQL, BigQuery/Snowflake | dbt Labs, Kimball, SQLFluff, dbt-project-evaluator |
+| `product-engineering` | **Experimental** — named, not designed | Product software | — |
+| `platform-engineering` | **Experimental** — named, not designed | Infrastructure, SRE | — |
+| `security` | **Experimental** — named, not designed | Security engineering | — |
 
-Only `analytics-engineering` is validated. The taxonomy, standard citations, and prompt design from v1 live here. Other lenses are named but not built.
+Experimental lenses have names and candidate authority lists but no taxonomy, no prompt design, and no validation run. They exist to reserve the namespace and signal intent. They will produce generic output if invoked. Implementing a new lens requires: category taxonomy design, authority selection, prompt calibration, and a validation run against a real repository of that type.
 
 ### Proposed status blocks (v2 — not yet implemented)
 
