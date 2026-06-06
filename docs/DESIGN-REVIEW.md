@@ -42,7 +42,7 @@ Added Status column to the lens table (Validated vs Planned).
 
 ## Round 2
 
-**Reviewer:** External second-pass audit  
+**Reviewer:** dhk (second-pass audit)  
 **Date:** 2026-06-06 ~14:20 PDT  
 **Commit reviewed:** `09e4bf5` (BRIEF.md restructured)  
 **Focus:** Whether the v1/v2 boundary was actually hard, and whether the scope expansion was defensible
@@ -55,65 +55,109 @@ The restructured brief still read like an implemented product contract. Despite 
 
 The three-part restructure from Round 1 already addressed the substance of this finding. The labels existed. What was missing was visual prominence, not structure.
 
-Fixed by adding blockquote callouts at two points: the document top (stating this is a design brief, Part 1 is shipped, Part 2 is not implemented) and immediately before Part 2 (stating explicitly that the codebase still exposes the v1 CLI and none of the commands or artifacts below exist yet).
+Fixed by adding blockquote callouts at two points: the document top and immediately before Part 2, both stating explicitly that nothing below is implemented and the v1 CLI remains the current surface.
 
 ### Finding 2 — High: No migration path for new commands and artifacts
 
-Commands like discover/analyze/learn/interpret/improve and .tricorder storage were described without a migration path. Easy to read as a committed implementation plan.
+Commands like discover/analyze/learn/interpret/improve and .tricorder storage were described without a migration path.
 
 **Response: Rejected.**
 
-Part 3 was already an explicit migration path with a command alias table, a "what carries forward" list, and a source-of-truth callout. The finding was either based on an older version or didn't account for Part 3. No change made for this finding.
+Part 3 was already an explicit migration path with a command alias table, a "what carries forward" list, and a source-of-truth callout. Finding did not account for Part 3. No change made.
 
 ### Finding 3 — Medium: Scope expansion without a validation bar
 
-The lens table used "Validated" vs "Planned" but never defined what validated means. Without a definition, the distinction is decorative — it doesn't prevent non-analytics lenses from devolving into generic AI commentary.
+The lens table used "Validated" vs "Planned" but never defined what validated means. Without a definition, the distinction is decorative.
 
 **Response: Accepted.**
 
-This was a genuine gap. Added explicit lens validation criteria:
-
+Added explicit lens validation criteria:
 1. A full synthesis run completes on a real production repository of that type
-2. Findings are legible and actionable to a domain expert in that field
-3. The category taxonomy and standard citations map accurately to real patterns — findings are specific, not generic
+2. Findings are legible and actionable to a domain expert
+3. Category taxonomy and standard citations map to real patterns — findings are specific, not generic
 
-Named cal-itp/data-infra (172 PRs, June 2026) as the evidence that met this bar for `analytics-engineering`.
+Named cal-itp/data-infra (172 PRs, June 2026) as the evidence that met this bar.
 
-Demoted non-analytics lenses from "Planned" to "Experimental — named, not designed" with an explicit warning that they will produce generic output if invoked. Noted that implementing a new lens requires: category taxonomy design, authority selection, prompt calibration, and a validation run.
+Demoted non-analytics lenses from "Planned" to "Experimental — named, not designed."
 
 ### Questions from Round 2
 
-**Q1: Should the brief be framed as a migration document with three sections: what exists now, what changes next, what remains experimental?**
+**Q1:** Should the brief be framed as a migration document with three sections: what exists now, what changes next, what remains experimental? — Already done in Round 1.
 
-Already done in Round 1. The "what remains experimental" tier was the one genuinely new thing from this question — addressed by the lens demotion and the "Experimental — named, not designed" status.
+**Q2:** Should the brief explicitly preserve v1 as the current source of truth until code catches up? — Already done in Round 1, reinforced in Round 2.
 
-**Q2: Should the brief explicitly preserve v1 as the current source of truth until code catches up?**
+**Q3:** What is the acceptance criterion for calling a new lens "validated"? — Accepted as a genuine gap. Answered with three explicit criteria in BRIEF.md.
 
-Already done in Round 1 (source-of-truth section in Part 3, README callout). Reinforced in Round 2 by the boundary blockquote.
+---
 
-**Q3: What is the acceptance criterion for calling a new lens "validated" rather than "proposed"?**
+## Round 3
 
-Accepted as a genuine gap. Answered in BRIEF.md with three explicit criteria, one validated example, and a warning about what experimental lenses produce if invoked.
+**Reviewer:** dhk  
+**Date:** 2026-06-06 ~21:33 PDT  
+**Commit:** `3095c44` (rewrote BRIEF.md, added review findings)  
+**Focus:** Operational gaps remaining after Round 2; new BRIEF.md rewrite proposed alongside findings
+
+*Note: This round included a rewritten BRIEF.md submitted alongside the findings. The rewrite was accepted and cherry-picked onto the branch as the new canonical version.*
+
+### Finding 1 — High: Lens validation gate still too loose
+
+The validation bar reads like it can be satisfied with a single run and a subjective judgment call. No definition of who decides, how much disagreement is acceptable, or what the rejection criterion is for a mixed verdict. One production run may not be enough to claim a lens generalizes across a domain.
+
+**Status: Open — needs response.**
+
+### Finding 2 — High: V1→V2 transition not operationally defined
+
+The alias table is a naming map, not a lifecycle plan. Doesn't answer: are v1 commands removed, aliased, or left intact when v2 ships? What is the minimum bar for v2 being a replacement rather than a sidecar? Which command is the canonical entry point during migration?
+
+**Status: Open — needs response.**
+
+### Finding 3 — Medium: "Repository learning system" broader than evidence supports
+
+The current evidence supports a dbt/SQL tool that can expand. It doesn't yet support the claim that tricorder is a general-purpose repository learning system. Risks overpromising before non-analytics lenses exist.
+
+**Status: Open — needs response.**
+
+### Finding 4 — Medium: "Incremental trust" under-specified
+
+Trust language used throughout but no concrete definition of what permissions or data access changes across levels. The v1 docs have an explicit access model; the v2 brief needs one.
+
+**Status: Open — needs response.**
+
+### Finding 5 — Medium: Lens definition ambiguous
+
+"Lens" is used as if self-evident but never operationally defined. Is it a taxonomy, a prompt pack, a standards set, an output template, or a combination? Without a definition it's hard to tell what's experimental vs an existing prompt configuration with a new name.
+
+**Status: Open — needs response.**
+
+### Finding 6 — Medium: Improvement-plan output has no concrete contract
+
+The brief ends at "Improvement plan" but never says what the artifact contains or how it's produced. If LLM-generated, cost and failure mode should be stated. If post-processing, that should be explicit.
+
+**Status: Open — needs response.**
+
+### Finding 7 — Low-Medium: Visibility model conflicts with main use case
+
+DESIGN.md names team leads and managers as a target user, but the visibility model redacts author profiles in `team` mode. Author profiles are exactly what a manager needs for a growth conversation. Tension not resolved.
+
+**Status: Open — needs response.**
 
 ---
 
 ## Open questions
 
-These were raised during the review process and are not yet resolved:
-
 | Question | Raised in | Status |
 |----------|-----------|--------|
 | `render` → `build` — is the name final? | Design discussion | Open — deferred |
 | Artifact storage config UX — what does `discover` output if `.tricorder/` is not writable? | Design discussion | Open — deferred |
-| Which repository type gets the second validated lens? Python data pipelines and IaC are candidates. | Issue #18 | Open |
-| Should `learn` and `interpret` be separated into distinct commands now, or deferred until a second lens requires it? | Design discussion | Deferred — will be separated when second lens is implemented |
+| Which repository type gets the second validated lens? | Issue #18 | Open |
+| Should `learn` and `interpret` be separated now, or deferred until a second lens requires it? | Design discussion | Deferred |
 
 ---
 
 ## Resolution status
 
-| Document | Round 1 | Round 2 | Final state |
-|----------|---------|---------|-------------|
-| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Ready for review |
-| DESIGN.md | Rewritten for v2 architecture | — | Ready for review |
-| docs/EVOLUTION.md | Written — design narrative | — | Ready for review |
+| Document | Round 1 | Round 2 | Round 3 | Final state |
+|----------|---------|---------|---------|-------------|
+| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by dhk, accepted | Pending Round 3 responses |
+| DESIGN.md | Rewritten for v2 architecture | — | Finding 7 open | Pending Round 3 responses |
+| docs/EVOLUTION.md | Written — design narrative | — | — | Ready for review |
