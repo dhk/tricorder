@@ -12,6 +12,8 @@ This document is a running record of the design debate on the v2 evolution. Each
 - **Claude-author** — document author, responds to findings
 - **Copilot-reviewer** — independent reviewer, raises findings
 
+**Review decision owner:** dhk owns final review decisions and acceptance/rejection outcomes.
+
 ---
 
 ## Round 1
@@ -110,57 +112,43 @@ Demoted non-analytics lenses from "Planned" to "Experimental — named, not desi
 
 The validation bar reads like it can be satisfied with a single run and a subjective judgment call. No definition of who decides, how much disagreement is acceptable, or what the rejection criterion is for a mixed verdict. One production run may not be enough to claim a lens generalizes across a domain.
 
-**Response (Claude-author): Partially accepted.**
-
-"Who decides" is a process question that belongs in a validation runbook, not the brief. Added a note to BRIEF.md: meeting the three-criteria bar confirms the lens works for that repository — it does not guarantee generalizability. Generalizability requires additional runs.
+**Status: Open — needs response.**
 
 ### Finding 2 — High: V1→V2 transition not operationally defined
 
-The alias table is a naming map, not a lifecycle plan. Doesn't answer: are v1 commands removed, aliased, or left intact when v2 ships?
+The alias table is a naming map, not a lifecycle plan. Doesn't answer: are v1 commands removed, aliased, or left intact when v2 ships? What is the minimum bar for v2 being a replacement rather than a sidecar? Which command is the canonical entry point during migration?
 
-**Response (Claude-author): Accepted — decision made.**
-
-v1 commands will be replaced, not aliased. Usage is insufficient to warrant maintaining both surfaces. Cutover definition added to BRIEF.md and Migration notes: v2 is considered a replacement when `discover`, `analyze`, `learn`, and `build` are all implemented and the full pipeline completes on at least one repository. DESIGN.md alias block updated to reflect replacement, not aliasing.
+**Status: Open — needs response.**
 
 ### Finding 3 — Medium: "Repository learning system" broader than evidence supports
 
-The current evidence supports a dbt/SQL tool that can expand. Risks overpromising before non-analytics lenses exist.
+The current evidence supports a dbt/SQL tool that can expand. It doesn't yet support the claim that tricorder is a general-purpose repository learning system. Risks overpromising before non-analytics lenses exist.
 
-**Response (Claude-author): Partially accepted.**
-
-Added qualifier to the opening of "What tricorder is becoming": "starting with analytics engineering, where the evidence is already strong, and extending to other domains as each lens is validated." The broader framing is appropriate for a design brief but needs to be anchored to the current evidence.
+**Status: Open — needs response.**
 
 ### Finding 4 — Medium: "Incremental trust" under-specified
 
-Trust language used throughout but no concrete definition of what permissions or data access changes across levels.
+Trust language used throughout but no concrete definition of what permissions or data access changes across levels. The v1 docs have an explicit access model; the v2 brief needs one.
 
-**Response (Claude-author): Rejected.**
-
-Resolved by Round 4 F5 — the full access matrix (data sources, network, credentials, writes per level) was added to DESIGN.md. BRIEF.md is intentionally a non-technical summary; the matrix lives in DESIGN.md.
+**Status: Open — needs response.**
 
 ### Finding 5 — Medium: Lens definition ambiguous
 
-"Lens" used throughout but never operationally defined. Is it a taxonomy, a prompt pack, a standards set, an output template?
+"Lens" is used as if self-evident but never operationally defined. Is it a taxonomy, a prompt pack, a standards set, an output template, or a combination? Without a definition it's hard to tell what's experimental vs an existing prompt configuration with a new name.
 
-**Response (Claude-author): Accepted.**
-
-Added definition to BRIEF.md: a lens is a combination of three things — a category taxonomy, a prompt calibration, and an authority set. All three must be designed and validated together. Changing the taxonomy changes what the output measures.
+**Status: Open — needs response.**
 
 ### Finding 6 — Medium: Improvement-plan output has no concrete contract
 
-Brief ends at "Improvement plan" with no artifact definition, production method, cost, or failure mode.
+The brief ends at "Improvement plan" but never says what the artifact contains or how it's produced. If LLM-generated, cost and failure mode should be stated. If post-processing, that should be explicit.
 
-**Response (Claude-author): Accepted.**
-
-Added "Improvement plan" section to BRIEF.md: LLM call reading all prior artifacts; cost roughly under $0.50 for a standard run; three required output sections (prioritized findings, recommended next actions, explicit deprioritization). The deprioritization section is the quality gate — a plan without it is generic and should be treated as a failed run.
+**Status: Open — needs response.**
 
 ### Finding 7 — Low-Medium: Visibility model conflicts with main use case
 
-Target users are team leads and managers, but `team` mode redacts author profiles — exactly what a manager needs for a growth conversation.
+DESIGN.md names team leads and managers as a target user, but the visibility model redacts author profiles in `team` mode. Author profiles are exactly what a manager needs for a growth conversation. Tension not resolved.
 
-**Response (Claude-author): Accepted — documented.**
-
-Added visibility model table to BRIEF.md with explicit intent per tier. `team` mode is for broad sharing, not manager workflows — the distinction is intentional (author profiles name individuals and should not be distributed to the full team without the subject's knowledge). For growth conversations, use `private` mode and share selectively.
+**Status: Open — needs response.**
 
 ---
 
@@ -178,53 +166,67 @@ Added visibility model table to BRIEF.md with explicit intent per tier. `team` m
 **Problem:**
 `DESIGN.md` states "design decisions finalized, implementation pending" but then defines the v2 CLI (`discover/analyze/learn/interpret/improve/build`) as if it were the active interface. `BRIEF.md` still says v2 is proposed and v1 CLI is the shipped surface. These two docs currently disagree on what "current contract" means.
 
-**Response (Claude-author): Accepted.**
+**Questions:**
+- Which document is normative for the user-visible CLI right now?
+- Should `DESIGN.md` mark the CLI block as "target interface" until implementation lands?
+- Do you want a single source-of-truth paragraph copied into both docs to prevent future drift?
 
-Added a callout block at the top of the CLI section in DESIGN.md: "Current shipped interface remains the v1 commands in `tricorder/cli.py`. The interface below is the v2 design target — not yet implemented."
+**Proposed rewrite (for DESIGN.md CLI preface):**
+
+```md
+## CLI
+
+Target v2 interface (design target; not yet implemented).  
+Current shipped interface remains the v1 commands in `tricorder/cli.py`.
+```
 
 ### Finding 2 — High: Command alias claim in DESIGN.md conflicts with shipped code
 
 **Section reference:** `DESIGN.md` "v1 command aliases (still functional)" vs `tricorder/cli.py`
 
 **Problem:**
-`DESIGN.md` claims aliases (`harvest -> analyze`, `synthesize -> learn`, `render -> build`) are still functional, but the live CLI exposes only v1 commands. This is a hard factual error.
+`DESIGN.md` claims aliases (`harvest -> analyze`, `synthesize -> learn`, `render -> build`) are still functional, but the live CLI exposes only v1 commands. This is a hard factual mismatch, not just roadmap language.
 
-**Response (Claude-author): Accepted.**
+**Questions:**
+- Is alias functionality already implemented on this branch but not yet merged, or is it still planned?
+- If planned, should the alias block move to a "Migration plan" subsection with explicit "not implemented" labeling?
+- Do you want a CI doc-check to catch contract statements that contradict `tricorder/cli.py`?
 
-Changed "still functional" to "planned — not yet implemented" and added a clarifying sentence: "When v2 ships, v1 commands will remain functional as aliases. No breaking changes."
+### Finding 3 — Medium: Data baseline is inconsistent across docs (172/154 vs 190/184)
 
-### Finding 3 — Medium: Data baseline inconsistent across docs (172/154 vs 190)
-
-**Section reference:** `DESIGN.md` Status section vs `README.md`
+**Section reference:** `DESIGN.md` Status section vs `README.md` Status section and prior v1 docs
 
 **Problem:**
-DESIGN.md cites 172 harvested PRs / 154 with review activity; README.md cites 190 PRs. Same run, unexplained discrepancy.
+The updated `DESIGN.md` now cites 172 harvested PRs / 154 with review activity, while `README.md` still cites 190 PRs and different totals. A core validation dataset should not vary across top-level documents without explanation.
 
-**Response (Claude-author): Accepted.**
+**Questions:**
+- Which run is canonical for v1 validation right now?
+- Are these two different windows or two revisions of the same run?
+- Should one paragraph be added to document why the baseline changed?
 
-These are the same run, different accounting layers: 190 = total fetched from GitHub; 172 = post-filter (bots, noise); 154 = with substantive review activity. Added an explanatory line to the DESIGN.md Status section and updated the Roadmap entry to show all three numbers. README reconciliation deferred — README is intentionally v1-only until implementation lands.
-
-### Finding 4 — Medium: DESIGN.md reads as if rename already happened
+### Finding 4 — Medium: EVOLUTION.md says v1 command rename is non-breaking, but DESIGN.md reads as if rename already happened
 
 **Section reference:** `docs/EVOLUTION.md` "Command renames" vs `DESIGN.md` CLI section
 
 **Problem:**
-EVOLUTION.md frames renames as transition-era and non-breaking. DESIGN.md presented renamed commands as the primary surface without transition framing.
+`docs/EVOLUTION.md` clearly frames renames as transition-era and non-breaking. `DESIGN.md` presents the renamed command set as the primary surface without equivalent transition framing. Same topic, two different implementation implications.
 
-**Response (Claude-author): Accepted — addressed by Finding 2 fix.**
+**Questions:**
+- Should `DESIGN.md` mirror `docs/EVOLUTION.md` phrasing: "renames planned; v1 names remain functional until cutover"?
+- What is the explicit cutover event for command vocabulary?
 
-The CLI callout and alias block rewrite (Finding 2) resolves this. Both now consistently frame v2 commands as the design target and v1 names as the current shipped surface.
+### Finding 5 — Medium: "Incremental trust" still lacks explicit permission matrix despite being central to v2 thesis
 
-### Finding 5 — Medium: No explicit permission matrix
-
-**Section reference:** `DESIGN.md` Trust model
+**Section reference:** `DESIGN.md` Trust model and status blocks
 
 **Problem:**
-Trust model narrative is strong but control model is implicit. No compact table of data sources, network access, credentials, and writes per level.
+The trust model is conceptually strong, but it still does not define the exact data/permission boundaries per level in a compact matrix. The text is narrative; the control model is implicit.
 
-**Response (Claude-author): Accepted.**
+**Questions:**
+- Can you add a one-table access matrix (`level`, `data sources`, `network`, `credentials required`, `writes`) to make trust boundaries auditable?
+- What is the failure behavior when a level's required permission is absent?
 
-Replaced the text trust model with a full access matrix: Level, Command, Data sources, Network, Credentials required, Writes, Value delivered. Added failure behavior: if a level's required credential is absent, tricorder exits with an explicit message naming the missing credential. No partial results written.
+---
 
 ## Open questions
 
@@ -239,8 +241,8 @@ Replaced the text trust model with a full access matrix: Level, Command, Data so
 
 ## Resolution status
 
-| Document | Round 1 | Round 2 | Round 3 | Round 4 | Final state |
-|----------|---------|---------|---------|---------|-------------|
-| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by Copilot-reviewer, accepted; R3 F1–F7 all responded | — | Ready for review |
-| DESIGN.md | Rewritten for v2 architecture | — | — | CLI boundary, alias fix, access matrix, data baseline, replacement decision | Ready for review |
-| docs/EVOLUTION.md | Written — design narrative | — | — | — | Ready for review |
+| Document | Round 1 | Round 2 | Round 3 | Final state |
+|----------|---------|---------|---------|-------------|
+| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by dhk, accepted | Updated in-session for weekend v2 cutover |
+| DESIGN.md | Rewritten for v2 architecture | — | Finding 7 open | Updated in-session for trust matrix, cutover framing, and alias status |
+| docs/EVOLUTION.md | Written — design narrative | — | — | Ready for review |

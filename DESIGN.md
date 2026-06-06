@@ -3,8 +3,13 @@
 > *"A room full of data people and you named it tricorder instead of data. Yes, on purpose."*
 
 **Version:** 2.0 (in design)  
-**Status:** Specification — design decisions finalized, implementation pending  
+**Status:** Specification — design decisions finalized, v2 cutover in progress (this weekend)  
 **Repo:** [dhk/tricorder](https://github.com/dhk/tricorder)
+
+**Current shipped interface:** v1 command set in [tricorder/cli.py](tricorder/cli.py#L17-L37)  
+**Target interface:** v2 command set in this design doc (not yet implemented)
+
+Current shipped interface switches to v2 when the v2 CLI command surface lands in code (recorded by cutover commit hash in this design doc).
 
 ---
 
@@ -54,18 +59,29 @@ Tricorder earns access incrementally.
 
 Every increase in access must unlock a visibly better class of insight. Users encounter something interesting before being asked to invest more. The interaction model is a ratchet: trust increases, signal increases, artifacts accumulate, and the next action is always obvious.
 
-| Level | Command | Data sources | Network | Credentials required | Writes | Value delivered |
-|-------|---------|-------------|---------|---------------------|--------|----------------|
-| 0 | `discover` | Local filesystem | None | None | None | Repository profile + archetype |
-| 1 | `discover --history` | Local git history | None | None | None | Evolution timeline, hotspots |
-| 2 | `analyze` | GitHub REST API | GitHub only | `GITHUB_TOKEN` | None | Review patterns, expertise map |
-| 3 | `learn` | Artifact store | LLM API | LLM API key | `.tricorder/` artifacts | Organizational learnings |
-| 4 | `interpret` | Artifact store | LLM API | LLM API key | `.tricorder/` artifacts | Domain-specific recommendations |
-| 5 | `improve` | Artifact store | LLM API | LLM API key | `.tricorder/` artifacts | Improvement roadmap |
-
-If a level's required credential is absent, tricorder exits with an explicit message naming the missing credential and the command to run once it is available. No partial results are written.
+```
+Level 0   Local filesystem     →  Repository Profile
+Level 1   Local git history    →  Evolution Timeline
+Level 2   GitHub read access   →  Review Patterns
+Level 3   LLM API              →  Organizational Learnings
+Level 4   LLM API + lens       →  Interpretation
+Level 5   LLM API              →  Improvement Plan
+```
 
 At every level, tricorder states clearly what access it used, what it did not access, what it found, and what the next step is.
+
+### Access contract
+
+| Level | Command | Data sources | Network | Credentials | Writes | Failure behavior |
+|---|---|---|---|---|---|---|
+| 0 | `discover` | Local repository files only | No | None | `.tricorder/repository-profile.yml`, `.tricorder/repository-fingerprint.json` | If repository path is unreadable/writable output location fails, exit with actionable filesystem error and no partial trust escalation |
+| 1 | `discover --history` | Local git history only | No | None | `.tricorder/contributors.json`, `.tricorder/hotspots.json`, `.tricorder/repository-timeline.json` | If git history is unavailable, exit with actionable git error and suggest running from a git repository |
+| 2 | `analyze` | GitHub PR/review metadata + local repo context files | Yes (GitHub API) | `GITHUB_TOKEN` | `.tricorder/review-observations.json`, `.tricorder/review-patterns.json`, `.tricorder/expertise-map.json` | If token/missing scopes/API errors occur, exit with actionable auth/API error; do not proceed to LLM levels |
+| 3 | `learn` | Level 2 artifacts | Yes (LLM API) | Provider API key (`ANTHROPIC_API_KEY` or `GEMINI_API_KEY`) | `.tricorder/learnings.json`, `.tricorder/standards-candidates.json`, markdown report | If LLM auth/quota/request errors occur, stop at last completed step; preserve completed artifacts for resume |
+| 4 | `interpret` | Level 3 artifacts + selected lens | Yes (LLM API) | Provider API key | `.tricorder/interpretations.json` | If lens is unsupported or LLM call fails, return actionable error and keep prior artifacts unchanged |
+| 5 | `improve` | All prior artifacts | Yes (LLM API) | Provider API key | `.tricorder/improvement-plan.md`, `.tricorder/roadmap.json` | If required upstream artifacts are missing, fail fast with missing-prerequisite error and suggested command sequence |
+
+This table is the authoritative trust boundary for v2 cutover implementation.
 
 ---
 
@@ -161,7 +177,7 @@ Also writes a Markdown report to `--out DIR`.
 
 **Access:** LLM API. Reads from Level 3 artifacts. Applies the detected (or user-selected) discipline lens.
 
-The lens provides domain-specific interpretation: which standards apply, which authorities to cite, how to read the patterns for this repository type. The `analytics-engineering` lens is the validated lens (built from v1). Other lenses ship as corresponding repository types are validated.
+The lens provides domain-specific interpretation: which standards apply, which authorities to cite, how to read the patterns for this repository type. The `analytics-engineering` lens is currently `Experimental` with strong evidence from v1 outputs, and other lenses remain `Experimental` until validated.
 
 **Artifacts written:**
 ```
@@ -215,7 +231,7 @@ Tricorder detects the likely archetype from the repository fingerprint and propo
 | `platform-engineering` | Infrastructure, SRE | Google SRE, DORA, AWS Well-Architected |
 | `security` | Security engineering | OWASP, NIST, CIS |
 
-The `analytics-engineering` lens is the only validated lens. It carries the category taxonomy, standard citations, and prompt design built in v1 and validated on cal-itp/data-infra. Other lenses ship when corresponding repository types are validated.
+The `analytics-engineering` lens is currently `Experimental` with strong evidence from cal-itp/data-infra. It moves to `Validated` after a second successful production-repo evaluation. Other lenses remain `Experimental` until validated.
 
 ---
 
@@ -343,8 +359,6 @@ For demos and sharing, real GitHub logins can be replaced with aliases. Create `
 
 Installed via `pip install -e .`. Entry point: `tricorder`.
 
-> **Current shipped interface** remains the v1 commands in `tricorder/cli.py` (`ready`, `probe`, `harvest`, `synthesize`, `render`, `demo`). The interface below is the **v2 design target** — not yet implemented.
-
 ```
 tricorder discover    OWNER/REPO [--lens NAME]
 tricorder discover    OWNER/REPO --history [--lens NAME]
@@ -360,16 +374,15 @@ tricorder demo        [--fast] [--no-pause]
 tricorder --version
 ```
 
-**v1 command replacement:**
+**Planned aliases (not yet implemented):**
 
-v2 replaces v1 commands. v1 commands will be removed when v2 ships — usage is insufficient to warrant maintaining both surfaces.
+These mappings describe the target migration path and are not currently available in the shipped CLI.
 
-| Removed | Replaced by |
-|---------|------------|
-| `ready` | `discover` |
-| `harvest` | `analyze` |
-| `synthesize` | `learn` |
-| `render` | `build` |
+```
+tricorder harvest     →  tricorder analyze
+tricorder synthesize  →  tricorder learn
+tricorder render      →  tricorder build
+```
 
 ---
 
@@ -418,7 +431,7 @@ git clone https://github.com/dhk/tricorder && cd tricorder && pip install -e .
 - ~$0.014 per PR (phases 1–4 combined, amortized)
 - 60-PR run: ~$0.85
 - 90-PR run: ~$1.25
-- 190-PR run (3 months, active team): ~$2.65
+- ~172-PR run (3 months, active team): ~$2.40
 
 Always run `tricorder probe` before `tricorder learn`.
 
@@ -449,7 +462,7 @@ Always run `tricorder probe` before `tricorder learn`.
 - Reviewer blind spots are inferred, not observed
 
 **Scope:**
-The `analytics-engineering` lens is the only validated lens. The `discover` and `analyze` commands are designed to be repository-agnostic. The `learn` and `interpret` commands degrade outside the analytics-engineering domain until additional lenses are validated.
+The `analytics-engineering` lens is currently `Experimental` with strong evidence, while `discover` and `analyze` are designed to be repository-agnostic. The `learn` and `interpret` commands degrade outside analytics-engineering until additional lenses are validated.
 
 ---
 
@@ -511,7 +524,7 @@ Patterns are grounded against named standards:
 
 ### Completed (v1.0.1.x)
 
-- ✓ First synthesis run — cal-itp/data-infra, 190 PRs fetched (172 retained, 154 with review activity), March–May 2026
+- ✓ First synthesis run — cal-itp/data-infra, ~172 PRs, March–May 2026
 - ✓ Interactive HTML explorer deployed to GitHub Pages
 - ✓ Composite radar chart (all reviewers overlaid)
 - ✓ Readiness check (`tricorder ready`)
@@ -550,14 +563,14 @@ Patterns are grounded against named standards:
 
 **v1.0.1.x** — Full pipeline validated and working. Explorer live at [dhk.github.io/tricorder/explorer](https://dhk.github.io/tricorder/explorer/).
 
-**v2.0** — In design. Design decisions finalized in issue #22 and documented in [BRIEF.md](BRIEF.md) and [docs/EVOLUTION.md](docs/EVOLUTION.md). Implementation pending.
+**v2.0** — Cutover in progress this weekend. Design decisions are finalized in issue #22 and documented in [BRIEF.md](BRIEF.md) and [docs/EVOLUTION.md](docs/EVOLUTION.md). Single-maintainer migration enables a fast transition without a long deprecation window. Cutover target: v2 command surface primary, v1 command surface retired after cutover validation in this session.
 
 **First synthesis run — cal-itp/data-infra, June 2026:**
-- 190 PRs fetched from GitHub; 172 retained after bot/noise filtering; 154 with substantive review activity
+- ~172 PRs harvested (March–May 2026), 154 with review activity
+
+_Note: cal-itp/data-infra is an active repository; exact totals vary slightly by run date, window boundaries, and filtering._
 - 15 contributors, 14 reviewer profiles, 15 author growth profiles
 - 5 institutionalization candidates (maturity: judgment → convention/rule)
 - 11 team gaps (5 coverage, 4 blind spots, 2 knowledge)
-
-*Note: README.md cites 190 PRs (total fetched). DESIGN.md uses 172 (post-filter) and 154 (with review activity) as the analysis baseline. These are the same run.*
 
 Key validation finding: review quality is concentrated in one reviewer (high signal) while the broader team defaults to low-signal approvals — including on breaking SQL changes. The composite radar makes this visible at a glance. The finding matched informal prior knowledge about the team, confirming that the synthesis is reading real signal, not producing plausible-sounding noise.

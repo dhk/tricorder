@@ -10,7 +10,9 @@ Tricorder v1 was a focused tool with a specific job: read the merged PR history 
 
 It ran in five steps: `ready` → `probe` → `harvest` → `synthesize` → `render`.
 
-The pipeline was validated on cal-itp/data-infra in June 2026 — a public dbt/BigQuery analytics team with 172 harvested PRs spanning three months. The synthesis returned four analyses: per-PR pattern extraction, reviewer fingerprints, author growth profiles, and a team gap analysis. The output was a Markdown report and an interactive HTML explorer deployed to GitHub Pages.
+The pipeline was validated on cal-itp/data-infra in June 2026 — a public dbt/BigQuery analytics team with ~172 harvested PRs spanning three months. The synthesis returned four analyses: per-PR pattern extraction, reviewer fingerprints, author growth profiles, and a team gap analysis. The output was a Markdown report and an interactive HTML explorer deployed to GitHub Pages.
+
+Because cal-itp/data-infra is an active repository, exact totals vary slightly by run date, window boundaries, and filtering.
 
 The design was intentionally narrow. Broad scope produces vague output. Calibrating the category taxonomy and standard citations to a specific domain — dbt, SQL, Kimball, SQLFluff — made findings specific enough to act on.
 
