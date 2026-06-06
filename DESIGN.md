@@ -374,15 +374,16 @@ tricorder demo        [--fast] [--no-pause]
 tricorder --version
 ```
 
-**Planned aliases (not yet implemented):**
+**v1 command replacement (not yet implemented):**
 
-These mappings describe the target migration path and are not currently available in the shipped CLI.
+v1 commands will be removed when v2 ships. There is not enough usage to warrant maintaining both surfaces.
 
-```
-tricorder harvest     →  tricorder analyze
-tricorder synthesize  →  tricorder learn
-tricorder render      →  tricorder build
-```
+| Removed | Replaced by |
+|---------|------------|
+| `ready` | `discover` |
+| `harvest` | `analyze` |
+| `synthesize` | `learn` |
+| `render` | `build` |
 
 ---
 
@@ -478,7 +479,7 @@ Broad scope produces vague output. The lens preserves the domain-specificity tha
 V1 produced outputs designed for humans. The artifact contract makes every analysis stage the foundation for the next — and for external consumers. The future MCP integration depends on stable, structured artifacts that agents can consume without rerunning analysis.
 
 **Why rename the commands?**
-V1 names described internal pipeline mechanics (harvest, synthesize, render). V2 names describe what users experience and what they get (analyze, learn, build). The v1 names remain as aliases during the transition.
+V1 names described internal pipeline mechanics (harvest, synthesize, render). V2 names describe what users experience and what they get (analyze, learn, build). v1 commands are replaced, not aliased — usage is insufficient to warrant maintaining both surfaces.
 
 **Why a local cache, not a live API?**
 The cache enables incremental runs, resume-on-failure, and re-synthesis after prompt changes without re-fetching. The raw data is inspectable on disk — if a result looks wrong, the input is there to check.

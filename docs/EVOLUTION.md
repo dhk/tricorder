@@ -86,12 +86,12 @@ The v1 command names described the pipeline's internal mechanics: harvest, synth
 | `probe` | `probe` | Kept — cost planning is still useful |
 | `harvest` | `analyze` | Describes the user-visible action (analyze the review history) |
 | `synthesize` | `learn` | Describes the output (organizational learnings) |
-| `render` | `build` (TBD) | Still under discussion |
+| `render` | `build` | Final name |
 | — | `discover` | New — local filesystem + git, no credentials |
 | — | `interpret` | New — lens application (Level 4) |
 | — | `improve` | New — improvement planning (Level 5) |
 
-The v1 commands remain functional during the transition. The rename is not a breaking change.
+v1 commands are replaced, not aliased. There is not enough usage to warrant maintaining both surfaces. v1 commands will be removed when the v2 CLI lands.
 
 ### 5. Principled evolution, not a rewrite
 
@@ -99,7 +99,7 @@ The v1 synthesis internals are preserved. The per-PR extraction, reviewer finger
 
 The v2 architecture wraps them: `discover` (new front-end), `analyze` (harvest renamed), `learn` (synthesize renamed with artifact contract), `interpret` (new lens layer), `improve` (new planning phase).
 
-Separating `learn` and `interpret` into distinct phases is the right long-term architecture. In practice, both currently require LLM calls and both produce outputs specific to the analytics-engineering domain. They will be separated in implementation once a second repository type is validated — when the lens layer needs to actually vary.
+Separating `learn` and `interpret` into distinct phases is the right architecture and will be implemented now — not deferred. Keeping them together was a shortcut that would make the lens layer harder to vary when a second repository type is added.
 
 ---
 
@@ -140,19 +140,15 @@ The broader thesis: a team's review history contains the implicit standards that
 
 ## What's deferred
 
-- Separate `learn` and `interpret` into distinct phases — deferred until a second repository type validates that the lens layer needs to vary
 - Implement non-analytics-engineering lenses — deferred until the second repo run
 - MCP integration — deferred until the artifact contract is stable across two validated runs
 
----
+## Resolved during design review
 
-## Open questions
-
-These were noted during the design discussion and not resolved:
-
-- **`render` → `build`?** Whether to rename `render` to `build` or something else is still open. The v1 name describes the HTML output; v2 may produce multiple artifact formats from the same step.
-- **Artifact storage config UX** — what does `tricorder discover` output when `.tricorder/` cannot be written to the current directory? What does the config error look like?
-- **Second lens validation** — which repository type gets the second lens? Python data pipelines and infrastructure-as-code are the candidates from issue #18.
+- **`render` → `build`** — final name is `build`
+- **Artifact storage fallback** — if `.tricorder/` is not writable, prompt the user to specify a folder location
+- **`learn` / `interpret` separation** — implemented now, not deferred
+- **v1 command lifecycle** — replaced, not aliased; v1 commands removed at cutover
 
 ---
 
