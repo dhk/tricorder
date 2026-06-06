@@ -2,8 +2,8 @@
 
 > *"A room full of data people and you named it tricorder instead of data. Yes, on purpose."*
 
-**Version:** 2.0 (in design)  
-**Status:** Specification — design decisions finalized, v2 cutover in progress (this weekend)  
+**Version:** 2.0  
+**Status:** Design complete — ready for implementation  
 **Repo:** [dhk/tricorder](https://github.com/dhk/tricorder)
 
 **Current shipped interface:** v1 command set in [tricorder/cli.py](tricorder/cli.py#L17-L37)  
