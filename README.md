@@ -34,7 +34,7 @@ Two phases. They run independently.
 
 **Harvest** pulls merged PRs from the GitHub API via the `gh` CLI and writes structured JSON to a local cache at `~/.learn-from-work/cache/`. Incremental: re-running harvest only fetches PRs newer than the last run. The cache persists across sessions.
 
-**Synthesize** loads the cache and runs four Claude API calls: one per PR for pattern extraction, one per reviewer for focus fingerprints, one per author for growth profiles, and one team-level gap analysis. Output is a Markdown report committed to your analysis repo plus an interactive React artifact for exploration.
+**Synthesize** loads the cache and runs four LLM calls: one per PR for pattern extraction, one per reviewer for focus fingerprints, one per author for growth profiles, and one team-level gap analysis. The active provider comes from `~/.learn-from-work/config` or a CLI override, so you can use Anthropic at home and Gemini at work without changing code. Output is a Markdown report committed to your analysis repo plus an interactive React artifact for exploration.
 
 ---
 
@@ -45,11 +45,24 @@ Two phases. They run independently.
 git clone https://github.com/dhk/tricorder.git && cd tricorder
 pip install -e .
 
-# 2. Set credentials
+# 2. Set credentials and pick a provider
 export GITHUB_TOKEN=ghp_your_token
+
+# Example: Anthropic at home
+cat > ~/.learn-from-work/config <<'EOF'
+provider=anthropic
+model=claude-sonnet-4-6
+api_key_env=ANTHROPIC_API_KEY
+EOF
 export ANTHROPIC_API_KEY=sk-ant-...
 
-# 3. Cost probe — no Claude API spend until you decide to go
+# Example: Gemini at work
+# provider=gemini
+# model=gemini-2.0-flash
+# api_key_env=GEMINI_API_KEY
+# export GEMINI_API_KEY=...
+
+# 3. Cost probe — no API spend until you decide to go
 tricorder probe OWNER/REPO --limit 20
 
 # 4. Harvest
@@ -57,6 +70,9 @@ tricorder harvest OWNER/REPO --since 2026-01-01
 
 # 5. Synthesize
 tricorder synthesize OWNER/REPO
+
+# Or override for one run
+# tricorder synthesize OWNER/REPO --provider gemini --model gemini-2.0-flash --api-key-env GEMINI_API_KEY
 
 # 6. Explore
 tricorder render OWNER/REPO && open explorer/index.html
@@ -66,7 +82,7 @@ tricorder render OWNER/REPO && open explorer/index.html
 
 ## Cost probe
 
-Run `tricorder-cost-probe.py` before any full harvest. It pulls real PRs, assembles the exact prompts, counts tokens, and prints a cost table with extrapolations. No Claude API spend until you decide to go.
+Run `tricorder-cost-probe.py` before any full harvest if you're using Anthropic. It pulls real PRs, assembles the exact prompts, counts tokens, and prints a cost table with extrapolations. Gemini runs use the same prompts but a different billing model, so the probe is only a rough planning tool there.
 
 ```bash
 python tricorder-cost-probe.py cal-itp/data-infra --limit 20

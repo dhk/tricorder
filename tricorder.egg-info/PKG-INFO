@@ -1,7 +1,0 @@
-Metadata-Version: 2.4
-Name: tricorder
-Version: 1.0.0.2
-Summary: PR review analysis for dbt/SQL analytics teams
-Requires-Python: >=3.9
-Requires-Dist: anthropic
-Requires-Dist: requests

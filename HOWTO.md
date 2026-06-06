@@ -43,19 +43,31 @@ security add-generic-password -a "$USER" -s "github-tricorder-pat" -w "ghp_your_
 export GITHUB_TOKEN=$(security find-generic-password -a "$USER" -s "github-tricorder-pat" -w)
 ```
 
-### Anthropic API key
+### LLM provider setup
 
-Tricorder calls Claude during synthesis. Get a key at https://console.anthropic.com.
+Tricorder can synthesize with Anthropic or Gemini. Pick one active profile in `~/.learn-from-work/config` and point it at the right environment variable for the key.
 
-Set it:
+Anthropic example:
 ```bash
+cat > ~/.learn-from-work/config <<'EOF'
+provider=anthropic
+model=claude-sonnet-4-6
+api_key_env=ANTHROPIC_API_KEY
+EOF
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Or store in macOS keychain (tricorder checks this automatically):
+Gemini example:
 ```bash
-security add-generic-password -a "$USER" -s "anthropic_api_key" -w "sk-ant-..."
+cat > ~/.learn-from-work/config <<'EOF'
+provider=gemini
+model=gemini-2.0-flash
+api_key_env=GEMINI_API_KEY
+EOF
+export GEMINI_API_KEY=...
 ```
+
+If both keys are present on the same machine, pass `--provider anthropic` or `--provider gemini` on `tricorder synthesize` so tricorder does not guess.
 
 ---
 
@@ -77,7 +89,7 @@ Public or private repos both work. Private repos require `repo` scope on your PA
 
 ## 4. Check the cost first
 
-Before spending any API credits, run the cost probe. It pulls a sample of real PRs, assembles the exact prompts, counts tokens, and prints a cost table — no Claude API spend.
+Before spending any API credits, run the cost probe if you're on Anthropic. It pulls a sample of real PRs, assembles the exact prompts, counts tokens, and prints a cost table.
 
 ```bash
 tricorder probe OWNER/REPO --limit 20
@@ -94,7 +106,7 @@ If the projected cost looks right, proceed. If the per-PR cost is much higher th
 
 ## 5. Harvest
 
-Pull merged PRs from GitHub into a local cache. No Claude API spend.
+Pull merged PRs from GitHub into a local cache. No LLM API spend.
 
 ```bash
 tricorder harvest OWNER/REPO --since 2026-01-01
@@ -128,7 +140,7 @@ tricorder harvest OWNER/REPO --since 2026-01-01
 
 ## 6. Synthesize
 
-Run the four-phase Claude analysis. This is where the API spend happens.
+Run the four-phase LLM analysis. This is where the API spend happens.
 
 ```bash
 tricorder synthesize OWNER/REPO --visibility private
@@ -136,6 +148,10 @@ tricorder synthesize OWNER/REPO --visibility private
 
 **Flags:**
 - `--visibility private|team|public` — controls what appears in the output report. `private` includes author growth profiles by name. `team` redacts them. `public` anonymizes everything. Default: `private`.
+- `--provider anthropic|gemini` — override the active LLM provider for this run.
+- `--model NAME` — override the active model for this run.
+- `--api-key-env NAME` — override the environment variable name that contains the key.
+- `--keychain-service NAME` — override the macOS keychain service used for key lookup.
 - `--out PATH` — directory to write the Markdown report. Default: `~/Documents/dev/adventures-in-ai/tricorder/` if it exists, otherwise `./output/`.
 
 **What the four phases do:**
@@ -241,7 +257,7 @@ Run `tricorder harvest` first. Synthesis requires the cache.
 Re-run the same command. It skips completed phases and picks up from where it stopped.
 
 **`credit balance too low`**
-Top up at https://console.anthropic.com. Then delete any errored synthesis files and re-run:
+Top up at https://console.anthropic.com for Anthropic runs, or check your Gemini quota if you are using Gemini. Then delete any errored synthesis files and re-run:
 ```bash
 # Remove error files from Phase 1
 for f in ~/.learn-from-work/cache/OWNER__REPO/synthesis/pr/*.json; do
@@ -290,7 +306,7 @@ open explorer/index.html
 |------|---------|
 | `tricorder-harvest.py` | Pull PRs from GitHub → local cache |
 | `tricorder-cost-probe.py` | Estimate token cost before synthesis |
-| `tricorder-synthesize.py` | Run 4-phase Claude analysis → Markdown report |
+| `tricorder-synthesize.py` | Run 4-phase LLM analysis → Markdown report |
 | `tricorder-render-explorer.py` | Generate explorer/data.js from synthesis cache |
 | `tricorder-demo.py` | Scripted 4-minute live demo (no API spend) |
 | `explorer/` | Interactive HTML explorer |
