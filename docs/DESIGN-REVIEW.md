@@ -7,11 +7,17 @@
 
 This document is a running record of the design debate on the v2 evolution. Each round captures the findings, the response, and the resolution. Unresolved questions are tracked at the bottom.
 
+**Roles:**
+- **dhk** — product owner
+- **Claude-author** — document author, responds to findings
+- **Copilot-reviewer** — independent reviewer, raises findings
+
 ---
 
 ## Round 1
 
 **Reviewer:** dhk  
+**Role:** dhk (author)  
 **Date:** 2026-06-06 ~14:10 PDT  
 **Commit reviewed:** `82bc9fe` (BRIEF.md first draft)  
 **Focus:** Overall framing of BRIEF.md
@@ -42,7 +48,7 @@ Added Status column to the lens table (Validated vs Planned).
 
 ## Round 2
 
-**Reviewer:** dhk (second-pass audit)  
+**Reviewer:** Copilot-reviewer  
 **Date:** 2026-06-06 ~14:20 PDT  
 **Commit reviewed:** `09e4bf5` (BRIEF.md restructured)  
 **Focus:** Whether the v1/v2 boundary was actually hard, and whether the scope expansion was defensible
@@ -92,12 +98,13 @@ Demoted non-analytics lenses from "Planned" to "Experimental — named, not desi
 
 ## Round 3
 
-**Reviewer:** dhk  
+**Reviewer:** Copilot-reviewer  
+**Author response:** Claude-author  
 **Date:** 2026-06-06 ~21:33 PDT  
 **Commit:** `3095c44` (rewrote BRIEF.md, added review findings)  
 **Focus:** Operational gaps remaining after Round 2; new BRIEF.md rewrite proposed alongside findings
 
-*Note: This round included a rewritten BRIEF.md submitted alongside the findings. The rewrite was accepted and cherry-picked onto the branch as the new canonical version.*
+*Note: This round included a rewritten BRIEF.md submitted by Copilot-reviewer alongside the findings. The rewrite was accepted by Claude-author and cherry-picked onto the branch as the new canonical version.*
 
 ### Finding 1 — High: Lens validation gate still too loose
 
