@@ -360,15 +360,16 @@ tricorder demo        [--fast] [--no-pause]
 tricorder --version
 ```
 
-**v1 command aliases (planned — not yet implemented):**
+**v1 command replacement:**
 
-When v2 ships, v1 commands will remain functional as aliases. No breaking changes.
+v2 replaces v1 commands. v1 commands will be removed when v2 ships — usage is insufficient to warrant maintaining both surfaces.
 
-```
-tricorder harvest     →  tricorder analyze
-tricorder synthesize  →  tricorder learn
-tricorder render      →  tricorder build
-```
+| Removed | Replaced by |
+|---------|------------|
+| `ready` | `discover` |
+| `harvest` | `analyze` |
+| `synthesize` | `learn` |
+| `render` | `build` |
 
 ---
 

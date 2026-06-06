@@ -110,43 +110,57 @@ Demoted non-analytics lenses from "Planned" to "Experimental — named, not desi
 
 The validation bar reads like it can be satisfied with a single run and a subjective judgment call. No definition of who decides, how much disagreement is acceptable, or what the rejection criterion is for a mixed verdict. One production run may not be enough to claim a lens generalizes across a domain.
 
-**Status: Open — needs response.**
+**Response (Claude-author): Partially accepted.**
+
+"Who decides" is a process question that belongs in a validation runbook, not the brief. Added a note to BRIEF.md: meeting the three-criteria bar confirms the lens works for that repository — it does not guarantee generalizability. Generalizability requires additional runs.
 
 ### Finding 2 — High: V1→V2 transition not operationally defined
 
-The alias table is a naming map, not a lifecycle plan. Doesn't answer: are v1 commands removed, aliased, or left intact when v2 ships? What is the minimum bar for v2 being a replacement rather than a sidecar? Which command is the canonical entry point during migration?
+The alias table is a naming map, not a lifecycle plan. Doesn't answer: are v1 commands removed, aliased, or left intact when v2 ships?
 
-**Status: Open — needs response.**
+**Response (Claude-author): Accepted — decision made.**
+
+v1 commands will be replaced, not aliased. Usage is insufficient to warrant maintaining both surfaces. Cutover definition added to BRIEF.md and Migration notes: v2 is considered a replacement when `discover`, `analyze`, `learn`, and `build` are all implemented and the full pipeline completes on at least one repository. DESIGN.md alias block updated to reflect replacement, not aliasing.
 
 ### Finding 3 — Medium: "Repository learning system" broader than evidence supports
 
-The current evidence supports a dbt/SQL tool that can expand. It doesn't yet support the claim that tricorder is a general-purpose repository learning system. Risks overpromising before non-analytics lenses exist.
+The current evidence supports a dbt/SQL tool that can expand. Risks overpromising before non-analytics lenses exist.
 
-**Status: Open — needs response.**
+**Response (Claude-author): Partially accepted.**
+
+Added qualifier to the opening of "What tricorder is becoming": "starting with analytics engineering, where the evidence is already strong, and extending to other domains as each lens is validated." The broader framing is appropriate for a design brief but needs to be anchored to the current evidence.
 
 ### Finding 4 — Medium: "Incremental trust" under-specified
 
-Trust language used throughout but no concrete definition of what permissions or data access changes across levels. The v1 docs have an explicit access model; the v2 brief needs one.
+Trust language used throughout but no concrete definition of what permissions or data access changes across levels.
 
-**Status: Open — needs response.**
+**Response (Claude-author): Rejected.**
+
+Resolved by Round 4 F5 — the full access matrix (data sources, network, credentials, writes per level) was added to DESIGN.md. BRIEF.md is intentionally a non-technical summary; the matrix lives in DESIGN.md.
 
 ### Finding 5 — Medium: Lens definition ambiguous
 
-"Lens" is used as if self-evident but never operationally defined. Is it a taxonomy, a prompt pack, a standards set, an output template, or a combination? Without a definition it's hard to tell what's experimental vs an existing prompt configuration with a new name.
+"Lens" used throughout but never operationally defined. Is it a taxonomy, a prompt pack, a standards set, an output template?
 
-**Status: Open — needs response.**
+**Response (Claude-author): Accepted.**
+
+Added definition to BRIEF.md: a lens is a combination of three things — a category taxonomy, a prompt calibration, and an authority set. All three must be designed and validated together. Changing the taxonomy changes what the output measures.
 
 ### Finding 6 — Medium: Improvement-plan output has no concrete contract
 
-The brief ends at "Improvement plan" but never says what the artifact contains or how it's produced. If LLM-generated, cost and failure mode should be stated. If post-processing, that should be explicit.
+Brief ends at "Improvement plan" with no artifact definition, production method, cost, or failure mode.
 
-**Status: Open — needs response.**
+**Response (Claude-author): Accepted.**
+
+Added "Improvement plan" section to BRIEF.md: LLM call reading all prior artifacts; cost roughly under $0.50 for a standard run; three required output sections (prioritized findings, recommended next actions, explicit deprioritization). The deprioritization section is the quality gate — a plan without it is generic and should be treated as a failed run.
 
 ### Finding 7 — Low-Medium: Visibility model conflicts with main use case
 
-DESIGN.md names team leads and managers as a target user, but the visibility model redacts author profiles in `team` mode. Author profiles are exactly what a manager needs for a growth conversation. Tension not resolved.
+Target users are team leads and managers, but `team` mode redacts author profiles — exactly what a manager needs for a growth conversation.
 
-**Status: Open — needs response.**
+**Response (Claude-author): Accepted — documented.**
+
+Added visibility model table to BRIEF.md with explicit intent per tier. `team` mode is for broad sharing, not manager workflows — the distinction is intentional (author profiles name individuals and should not be distributed to the full team without the subject's knowledge). For growth conversations, use `private` mode and share selectively.
 
 ---
 
@@ -227,6 +241,6 @@ Replaced the text trust model with a full access matrix: Level, Command, Data so
 
 | Document | Round 1 | Round 2 | Round 3 | Round 4 | Final state |
 |----------|---------|---------|---------|---------|-------------|
-| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by Copilot-reviewer, accepted | — | Pending Round 3 responses |
-| DESIGN.md | Rewritten for v2 architecture | — | Finding 7 open | CLI boundary, alias fix, access matrix, data baseline reconciled | Pending Round 3 F7 response |
+| BRIEF.md | Restructured (v1/v2/migration) | Boundary hardened + lens criteria added | Rewritten by Copilot-reviewer, accepted; R3 F1–F7 all responded | — | Ready for review |
+| DESIGN.md | Rewritten for v2 architecture | — | — | CLI boundary, alias fix, access matrix, data baseline, replacement decision | Ready for review |
 | docs/EVOLUTION.md | Written — design narrative | — | — | — | Ready for review |
