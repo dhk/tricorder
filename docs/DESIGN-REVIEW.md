@@ -12,6 +12,8 @@ This document is a running record of the design debate on the v2 evolution. Each
 ## Round 1
 
 **Reviewer:** dhk  
+**Date:** 2026-06-06 ~14:10 PDT  
+**Commit reviewed:** `82bc9fe` (BRIEF.md first draft)  
 **Focus:** Overall framing of BRIEF.md
 
 ### Findings
@@ -41,6 +43,8 @@ Added Status column to the lens table (Validated vs Planned).
 ## Round 2
 
 **Reviewer:** External second-pass audit  
+**Date:** 2026-06-06 ~14:20 PDT  
+**Commit reviewed:** `09e4bf5` (BRIEF.md restructured)  
 **Focus:** Whether the v1/v2 boundary was actually hard, and whether the scope expansion was defensible
 
 ### Finding 1 — High: Boundary still soft
