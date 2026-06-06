@@ -30,7 +30,7 @@ Usage:
   tricorder ready      OWNER/REPO [--days 90]
   tricorder probe      OWNER/REPO [--limit 20]
   tricorder harvest    OWNER/REPO [--since YYYY-MM-DD] [--limit N] [--force]
-  tricorder synthesize OWNER/REPO [--visibility private|team|public] [--out DIR]
+    tricorder synthesize OWNER/REPO [--visibility private|team|public] [--provider anthropic|gemini] [--model NAME] [--api-key-env NAME] [--keychain-service NAME] [--out DIR]
   tricorder render     OWNER/REPO [--out PATH] [--name-map PATH]
   tricorder demo       [--fast] [--no-pause]
 

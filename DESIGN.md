@@ -32,7 +32,7 @@ It runs in five steps:
 tricorder ready      OWNER/REPO          # is this repo a good candidate?
 tricorder probe      OWNER/REPO          # what will it cost?
 tricorder harvest    OWNER/REPO          # pull PR data from GitHub
-tricorder synthesize OWNER/REPO          # run four Claude API calls
+tricorder synthesize OWNER/REPO          # run four LLM calls
 tricorder render     OWNER/REPO          # generate the interactive explorer
 ```
 
@@ -102,7 +102,7 @@ Harvest also captures repo context: `dbt_project.yml`, `.sqlfluff` (rules alread
 
 ### `tricorder synthesize`
 
-Loads the cache and runs four Claude API calls (claude-sonnet-4-6):
+Loads the cache, resolves the active LLM provider from config or CLI flag, and runs four provider-selected LLM calls:
 
 1. **Per-PR pattern extraction** — one call per PR. Returns structured JSON: patterns identified, evidence quotes, author signals, reviewer signals. PRs with no review activity are skipped.
 
@@ -184,6 +184,8 @@ tricorder ready      OWNER/REPO [--days N]
 tricorder probe      OWNER/REPO [--limit N] [--since YYYY-MM-DD]
 tricorder harvest    OWNER/REPO [--since YYYY-MM-DD] [--limit N] [--force]
 tricorder synthesize OWNER/REPO [--visibility private|team|public] [--out DIR]
+                               [--provider anthropic|gemini] [--model NAME]
+                               [--api-key-env NAME] [--keychain-service NAME]
 tricorder render     OWNER/REPO [--out PATH] [--name-map PATH]
 tricorder demo       [--fast] [--no-pause]
 tricorder --version
@@ -225,15 +227,23 @@ git clone https://github.com/dhk/tricorder && cd tricorder && pip install -e .
 
 **Credentials:**
 - `GITHUB_TOKEN` — classic PAT, `public_repo` scope for public repos, `repo` for private
-- `ANTHROPIC_API_KEY` — or stored in macOS keychain as `anthropic_api_key`
+- LLM API key — `ANTHROPIC_API_KEY` (or macOS keychain `anthropic_api_key`) for Anthropic; `GEMINI_API_KEY` for Gemini
 
-**Cost model (claude-sonnet-4-6, June 2026):**
+**LLM provider config** (`~/.learn-from-work/config`):
+```
+provider=anthropic          # anthropic | gemini
+model=claude-sonnet-4-6     # or gemini-2.0-flash, etc.
+api_key_env=ANTHROPIC_API_KEY
+```
+Provider resolves in order: CLI flag → env override (`TRICORDER_LLM_PROVIDER`) → config file → auto-detect from available keys → default (anthropic).
+
+**Cost model (Anthropic claude-sonnet-4-6, June 2026):**
 - ~$0.014 per PR (phases 1–4 combined, amortized)
 - 60-PR run: ~$0.85
 - 90-PR run: ~$1.25
 - 190-PR run (3 months, active team): ~$2.65
 
-Always run `tricorder probe` first. No Claude spend until you decide to proceed.
+Always run `tricorder probe` first. The probe assembles the exact prompts from real data, counts tokens, and extrapolates cost. Most useful for Anthropic runs — Gemini uses the same prompts but different billing, so treat the probe as directional there.
 
 ---
 
@@ -261,8 +271,11 @@ Tricorder is scoped to dbt/SQL analytics repositories. The category taxonomy, st
 **Why Claude, not a keyword classifier?**
 Review comments require interpretation. "This model is doing too much" is a grain issue in one PR and a modeling issue in another. Claude reads the comment alongside the PR description, the file path, and the repo context, and makes the same judgment a human reader would.
 
+**Why a provider layer?**
+Different environments have different keys and different LLM access. Tricorder resolves the active provider from a shared config file or a CLI flag, so a personal Anthropic setup and a work Gemini setup can run the same pipeline without code changes. The prompts and output schema are identical across providers.
+
 **Why a local cache, not a live API?**
-The cache enables incremental runs, resume-on-failure, and synthesis without re-fetching. The raw data is inspectable — if a synthesis result looks wrong, the input is on disk. Re-synthesis after prompt changes costs nothing.
+The cache enables incremental runs, resume-on-failure, and re-synthesis after prompt changes without re-fetching. The raw data is inspectable on disk — if a result looks wrong, the input is there to check.
 
 **Why Markdown output, not a database?**
 The primary consumer of tricorder output is a human reading a document. Markdown commits to git, diffs cleanly, and publishes anywhere.
@@ -304,6 +317,7 @@ Patterns are grounded against named standards:
 - ✓ Version scheme with auto-bump on merge (1.0.0.x)
 - ✓ HOWTO, DEMO, and presenter guide
 - ✓ Codespaces devcontainer
+- ✓ Configurable LLM provider — Anthropic and Gemini, resolved from `~/.learn-from-work/config` or CLI flag (PR #24)
 
 ### Open
 
