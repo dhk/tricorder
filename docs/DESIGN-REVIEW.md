@@ -267,9 +267,9 @@ Resolution: Access matrix added under trust model with explicit failure behavior
 | Question | Raised in | Status |
 |----------|-----------|--------|
 | `render` → `build` — is the name final? | Design discussion | Open — deferred |
-| Artifact storage config UX — what does `discover` output if `.tricorder/` is not writable? | Design discussion | Open — deferred |
-| Which repository type gets the second validated lens? | Issue #18 | Open |
-| Should `learn` and `interpret` be separated now, or deferred until a second lens requires it? | Design discussion | Deferred |
+| Artifact storage config UX — what does `discover` output if `.tricorder/` is not writable? | Design discussion | Resolved — ask for a folder location |
+| Which repository type gets the second validated lens? | Issue #18 | Deferred — TBD; will determine and update |
+| Should `learn` and `interpret` be separated now, or deferred until a second lens requires it? | Design discussion | Resolved — separate now |
 
 ---
 
