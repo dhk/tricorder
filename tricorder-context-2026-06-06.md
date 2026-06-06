@@ -2,9 +2,10 @@
 **Date:** 2026-06-06 (updated end-of-session)  
 **Sessions:** b82e43ca (build session) → current session (design review)  
 **Repo:** `/Users/dhk/Documents/dev/tricorder`  
-**Branch:** `feat/design-evolution-22`  
+**Branch:** `feat/v2-cli-implementation`  
 **Version:** 1.0.1.3 (auto-bumped on main)  
-**PR:** https://github.com/dhk/tricorder/pull/23
+**PR #23:** Merged ✓ (design complete)  
+**PR:** https://github.com/dhk/tricorder/pull/new/feat/v2-cli-implementation (open when ready)
 
 ---
 
@@ -128,12 +129,18 @@ v1 DESIGN.md preserved at commit `95dfee7`: `git show 95dfee7:DESIGN.md`
 
 ```
 cd /Users/dhk/Documents/dev/tricorder
-git checkout feat/design-evolution-22
+git checkout feat/v2-cli-implementation
 git pull
 ```
 
 **Next steps:**
-1. Merge PR #23 (design complete, all reviews resolved)
-2. Implement v2 CLI — start with `discover` (Level 0), then `analyze` → `learn` → `interpret` → `improve` → `build`
-3. Run second synthesis on a new repo to move `analytics-engineering` lens from Experimental → Validated
-4. Update README when v2 CLI is live
+1. Implement `tricorder discover` — Level 0, local filesystem only, no credentials, writes `.tricorder/repository-profile.yml` and `.tricorder/repository-fingerprint.json`
+2. Implement `tricorder discover --history` — Level 1, local git history
+3. Implement `tricorder analyze` (replaces `harvest`) — Level 2, GitHub read
+4. Implement `tricorder learn` (replaces `synthesize`) + artifact contract — Level 3
+5. Implement `tricorder interpret` — Level 4, lens application
+6. Implement `tricorder improve` — Level 5
+7. Implement `tricorder build` (replaces `render`)
+8. Remove v1 commands (`ready`, `harvest`, `synthesize`, `render`)
+9. Update README when v2 CLI is live
+10. Run second synthesis on a new repo → move `analytics-engineering` from Experimental → Validated
