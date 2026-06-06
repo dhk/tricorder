@@ -26,7 +26,7 @@ The broader thesis: non-code repository content — reviews, comments, discussio
 
 Tricorder is a two-phase tool that analyzes the merged pull request history of a dbt/SQL analytics repository and returns a structured map of what the team knows, what it misses, and what is ready to institutionalize.
 
-Phase one (harvest) pulls merged PRs and their review activity from the GitHub API and writes structured JSON to a local cache. Phase two (synthesize) loads that cache, runs four Claude API calls, and produces a Markdown report with reviewer focus fingerprints, per-author growth profiles, and a team-level gap analysis.
+Phase one (harvest) pulls merged PRs and their review activity from the GitHub API and writes structured JSON to a local cache. Phase two (synthesize) loads that cache, resolves the active LLM provider from shared config or CLI override, runs four JSON-producing LLM calls, and produces a Markdown report with reviewer focus fingerprints, per-author growth profiles, and a team-level gap analysis.
 
 The output is a document, not a dashboard. It is designed to be read, discussed, and acted on — not monitored.
 
@@ -84,7 +84,7 @@ Five signals are computed at harvest time and stored with each PR:
 
 ### Synthesize
 
-Loads the cache and runs four Claude API calls (claude-sonnet-4-6):
+Loads the cache and runs four provider-selected LLM calls:
 
 1. **Per-PR pattern extraction** — one call per PR. Returns structured JSON: patterns identified, evidence quotes, author strengths and gaps, reviewer focus signals for that PR. PRs with no review activity are skipped.
 
@@ -151,7 +151,8 @@ Tricorder is less useful for teams where review happens in Slack rather than Git
 - Python 3.9+
 - `pip install anthropic requests`
 - `GITHUB_TOKEN` — classic PAT, `public_repo` scope (for public repos)
-- Anthropic API key in macOS keychain (`anthropic_api_key`) or `ANTHROPIC_API_KEY` env var
+- `~/.learn-from-work/config` with `provider`, `model`, and `api_key_env` set for the active provider
+- Anthropic API key in macOS keychain (`anthropic_api_key`) or `ANTHROPIC_API_KEY` env var, or a Gemini key in `GEMINI_API_KEY`
 
 **Cost model (claude-sonnet-4-6, May 2026):**
 - ~$0.015 per PR (Prompt 1 through 4 combined, amortized)
@@ -159,7 +160,7 @@ Tricorder is less useful for teams where review happens in Slack rather than Git
 - 90-PR run: ~$1.35
 - 190-PR run (3 months, active team): ~$2.85
 
-Run `tricorder-cost-probe.py` before any full synthesis. It assembles exact prompts from real data, counts tokens, and extrapolates cost. No Claude API spend until you decide to proceed.
+Run `tricorder-cost-probe.py` before any full synthesis. It assembles exact prompts from real data, counts tokens, and extrapolates cost. This is most useful for Anthropic runs; Gemini uses the same prompts but a different billing model.
 
 ---
 
@@ -189,6 +190,9 @@ Tricorder is scoped to dbt/SQL analytics repositories. The category taxonomy, st
 
 **Why Claude, not a keyword classifier?**  
 Review comments require interpretation. "This model is doing too much" is a grain issue in one PR and a modeling issue in another. A keyword approach would miss the context. Claude reads the comment alongside the PR description, the file path, and the repo context, and makes the same judgment a human reader would.
+
+**Why a provider layer?**  
+Different environments have different keys. Tricorder now resolves the active provider from shared config or CLI override so personal Anthropic setups and work Gemini setups can use the same pipeline without code changes.
 
 **Why a local cache, not a live API?**  
 The cache enables incremental runs, resume-on-failure, and synthesis without re-fetching. It also means the raw data is inspectable. If a synthesis result looks wrong, the input data is on disk.

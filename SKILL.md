@@ -7,14 +7,14 @@ description: >
   per-author strength/gap profiles, and team-level coverage gaps. Outputs a Markdown report
   committed to the analysis repo and an interactive React artifact for exploration. Scoped to
   dbt/SQL analytics repos. Two-phase: harvest (GitHub API → local cache) then synthesize
-  (cache → Claude analysis → outputs). Cache is persistent across sessions at
+  (cache → provider-selected LLM analysis → outputs). Cache is persistent across sessions at
   ~/.learn-from-work/cache/. Trigger on: "tricorder", "scan PRs", "analyze PRs", "learn from PRs", "review signal",
   "what are we learning from code review", "PR patterns", or any request to extract learning
   from pull request history.
 visibility: private
 depends_on:
   - gh CLI (authenticated)
-  - ANTHROPIC_API_KEY in keychain (service: anthropic_api_key, account: $USER)
+  - one provider key: ANTHROPIC_API_KEY or GEMINI_API_KEY
 cache_dir: ~/.learn-from-work/cache/
 output_dir: adventures-in-ai/tricorder/
 ---
@@ -63,7 +63,7 @@ Phase 1: HARVEST
   Incremental: only pull PRs newer than last cache timestamp
 
 Phase 2: SYNTHESIZE
-  Cache → Claude analysis → signal extraction → outputs
+  Cache → provider-selected LLM analysis → signal extraction → outputs
   Outputs: Markdown report (repo) + React artifact (exploration)
 ```
 
@@ -90,6 +90,10 @@ default_repo=OWNER/REPO          # e.g. dhk/analytics
 default_window_days=90           # how many days back to pull by default
 cache_dir=~/.learn-from-work/cache/
 output_repo=~/path/to/adventures-in-ai
+provider=anthropic               # or gemini
+model=claude-sonnet-4-6          # or gemini-2.0-flash
+api_key_env=ANTHROPIC_API_KEY
+keychain_service=anthropic_api_key
 ```
 
 Ask:
@@ -106,6 +110,11 @@ security find-generic-password -a "dhk" -s "github-fossil-pat" -w
 Retrieve Anthropic key:
 ```bash
 security find-generic-password -a "$USER" -s "anthropic_api_key" -w
+```
+
+Retrieve Gemini key:
+```bash
+echo "$GEMINI_API_KEY"
 ```
 
 ---
@@ -306,10 +315,10 @@ If no repo specified, uses default from config. Window defaults to full cache co
 
 ### Synthesis pipeline
 
-Synthesis runs in Claude Code (headless or interactive). It:
+Synthesis runs with the active LLM provider (headless or interactive). It:
 1. Loads all cached JSON for the target window
 2. Assembles a structured analysis payload per PR
-3. Calls Claude claude-sonnet-4-6 for signal extraction (batched by contributor, then team-level)
+3. Calls the configured provider and model for signal extraction (batched by contributor, then team-level)
 4. Aggregates outputs into report sections
 5. Writes Markdown to output repo
 6. Renders React artifact for exploration
@@ -802,7 +811,7 @@ When `team` visibility is set, author profile section is replaced with:
 | Repo not found | Abort harvest, report repo name + suggestion to check OWNER/REPO format |
 | Cache dir missing | Create it: `mkdir -p ~/.learn-from-work/cache/` |
 | PR has no reviews | Include in harvest, skip in synthesis (log count of review-less PRs) |
-| Claude API timeout | Retry once with 10s backoff. If second attempt fails, write partial results and note which PRs were skipped |
+| LLM API timeout | Retry once with 10s backoff. If second attempt fails, write partial results and note which PRs were skipped |
 | Rate limit hit | Pause, write manifest with current progress, report resume instruction |
 
 ---

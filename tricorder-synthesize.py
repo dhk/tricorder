@@ -2,7 +2,7 @@
 """
 tricorder — synthesize
 ----------------------
-Loads harvest cache for a repo and runs 4 Claude API calls:
+Loads harvest cache for a repo and runs 4 LLM calls:
   1. Per-PR pattern extraction (one call per PR)
   2. Reviewer focus fingerprints (one call per reviewer)
   3. Author growth profiles (one call per author)
@@ -14,46 +14,26 @@ Usage:
   python tricorder-synthesize.py OWNER/REPO [--visibility private|team|public]
 
 Auth:
-  Reads ANTHROPIC_API_KEY from macOS keychain:
-    security find-generic-password -a "$USER" -s "anthropic_api_key" -w
+    Reads the active provider key from the configured environment variable.
+    Anthropic still supports the macOS keychain fallback:
+        security find-generic-password -a "$USER" -s "anthropic_api_key" -w
 """
 
 import argparse
 import json
-import os
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    import anthropic
-except ImportError:
-    sys.exit("Missing dependency: pip install anthropic")
+from tricorder.llm import build_llm_provider
 
 
 # ── config ────────────────────────────────────────────────────────────────────
 CACHE_BASE       = Path.home() / ".learn-from-work" / "cache"
 _DEFAULT_OUT     = Path.home() / "Documents" / "dev" / "adventures-in-ai" / "tricorder"
 OUTPUT_BASE      = _DEFAULT_OUT if _DEFAULT_OUT.exists() else Path("output")
-MODEL            = "claude-sonnet-4-6"
 MAX_TOKENS       = 2048
-
-
-# ── auth ──────────────────────────────────────────────────────────────────────
-def get_api_key() -> str:
-    result = subprocess.run(
-        ["security", "find-generic-password", "-a", os.environ["USER"],
-         "-s", "anthropic_api_key", "-w"],
-        capture_output=True, text=True
-    )
-    if result.returncode == 0 and result.stdout.strip():
-        return result.stdout.strip()
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if key:
-        return key
-    sys.exit("❌  Anthropic API key not found in keychain or ANTHROPIC_API_KEY env var.")
 
 
 # ── file type detection ───────────────────────────────────────────────────────
@@ -120,7 +100,7 @@ def build_pr_payload(pr: dict, reviews: list, comments: list, repo_ctx: dict) ->
     return "\n".join(lines)
 
 
-# ── claude calls ──────────────────────────────────────────────────────────────
+# ── llm calls ─────────────────────────────────────────────────────────────────
 SYSTEM_P1 = """You are a senior analytics engineering reviewer analyzing a GitHub pull request.
 Your job is to extract review signals — patterns, feedback themes, and learning moments — from the PR description and review comments.
 
@@ -273,16 +253,10 @@ def strip_fences(text: str) -> str:
     return text.strip()
 
 
-def call_claude(client, system: str, user: str, retries: int = 2, max_tokens: int = MAX_TOKENS) -> dict:
+def call_llm(client, system: str, user: str, retries: int = 2, max_tokens: int = MAX_TOKENS) -> dict:
     for attempt in range(retries + 1):
         try:
-            msg = client.messages.create(
-                model=MODEL,
-                max_tokens=max_tokens,
-                system=system,
-                messages=[{"role": "user", "content": user}],
-            )
-            text = strip_fences(msg.content[0].text)
+            text = strip_fences(client.generate(system, user, max_tokens))
             return json.loads(text)
         except json.JSONDecodeError as e:
             if attempt < retries:
@@ -429,6 +403,14 @@ def main():
     parser.add_argument("repo", help="OWNER/REPO")
     parser.add_argument("--visibility", default="private",
                         choices=["private", "team", "public"])
+    parser.add_argument("--provider", choices=["anthropic", "gemini"], default=None,
+                        help="Override the active LLM provider")
+    parser.add_argument("--model", default=None,
+                        help="Override the model for the active provider")
+    parser.add_argument("--api-key-env", dest="api_key_env", default=None,
+                        help="Override the environment variable name used for the key")
+    parser.add_argument("--keychain-service", dest="keychain_service", default=None,
+                        help="Override the macOS keychain service used for the key")
     parser.add_argument("--out", default=None,
                         help="Directory for the Markdown report "
                              f"(default: {OUTPUT_BASE})")
@@ -452,10 +434,14 @@ def main():
     print(f"    PRs:        {len(pr_files)}")
     print(f"    Window:     {manifest['date_range']['from']} → {manifest['date_range']['to']}")
     print(f"    Visibility: {args.visibility}")
-    print(f"    Model:      {MODEL}\n")
-
-    api_key = get_api_key()
-    client  = anthropic.Anthropic(api_key=api_key)
+    client = build_llm_provider(
+        provider=args.provider,
+        model=args.model,
+        api_key_env=args.api_key_env,
+        keychain_service=args.keychain_service,
+    )
+    print(f"    LLM:        {client.config.provider} / {client.config.model}")
+    print(f"    Key env:    {client.config.api_key_env}\n")
 
     synth_dir = cache_dir / "synthesis"
     synth_dir.mkdir(exist_ok=True)
@@ -490,7 +476,7 @@ def main():
             continue
 
         payload = build_pr_payload(pr, reviews, comments, repo_ctx)
-        result  = call_claude(client, SYSTEM_P1, payload)
+        result  = call_llm(client, SYSTEM_P1, payload)
         result["_pr_number"] = pr["number"]
         result["_author"]    = pr["author"]["login"]
 
@@ -545,7 +531,7 @@ def main():
             continue
 
         review_lines.insert(1, f"PRs reviewed: {pr_count}")
-        result = call_claude(client, SYSTEM_P2, "\n".join(review_lines))
+        result = call_llm(client, SYSTEM_P2, "\n".join(review_lines))
         result["_reviewer"] = reviewer
 
         with open(out_path, "w") as f:
@@ -598,7 +584,7 @@ def main():
             continue
 
         pr_lines.insert(1, f"PRs in window: {pr_count}")
-        result = call_claude(client, SYSTEM_P3, "\n".join(pr_lines))
+        result = call_llm(client, SYSTEM_P3, "\n".join(pr_lines))
         result["_author"] = author
 
         with open(out_path, "w") as f:
@@ -634,7 +620,7 @@ def main():
             json.dumps([{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles], indent=2)[:4000],
         ]
 
-        team_gaps = call_claude(client, SYSTEM_P4, "\n".join(team_prompt_lines), max_tokens=8192)
+        team_gaps = call_llm(client, SYSTEM_P4, "\n".join(team_prompt_lines), max_tokens=8192)
         with open(team_gaps_path, "w") as f:
             json.dump(team_gaps, f, indent=2)
         status = "⚠ error" if team_gaps.get("_error") else f"{len(team_gaps.get('gaps',[]))} gaps identified"
