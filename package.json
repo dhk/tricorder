@@ -1,0 +1,18 @@
+{
+  "name": "tricorder",
+  "version": "1.0.1",
+  "description": "Repository learning system — PR review analysis, progressive trust model, discipline lenses.",
+  "keywords": ["code-review", "analytics", "dbt", "llm", "agent"],
+  "homepage": "https://github.com/dhk/tricorder",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dhk/tricorder.git"
+  },
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
