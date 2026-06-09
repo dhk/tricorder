@@ -1,20 +1,19 @@
 """
 tricorder — CLI entry point
 
-Dispatches subcommands to the scripts in the repo root.
-Install once with:  pip install -e .
-Then use anywhere:  tricorder harvest OWNER/REPO
+v2 commands are implemented as Python modules in tricorder/commands/.
+v1 commands (harvest, synthesize, render, ready) are dispatched to legacy
+scripts until replaced.
 """
 
 import subprocess
 import sys
 from pathlib import Path
 
-# The scripts live in the repo root, one level above this package directory.
-# Works correctly for `pip install -e .` (editable install).
 SCRIPTS_DIR = Path(__file__).parent.parent
 
-SUBCOMMANDS = {
+# v1 legacy script dispatch (will be removed as v2 commands land)
+_LEGACY_SCRIPTS = {
     "ready":      "tricorder-readiness.py",
     "harvest":    "tricorder-harvest.py",
     "synthesize": "tricorder-synthesize.py",
@@ -24,24 +23,19 @@ SUBCOMMANDS = {
 }
 
 USAGE = """\
-tricorder — PR review analysis for dbt/SQL teams
+tricorder — repository learning system
 
 Usage:
-  tricorder ready      OWNER/REPO [--days 90]
-  tricorder probe      OWNER/REPO [--limit 20]
-  tricorder harvest    OWNER/REPO [--since YYYY-MM-DD] [--limit N] [--force]
-    tricorder synthesize OWNER/REPO [--visibility private|team|public] [--provider anthropic|gemini] [--model NAME] [--api-key-env NAME] [--keychain-service NAME] [--out DIR]
-  tricorder render     OWNER/REPO [--out PATH] [--name-map PATH]
-  tricorder demo       [--fast] [--no-pause]
+  tricorder make-it-so [OWNER/REPO]          # run the full pipeline end-to-end
+
+  tricorder discover  [PATH] [--lens NAME] [--history]   # Level 0-1: no credentials
+  tricorder analyze   OWNER/REPO                         # Level 2: GitHub read
+  tricorder learn     OWNER/REPO                         # Level 3: LLM API
+  tricorder interpret OWNER/REPO [--lens NAME]           # Level 4: LLM + lens
+  tricorder improve   OWNER/REPO [--forge]               # Level 5: improvement plan
+  tricorder build     [OWNER/REPO] [--open]              # Build explorer
 
 Run any subcommand with --help for full flag reference.
-
-Recommended order for a new repo:
-  1. tricorder ready      OWNER/REPO          # is this repo a good candidate?
-  2. tricorder probe      OWNER/REPO          # confirm cost before spending
-  3. tricorder harvest    OWNER/REPO --since YYYY-MM-DD
-  4. tricorder synthesize OWNER/REPO
-  5. tricorder render     OWNER/REPO
 """
 
 
@@ -62,11 +56,46 @@ def main():
         return
 
     cmd = args[0]
-    if cmd not in SUBCOMMANDS:
-        print(f"tricorder: unknown subcommand '{cmd}'")
-        print(f"Available: {', '.join(SUBCOMMANDS)}")
-        sys.exit(1)
+    rest = args[1:]
 
-    script = SCRIPTS_DIR / SUBCOMMANDS[cmd]
-    result = subprocess.run([sys.executable, str(script)] + args[1:])
-    sys.exit(result.returncode)
+    # make-it-so aliases
+    if cmd in ("make-it-so", "--make-it-so", "-make-it-so", "engage", "miso"):
+        from tricorder.commands.make_it_so import run
+        sys.exit(run(rest))
+
+    # v2 native commands
+    if cmd == "discover":
+        from tricorder.commands.discover import run
+        sys.exit(run(rest))
+
+    if cmd == "analyze":
+        from tricorder.commands.analyze import run
+        sys.exit(run(rest))
+
+    if cmd == "learn":
+        from tricorder.commands.learn import run
+        sys.exit(run(rest))
+
+    # v1 legacy dispatch
+    if cmd in _LEGACY_SCRIPTS:
+        script = SCRIPTS_DIR / _LEGACY_SCRIPTS[cmd]
+        result = subprocess.run([sys.executable, str(script)] + rest)
+        sys.exit(result.returncode)
+
+    # Not yet implemented v2 commands
+    if cmd == "interpret":
+        from tricorder.commands.interpret import run
+        sys.exit(run(rest))
+
+    if cmd == "improve":
+        from tricorder.commands.improve import run
+        sys.exit(run(rest))
+
+    if cmd == "build":
+        from tricorder.commands.build import run
+        sys.exit(run(rest))
+
+    print(f"tricorder: unknown subcommand '{cmd}'")
+    all_cmds = sorted({"discover", "analyze", "learn", "interpret", "improve", "build"} | set(_LEGACY_SCRIPTS))
+    print(f"Available: {', '.join(all_cmds)}")
+    sys.exit(1)

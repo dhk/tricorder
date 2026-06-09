@@ -63,6 +63,11 @@ def _config_value(values: dict[str, str], key: str) -> str | None:
     return None
 
 
+def detect_all_available_providers() -> list[str]:
+    """Return all providers for which an API key is present in the environment."""
+    return [p for p, d in DEFAULTS.items() if os.environ.get(d["api_key_env"])]
+
+
 def _detect_provider_from_env() -> str | None:
     detected = []
     for provider, defaults in DEFAULTS.items():
