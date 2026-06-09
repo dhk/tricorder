@@ -128,6 +128,7 @@ def write_default_config(path: Path) -> None:
 llm:
   provider: anthropic       # anthropic | gemini
   # model: claude-sonnet-4-5  # uncomment to pin a model
+  # call_delay: 0.3           # seconds between LLM calls (default 0.3; raise to ~4 on Gemini free tier)
 
 output:
   # dir: ~/reports/tricorder  # default --out directory for markdown reports

@@ -928,8 +928,9 @@ def run(args: list[str]) -> int:
         print(f"  Focus:      {focus_area.name}")
     print()
 
-    # Inter-call delay — Gemini free tier throttles hard on bursts
-    call_delay = 4.0 if (client.config.provider == "gemini") else 0.3
+    # Inter-call delay — overridable via config llm.call_delay
+    _default_delay = 0.3
+    call_delay = float(_cfg_get(tri_config, "llm", "call_delay") or _default_delay)
 
     # Purge errored cache files so they get retried
     purged = 0
