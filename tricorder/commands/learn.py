@@ -857,9 +857,24 @@ def run(args: list[str]) -> int:
             print(f"Unknown focus area: {parsed.focus_on!r}. Available: {', '.join(list_focus())}", file=sys.stderr)
             return 1
 
-    # Resolve .tricorder dir
-    tri_dir = Path(parsed.tricorder_dir).expanduser().resolve() if parsed.tricorder_dir \
-        else Path.cwd() / ".tricorder"
+    # Load tricorder config
+    from tricorder.config import load_config as _load_tri_config, repo_dir as _repo_dir, get as _cfg_get
+    tri_base = Path.cwd() / ".tricorder"
+    tri_config = _load_tri_config(tri_base)
+
+    # Resolve .tricorder dir — per-repo subdir unless overridden
+    if parsed.tricorder_dir:
+        tri_dir = Path(parsed.tricorder_dir).expanduser().resolve()
+    elif repo:
+        tri_dir = _repo_dir(tri_base, repo)
+    else:
+        tri_dir = tri_base
+
+    # Apply config LLM defaults (CLI flags take precedence)
+    if not parsed.provider:
+        parsed.provider = _cfg_get(tri_config, "llm", "provider")
+    if not parsed.model:
+        parsed.model = _cfg_get(tri_config, "llm", "model")
 
     obs_path = tri_dir / "review-observations.json"
     if not obs_path.exists():
@@ -1099,8 +1114,9 @@ def run(args: list[str]) -> int:
 
     # ── Markdown report ───────────────────────────────────────────────────────
     report_path: Path | None = None
-    if parsed.out:
-        out_dir = Path(parsed.out).expanduser().resolve()
+    _report_out = parsed.out or _cfg_get(tri_config, "output", "dir")
+    if _report_out:
+        out_dir = Path(_report_out).expanduser().resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
         today = datetime.now(timezone.utc).date().isoformat()
         slug = (repo or "repo").replace("/", "__")
