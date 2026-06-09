@@ -529,8 +529,13 @@ def run(args: list[str]) -> int:
 
     owner, repo_name = repo_slug.split("/", 1)
 
-    # Resolve output dir
-    out_dir = Path(parsed.out).expanduser().resolve() if parsed.out else Path.cwd() / ".tricorder"
+    # Resolve output dir — per-repo subdir inside .tricorder/
+    from tricorder.config import load_config as _load_tri_config, repo_dir as _repo_dir, get as _cfg_get
+    tri_base = Path.cwd() / ".tricorder"
+    if parsed.out:
+        out_dir = Path(parsed.out).expanduser().resolve()
+    else:
+        out_dir = _repo_dir(tri_base, repo_slug)
     raw_dir = out_dir / ".raw"  # internal cache for per-PR files
     for d in (raw_dir / "prs", raw_dir / "reviews", raw_dir / "comments"):
         try:
@@ -540,7 +545,13 @@ def run(args: list[str]) -> int:
             return 1
 
     # Load config and build reviewer filter
+    tri_config = _load_tri_config(tri_base)
     config = _load_config(out_dir)
+    # Merge top-level reviewer_deny/allow from tricorder config
+    if not config.get("reviewer_deny") and tri_config.get("reviewer_deny"):
+        config["reviewer_deny"] = tri_config["reviewer_deny"]
+    if not config.get("reviewer_allow") and tri_config.get("reviewer_allow"):
+        config["reviewer_allow"] = tri_config["reviewer_allow"]
     cli_deny = [s.strip() for s in (parsed.deny or "").split(",") if s.strip()]
     cli_allow = [s.strip() for s in (parsed.allow or "").split(",") if s.strip()]
     deny_set, allow_set = _build_reviewer_filter(config, cli_deny, cli_allow)

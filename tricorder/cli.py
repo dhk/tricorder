@@ -35,6 +35,9 @@ Usage:
   tricorder improve   OWNER/REPO [--forge]               # Level 5: improvement plan
   tricorder build     [OWNER/REPO] [--open]              # Build explorer
 
+  tricorder config                                       # Show config + per-repo data dirs
+  tricorder config --init                                # Write starter .tricorder/config.yml
+
 Run any subcommand with --help for full flag reference.
 """
 
@@ -68,6 +71,10 @@ def main():
         from tricorder.commands.discover import run
         sys.exit(run(rest))
 
+    if cmd == "config":
+        from tricorder.commands.config_cmd import run
+        sys.exit(run(rest))
+
     if cmd == "analyze":
         from tricorder.commands.analyze import run
         sys.exit(run(rest))
@@ -96,6 +103,6 @@ def main():
         sys.exit(run(rest))
 
     print(f"tricorder: unknown subcommand '{cmd}'")
-    all_cmds = sorted({"discover", "analyze", "learn", "interpret", "improve", "build"} | set(_LEGACY_SCRIPTS))
+    all_cmds = sorted({"config", "discover", "analyze", "learn", "interpret", "improve", "build"} | set(_LEGACY_SCRIPTS))
     print(f"Available: {', '.join(all_cmds)}")
     sys.exit(1)
