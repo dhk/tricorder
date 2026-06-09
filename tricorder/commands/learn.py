@@ -928,6 +928,25 @@ def run(args: list[str]) -> int:
         print(f"  Focus:      {focus_area.name}")
     print()
 
+    # Inter-call delay — Gemini free tier throttles hard on bursts
+    call_delay = 4.0 if (client.config.provider == "gemini") else 0.3
+
+    # Purge errored cache files so they get retried
+    purged = 0
+    for cache_dir in (synth_dir / "pr", synth_dir / "reviewers", synth_dir / "authors"):
+        if cache_dir.exists():
+            for f in cache_dir.glob("*.json"):
+                try:
+                    if json.loads(f.read_text()).get("_error"):
+                        f.unlink()
+                        purged += 1
+                except Exception:
+                    pass
+    for f in (synth_dir / "team-gaps.json", synth_dir / "team-gaps-*.json"):
+        pass  # team-gaps handled separately below
+    if purged:
+        print(f"  Purged {purged} errored cache entries — will retry.\n")
+
     # Build phase system prompts (optionally augmented with focus area context)
     sys_p1 = SYSTEM_P1 + ("\n\n" + focus_area.system_context if focus_area else "")
     sys_p2 = SYSTEM_P2 + ("\n\n" + focus_area.system_context if focus_area else "")
@@ -960,7 +979,7 @@ def run(args: list[str]) -> int:
         status = "⚠ error" if result.get("_error") else f"{len(result.get('patterns', []))} patterns"
         author = pr.get("author", "?")
         print(f"  [{i:03d}/{len(prs_with_reviews)}] #{num:5d}  {author:<20}  {status}")
-        time.sleep(0.3)
+        time.sleep(call_delay)
 
     print(f"\n  ✓ {len(pr_results)} PRs processed\n")
 
@@ -1014,7 +1033,7 @@ def run(args: list[str]) -> int:
 
         status = "⚠ error" if result.get("_error") else result.get("signal_quality", "?")
         print(f"  {reviewer:<22}  signal_quality={status}  prs={pr_count}")
-        time.sleep(0.3)
+        time.sleep(call_delay)
 
     print(f"\n  ✓ {len(reviewer_profiles)} reviewer profiles\n")
 
@@ -1062,13 +1081,15 @@ def run(args: list[str]) -> int:
 
         status = "⚠ error" if result.get("_error") else result.get("trajectory", "?")
         print(f"  {author:<22}  trajectory={status}  prs={pr_count}")
-        time.sleep(0.3)
+        time.sleep(call_delay)
 
     print(f"\n  ✓ {len(author_profiles)} author profiles\n")
 
     # ── Phase 4: team gap analysis ────────────────────────────────────────────
     print("Phase 4 — Team gap analysis ...")
     team_cache = synth_dir / "team-gaps.json"
+    if team_cache.exists() and json.loads(team_cache.read_text()).get("_error"):
+        team_cache.unlink()
     if team_cache.exists():
         team_gaps = json.loads(team_cache.read_text())
         print("  (cached)\n")
