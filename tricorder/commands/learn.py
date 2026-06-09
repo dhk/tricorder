@@ -846,7 +846,16 @@ def run(args: list[str]) -> int:
 
     parsed = parser.parse_args(args)
 
-    repo = parsed.repo or _infer_repo_from_remote()
+    # Load tricorder config
+    from tricorder.config import load_config as _load_tri_config, repo_dir as _repo_dir, get as _cfg_get, resolve_repo as _resolve_repo
+    tri_base = Path.cwd() / ".tricorder"
+    tri_config = _load_tri_config(tri_base)
+
+    repo, repo_source = _resolve_repo(tri_base, parsed.repo, _infer_repo_from_remote)
+    if repo_source == "config":
+        print(f"  Repo: {repo}  (from .tricorder/config.yml — pass OWNER/REPO to override)")
+    elif repo_source == "git":
+        print(f"  Repo: {repo}  (inferred from git remote)")
 
     # Validate --focus-on
     focus_area = None
@@ -856,11 +865,6 @@ def run(args: list[str]) -> int:
         if focus_area is None:
             print(f"Unknown focus area: {parsed.focus_on!r}. Available: {', '.join(list_focus())}", file=sys.stderr)
             return 1
-
-    # Load tricorder config
-    from tricorder.config import load_config as _load_tri_config, repo_dir as _repo_dir, get as _cfg_get
-    tri_base = Path.cwd() / ".tricorder"
-    tri_config = _load_tri_config(tri_base)
 
     # Resolve .tricorder dir — per-repo subdir unless overridden
     if parsed.tricorder_dir:

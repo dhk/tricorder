@@ -795,5 +795,9 @@ def run(args: list[str]) -> int:
     print(f"  PRs skipped (bots):  {skipped_bot}")
     print(f"  Total in cache:      {pr_count}")
 
+    # Persist current repo so subsequent commands don't need it passed explicitly
+    from tricorder.config import set_current_repo
+    set_current_repo(tri_base, repo_slug)
+
     _print_status(repo_slug, out_dir, observations, patterns, expertise)
     return 0

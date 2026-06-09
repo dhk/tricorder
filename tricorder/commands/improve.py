@@ -277,10 +277,28 @@ def run(args: list[str]) -> int:
                              "items as SKILL.md files in a target repo.")
 
     parsed = parser.parse_args(args)
-    repo = parsed.repo or _infer_repo_from_remote()
 
-    tri_dir = Path(parsed.tricorder_dir).expanduser().resolve() if parsed.tricorder_dir \
-        else Path.cwd() / ".tricorder"
+    from tricorder.config import load_config as _load_tri_config, repo_dir as _repo_dir, get as _cfg_get, resolve_repo as _resolve_repo
+    tri_base = Path.cwd() / ".tricorder"
+    tri_config = _load_tri_config(tri_base)
+
+    repo, repo_source = _resolve_repo(tri_base, parsed.repo, _infer_repo_from_remote)
+    if repo_source == "config":
+        print(f"  Repo: {repo}  (from .tricorder/config.yml — pass OWNER/REPO to override)")
+    elif repo_source == "git":
+        print(f"  Repo: {repo}  (inferred from git remote)")
+
+    if parsed.tricorder_dir:
+        tri_dir = Path(parsed.tricorder_dir).expanduser().resolve()
+    elif repo:
+        tri_dir = _repo_dir(tri_base, repo)
+    else:
+        tri_dir = tri_base
+
+    if not parsed.provider:
+        parsed.provider = _cfg_get(tri_config, "llm", "provider")
+    if not parsed.model:
+        parsed.model = _cfg_get(tri_config, "llm", "model")
 
     # Require at least Level 3
     learnings_path = tri_dir / "learnings.json"

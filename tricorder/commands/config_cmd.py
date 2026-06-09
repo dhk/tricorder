@@ -54,6 +54,10 @@ def run(args: list[str]) -> int:
         print()
         return 0
 
+    current_repo = cfg.get("current_repo")
+    print(f"  Current repo: {current_repo or '(none — run tricorder analyze OWNER/REPO to set)'}")
+    print()
+
     _print_section("LLM", {
         "provider": (cfg.get("llm") or {}).get("provider", "(default: anthropic)"),
         "model":    (cfg.get("llm") or {}).get("model", "(default: provider default)"),

@@ -83,6 +83,42 @@ def repo_dir(tricorder_dir: Path, repo_slug: str) -> Path:
     return tricorder_dir / safe
 
 
+def set_current_repo(tricorder_dir: Path, repo_slug: str) -> None:
+    """Persist current_repo to .tricorder/config.yml after a successful analyze."""
+    config_path = tricorder_dir / "config.yml"
+    tricorder_dir.mkdir(parents=True, exist_ok=True)
+
+    # Read existing content as raw text to preserve comments
+    existing = config_path.read_text() if config_path.exists() else ""
+
+    if "current_repo:" in existing:
+        import re
+        updated = re.sub(r"^current_repo:.*$", f"current_repo: {repo_slug}", existing, flags=re.MULTILINE)
+        config_path.write_text(updated)
+    else:
+        config_path.write_text(f"current_repo: {repo_slug}\n" + existing)
+
+
+def resolve_repo(tri_base: Path, cli_repo: str | None, git_remote_fn) -> tuple[str | None, str]:
+    """
+    Resolve the repo slug from: CLI arg → git remote → config current_repo.
+    Returns (slug, source) where source is one of: 'arg', 'git', 'config'.
+    """
+    if cli_repo:
+        return cli_repo, "arg"
+
+    remote = git_remote_fn()
+    if remote:
+        return remote, "git"
+
+    cfg = load_config(tri_base)
+    current = get(cfg, "current_repo")
+    if current:
+        return current, "config"
+
+    return None, "none"
+
+
 def write_default_config(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("""\
