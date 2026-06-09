@@ -164,6 +164,12 @@ def run(args: list[str]) -> int:
                         help="Run skills forge after improve (interactive)")
     parser.add_argument("--minority-report", action="store_true",
                         help="Enable Minority Report mode in learn")
+    parser.add_argument("--limit", type=int, default=None, metavar="N",
+                        help="Pass --limit N to analyze (useful for testing)")
+    parser.add_argument("--since", default=None, metavar="YYYY-MM-DD",
+                        help="Pass --since to analyze")
+    parser.add_argument("--force", action="store_true",
+                        help="Pass --force to analyze (re-fetch all PRs)")
     parser.add_argument("--tricorder-dir", default=None, metavar="DIR")
 
     parsed = parser.parse_args(args)
@@ -345,7 +351,10 @@ def _run_level(
 
     if lid == "L2":
         from tricorder.commands.analyze import run as r
-        return r([repo] + tri_args)
+        limit_args = ["--limit", str(parsed.limit)] if parsed.limit else []
+        since_args = ["--since", parsed.since] if parsed.since else []
+        force_args = ["--force"] if parsed.force else []
+        return r([repo] + limit_args + since_args + force_args + tri_args)
 
     if lid == "L3":
         from tricorder.commands.learn import run as r
