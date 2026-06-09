@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 
-MAX_TOKENS = 2048
+MAX_TOKENS = 4096
 
 
 # ---------------------------------------------------------------------------

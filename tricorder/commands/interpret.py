@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 
-MAX_TOKENS = 4096
+MAX_TOKENS = 8192
 
 VALID_LENSES = {
     "analytics-engineering",
