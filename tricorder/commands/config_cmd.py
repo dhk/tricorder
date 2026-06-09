@@ -55,12 +55,12 @@ def run(args: list[str]) -> int:
         return 0
 
     _print_section("LLM", {
-        "provider": cfg.get("llm", {}).get("provider", "(default: anthropic)"),
-        "model":    cfg.get("llm", {}).get("model", "(default: provider default)"),
+        "provider": (cfg.get("llm") or {}).get("provider", "(default: anthropic)"),
+        "model":    (cfg.get("llm") or {}).get("model", "(default: provider default)"),
     })
 
     _print_section("Output", {
-        "dir": cfg.get("output", {}).get("dir", "(default: --out flag)"),
+        "dir": (cfg.get("output") or {}).get("dir", "(default: --out flag)"),
     })
 
     deny = cfg.get("reviewer_deny") or []
