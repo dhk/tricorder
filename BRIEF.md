@@ -1,21 +1,23 @@
 # Tricorder — Product Brief
 
-**Version:** 2.0 (in design)  
-**Status:** Migration brief — v1 is current, v2 cutover in progress (this weekend)  
-**Source of truth for shipped behavior:** [README.md](README.md) and [tricorder/cli.py](tricorder/cli.py)
+**Version:** 2.0 — shipped  
+**Status:** Historical migration record. Written during the v2 design phase (June 2026,
+reviewed across 4 rounds in [docs/DESIGN-REVIEW.md](docs/DESIGN-REVIEW.md)) to describe
+the planned v1 → v2 cutover as a still-pending proposal. **The cutover has since
+happened** — read the rest of this document as design history, not current status.  
+**Source of truth for shipped behavior:** [README.md](README.md) and [tricorder/cli.py](tricorder/cli.py) — not this document.
 
-**Current shipped interface:** v1 command set in [tricorder/cli.py](tricorder/cli.py#L17-L37)  
-**Target interface:** v2 command set in design docs (not yet implemented)
+**Current shipped interface:** the v2 command set (`discover`/`analyze`/`learn`/`interpret`/`improve`/`build`), documented in [README.md](README.md).
+v1 commands (`ready`/`harvest`/`synthesize`/`render`/`probe`/`demo`) remain available only
+as legacy dispatch — see `_LEGACY_SCRIPTS` in [tricorder/cli.py](tricorder/cli.py).
 
-Current shipped interface switches to v2 when the v2 CLI command surface lands in code (recorded by cutover commit hash in this brief).
-
-> **Important:** Part 2 describes the next version only. Nothing in Part 2 is implemented yet.
->
-> The current shipped surface remains the six-command v1 CLI in [tricorder/cli.py](tricorder/cli.py#L17-L37).
+> **Note:** Part 2 below describes what was, at the time, a next-version proposal.
+> Everything in it has since shipped; treat "not yet implemented" language in Part 2
+> as a historical snapshot of intent, not a current gap.
 
 ---
 
-## What tricorder is today
+## What tricorder was at v1 (superseded — see [README.md](README.md) for the current CLI)
 
 Tricorder v1 is a dbt/SQL review analysis tool.
 
