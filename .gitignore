@@ -2,3 +2,9 @@ tricorder.egg-info/
 tricorder/__pycache__/
 __pycache__/
 *.pyc
+
+# Ephemeral session scratch files — never commit
+.scratch/
+
+# Local tricorder artifact store (self-run analysis; may contain named individuals)
+.tricorder/
