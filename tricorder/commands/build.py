@@ -353,10 +353,43 @@ def run(args: list[str]) -> int:
                         help="Path to .tricorder/ directory (default: .tricorder/ in cwd)")
 
     parsed = parser.parse_args(args)
-    repo = parsed.repo or _infer_repo_from_remote() or "unknown/repo"
 
-    tri_dir = Path(parsed.tricorder_dir).expanduser().resolve() if parsed.tricorder_dir \
-        else Path.cwd() / ".tricorder"
+    from tricorder.config import repo_dir as _repo_dir, load_config as _load_tri_config, get as _cfg_get
+    tri_base = Path.cwd() / ".tricorder"
+
+    # build renders data that's *already on disk* — unlike analyze/learn/interpret/improve,
+    # which decide what repo to newly process, build must not let cwd's git remote override
+    # a repo that was actually analyzed into this .tricorder/ directory. Precedence here is
+    # CLI arg -> config current_repo (if its cache has data) -> git remote (if its cache has
+    # data) -> config current_repo (as a label even without data, for a clear error message).
+    def _has_learnings(slug: str | None) -> bool:
+        return bool(slug) and (_repo_dir(tri_base, slug) / "learnings.json").exists()
+
+    current_repo = _cfg_get(_load_tri_config(tri_base), "current_repo")
+    git_repo = _infer_repo_from_remote()
+
+    if parsed.repo:
+        repo, repo_source = parsed.repo, "arg"
+    elif _has_learnings(current_repo):
+        repo, repo_source = current_repo, "config"
+    elif _has_learnings(git_repo):
+        repo, repo_source = git_repo, "git"
+    else:
+        repo, repo_source = (current_repo or git_repo), "config" if current_repo else "git"
+
+    if repo_source == "config" and repo:
+        print(f"  Repo: {repo}  (from .tricorder/config.yml — pass OWNER/REPO to override)")
+    elif repo_source == "git":
+        print(f"  Repo: {repo}  (inferred from git remote — pass OWNER/REPO if this isn't the analyzed repo)")
+    repo = repo or "unknown/repo"
+
+    # Resolve .tricorder dir — per-repo subdir, matching analyze/learn/interpret/improve
+    if parsed.tricorder_dir:
+        tri_dir = Path(parsed.tricorder_dir).expanduser().resolve()
+    elif repo != "unknown/repo":
+        tri_dir = _repo_dir(tri_base, repo)
+    else:
+        tri_dir = tri_base
 
     learnings_path = tri_dir / "learnings.json"
     if not learnings_path.exists():
