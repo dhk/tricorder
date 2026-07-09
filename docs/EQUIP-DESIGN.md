@@ -256,9 +256,17 @@ first:
    license.
 4. **Doctor** — invoke **skill-doctor** on the authored/adapted SKILL.md.
    Doctor's interview questions (tool scoping, data sensitivity, high-stakes
-   surface) are answered in the same session. A skill that doctor grades below
-   B does not proceed; equip-generated skills must pass the bar every other
-   skill is held to — no self-exemption.
+   surface) are answered in the same session. **Gate: grade ≥ B (≥70) AND no
+   open safety/data blocker** — mirroring skill-doctor's own "best practice"
+   definition (§ rubric.md: "A on quality **and** no open safety/data
+   blocker"). Grade alone is insufficient: skill-doctor's grade is a single
+   weighted average across 5 axes (safety is 25%), so a skill could be
+   mediocre on safety and still average to B if frontmatter/triggering/
+   disclosure/structure compensate. Equip checks the safety axis
+   independently of the overall letter grade. A skill failing either half of
+   the gate does not proceed; equip-generated skills must pass the bar every
+   other skill is held to — no self-exemption. (Interview decision,
+   2026-07-08: confirmed after reviewing skill-doctor's actual rubric.)
 5. **Stage** — write to a local staging dir with a `WIRING.md` declaring
    provenance (source analysis run, proposal id, evidence PRs) per skill-map's
    WIRING spec.
