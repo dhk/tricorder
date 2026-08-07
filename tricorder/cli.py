@@ -2,8 +2,8 @@
 tricorder — CLI entry point
 
 v2 commands are implemented as Python modules in tricorder/commands/.
-v1 commands (harvest, synthesize, render, ready) are dispatched to legacy
-scripts until replaced.
+v1 commands are dispatched to legacy scripts for compatibility. The v2 command
+surface is authoritative for new usage.
 """
 
 import subprocess
@@ -12,7 +12,7 @@ from pathlib import Path
 
 SCRIPTS_DIR = Path(__file__).parent.parent
 
-# v1 legacy script dispatch (will be removed as v2 commands land)
+# v1 legacy script dispatch retained for compatibility.
 _LEGACY_SCRIPTS = {
     "ready":      "tricorder-readiness.py",
     "harvest":    "tricorder-harvest.py",
@@ -89,7 +89,7 @@ def main():
         result = subprocess.run([sys.executable, str(script)] + rest)
         sys.exit(result.returncode)
 
-    # Not yet implemented v2 commands
+    # Remaining v2 native commands
     if cmd == "interpret":
         from tricorder.commands.interpret import run
         sys.exit(run(rest))

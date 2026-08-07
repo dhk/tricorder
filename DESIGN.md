@@ -3,13 +3,13 @@
 > *"A room full of data people and you named it tricorder instead of data. Yes, on purpose."*
 
 **Version:** 2.0  
-**Status:** Design complete — ready for implementation  
+**Status:** v2 architecture implemented; design document (some future sections remain proposals)
+
 **Repo:** [dhk/tricorder](https://github.com/dhk/tricorder)
 
-**Current shipped interface:** v1 command set in [tricorder/cli.py](tricorder/cli.py#L17-L37)  
-**Target interface:** v2 command set in this design doc (not yet implemented)
-
-Current shipped interface switches to v2 when the v2 CLI command surface lands in code (recorded by cutover commit hash in this design doc).
+**Current shipped interface:** v2 command set in [tricorder/cli.py](tricorder/cli.py),
+with v1 names retained as legacy compatibility dispatch. Operational details live in
+[HOWTO.md](HOWTO.md); privacy details live in [docs/PRIVACY.md](docs/PRIVACY.md).
 
 ---
 
@@ -374,11 +374,10 @@ tricorder demo        [--fast] [--no-pause]
 tricorder --version
 ```
 
-**v1 command replacement (not yet implemented):**
+**v1 compatibility:** v2 names are authoritative. The older commands remain
+available through legacy script dispatch so existing workflows are not broken.
 
-v1 commands will be removed when v2 ships. There is not enough usage to warrant maintaining both surfaces.
-
-| Removed | Replaced by |
+| Legacy | Authoritative v2 path |
 |---------|------------|
 | `ready` | `discover` |
 | `harvest` | `analyze` |
@@ -479,7 +478,9 @@ Broad scope produces vague output. The lens preserves the domain-specificity tha
 V1 produced outputs designed for humans. The artifact contract makes every analysis stage the foundation for the next — and for external consumers. The future MCP integration depends on stable, structured artifacts that agents can consume without rerunning analysis.
 
 **Why rename the commands?**
-V1 names described internal pipeline mechanics (harvest, synthesize, render). V2 names describe what users experience and what they get (analyze, learn, build). v1 commands are replaced, not aliased — usage is insufficient to warrant maintaining both surfaces.
+V1 names described internal pipeline mechanics (harvest, synthesize, render). V2
+names describe what users experience and what they get (analyze, learn, build). The
+shipped CLI retains v1 names through legacy dispatch while making v2 authoritative.
 
 **Why a local cache, not a live API?**
 The cache enables incremental runs, resume-on-failure, and re-synthesis after prompt changes without re-fetching. The raw data is inspectable on disk — if a result looks wrong, the input is there to check.
@@ -536,7 +537,7 @@ Patterns are grounded against named standards:
 - ✓ Codespaces devcontainer
 - ✓ Configurable LLM provider — Anthropic and Gemini
 
-### In design (v2.0)
+### Implemented v2 command surface
 
 - Progressive trust model — `discover` with no credentials, access earned by level
 - Discipline lenses — auto-detect archetype, apply domain-specific interpretation
@@ -564,7 +565,9 @@ Patterns are grounded against named standards:
 
 **v1.0.1.x** — Full pipeline validated and working. Explorer live at [dhk.github.io/tricorder/explorer](https://dhk.github.io/tricorder/explorer/).
 
-**v2.0** — Cutover in progress this weekend. Design decisions are finalized in issue #22 and documented in [BRIEF.md](BRIEF.md) and [docs/EVOLUTION.md](docs/EVOLUTION.md). Single-maintainer migration enables a fast transition without a long deprecation window. Cutover target: v2 command surface primary, v1 command surface retired after cutover validation in this session.
+**v2 command surface** — Shipped and authoritative. Legacy v1 dispatch remains for
+compatibility. [BRIEF.md](BRIEF.md) and [docs/EVOLUTION.md](docs/EVOLUTION.md) retain
+the migration history; they do not override the current CLI or HOWTO.
 
 **First synthesis run — cal-itp/data-infra, June 2026:**
 - ~172 PRs harvested (March–May 2026), 154 with review activity

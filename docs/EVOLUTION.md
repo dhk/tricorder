@@ -2,6 +2,11 @@
 
 > How a dbt/SQL analysis tool became a repository learning system.
 
+**Status:** Historical design narrative. The v2 interface has shipped; use
+[README.md](../README.md), [HOWTO.md](../HOWTO.md), and command `--help` output for
+current behavior. Statements below about what the design discussion intended are
+preserved as history.
+
 ---
 
 ## Where it started
@@ -52,7 +57,10 @@ The domain-specificity that made v1 findings actionable is preserved in v2 throu
 
 Rather than asking users to select a lens, tricorder detects the likely archetype from the repository fingerprint and proposes it. `dbt_project.yml` detected → analytics-engineering lens proposed. Users can override; they do not need to configure from scratch.
 
-The `analytics-engineering` lens is the validated lens. It is where the category taxonomy, standard citations, and prompt design from v1 live. Other lenses ship as corresponding repository types are validated.
+The `analytics-engineering` lens carried the strongest production evidence into the
+design. It is where the category taxonomy, standard citations, and prompt design
+from v1 live. Current documentation marks lenses experimental until the complete
+validation protocol in [BRIEF.md](../BRIEF.md) is recorded.
 
 ### 3. The artifact contract
 
@@ -91,7 +99,9 @@ The v1 command names described the pipeline's internal mechanics: harvest, synth
 | — | `interpret` | New — lens application (Level 4) |
 | — | `improve` | New — improvement planning (Level 5) |
 
-v1 commands are replaced, not aliased. There is not enough usage to warrant maintaining both surfaces. v1 commands will be removed when the v2 CLI lands.
+The design initially proposed removing v1 commands. The shipped implementation made
+a different compatibility choice: v2 is authoritative, while v1 names remain
+available through legacy script dispatch.
 
 ### 5. Principled evolution, not a rewrite
 
@@ -99,7 +109,8 @@ The v1 synthesis internals are preserved. The per-PR extraction, reviewer finger
 
 The v2 architecture wraps them: `discover` (new front-end), `analyze` (harvest renamed), `learn` (synthesize renamed with artifact contract), `interpret` (new lens layer), `improve` (new planning phase).
 
-Separating `learn` and `interpret` into distinct phases is the right architecture and will be implemented now — not deferred. Keeping them together was a shortcut that would make the lens layer harder to vary when a second repository type is added.
+Separating `learn` and `interpret` into distinct phases became the shipped
+architecture, allowing the lens layer to vary independently.
 
 ---
 
@@ -148,7 +159,7 @@ The broader thesis: a team's review history contains the implicit standards that
 - **`render` → `build`** — final name is `build`
 - **Artifact storage fallback** — if `.tricorder/` is not writable, prompt the user to specify a folder location
 - **`learn` / `interpret` separation** — implemented now, not deferred
-- **v1 command lifecycle** — replaced, not aliased; v1 commands removed at cutover
+- **v1 command lifecycle** — historical proposal was removal; shipped cutover retains legacy dispatch for compatibility
 
 ---
 
@@ -156,7 +167,7 @@ The broader thesis: a team's review history contains the implicit standards that
 
 | # | Title | Status |
 |---|-------|--------|
-| #22 | Update and evolve the design and product scope | Active — this branch |
-| #15 | Second repo run — validate generalizability | Blocked on lens design stabilizing |
-| #16 | Trend detection across synthesis runs | Open |
-| #18 | Switchable persona by repo type | Renamed "discipline lenses" — part of v2 spec |
+| #22 | Update and evolve the design and product scope | Historical design discussion; v2 subsequently shipped |
+| #15 | Second repo run — validate generalizability | Historical status; consult GitHub for current state |
+| #16 | Trend detection across synthesis runs | Historical status; consult GitHub for current state |
+| #18 | Switchable persona by repo type | Became the discipline-lens concept |

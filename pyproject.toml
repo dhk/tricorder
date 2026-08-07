@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tricorder"
-description = "PR review analysis for dbt/SQL analytics teams"
+description = "Repository learning system for review patterns, team knowledge, and improvement planning"
 requires-python = ">=3.9"
 dynamic = ["version"]
 dependencies = [
