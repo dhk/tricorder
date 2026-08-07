@@ -1,315 +1,225 @@
-# How to run tricorder
+# How to use Tricorder v2
 
-Step-by-step from zero to a finished report. Assumes Python 3.9+ is installed. Nothing else required upfront.
+This is the authoritative operating guide for the v2 interface:
+`discover → analyze → learn → interpret → improve → build`. Each step leaves
+inspectable artifacts under `.tricorder/`; do not commit that directory.
 
----
+## Install from source in isolation
 
-## 1. Get the code
+Python 3.9+ and git are required. A virtual environment prevents Tricorder and its
+dependencies from modifying your system Python or another project's environment.
 
 ```bash
 git clone https://github.com/dhk/tricorder.git
 cd tricorder
-pip install -e .
+python3 -m venv .venv
+source .venv/bin/activate             # Windows: .venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+tricorder --version
+tricorder --help
 ```
 
----
+Leave the environment with `deactivate`. To remove this isolated installation,
+delete only the `.venv` directory you created.
 
-## 2. Set up credentials
+### npm bridge
 
-You need two credentials. Neither is stored in the repo.
-
-### GitHub token
-
-Tricorder uses the GitHub REST API to pull PR data. Create a classic PAT:
-
-1. Go to https://github.com/settings/tokens → **Generate new token (classic)**
-2. Name: `tricorder`
-3. Scope: `public_repo` for public repos, `repo` for private
-4. Copy the token (`ghp_...`)
-
-Set it in your shell:
 ```bash
-export GITHUB_TOKEN=ghp_your_token
+npm install dhk/tricorder
 ```
 
-To make it permanent (add to `~/.zshrc` or `~/.bashrc`):
+**This is not a JavaScript-only install.** npm automatically runs `node install.js`
+through `postinstall`. That script locates `pip3` or `pip` on `PATH` and runs
+`pip install -e <npm-package-directory>`. It can therefore install Python packages
+and an editable `tricorder` command into whichever Python environment that `pip`
+selects. The script soft-fails (npm may succeed even if pip fails). Prefer the
+virtual-environment procedure above when isolation or reproducibility matters.
+
+## Start locally
+
+From the repository you want to inspect:
+
 ```bash
-echo 'export GITHUB_TOKEN=ghp_your_token' >> ~/.zshrc
+tricorder discover
+tricorder discover --history
 ```
 
-Or store it in the macOS keychain and load on demand:
+These commands require no credentials or network. `discover` reads the local
+filesystem; `--history` additionally invokes local git history. Review the generated
+`.tricorder/` artifacts before continuing.
+
+## Credentials
+
+### GitHub
+
+`tricorder analyze` uses the first credential it finds:
+
+1. `GITHUB_TOKEN` in the process environment;
+2. the token returned by an authenticated `gh` CLI;
+3. a supported macOS Keychain entry (`github-tricorder-pat` or
+   `github-fossil-pat`).
+
+Use a dedicated, least-privilege credential that can read only the repositories you
+intend to analyze. For a public repository, read access to public repository data is
+enough. For a private repository, the token or GitHub CLI identity must explicitly
+have access to that repository and its pull requests. Organization SSO or token
+policies may require additional authorization. Tricorder performs GitHub reads in
+`analyze`; it writes results locally.
+
 ```bash
-security add-generic-password -a "$USER" -s "github-tricorder-pat" -w "ghp_your_token"
-export GITHUB_TOKEN=$(security find-generic-password -a "$USER" -s "github-tricorder-pat" -w)
+export GITHUB_TOKEN=...       # placeholder only; never put a real token in docs
+tricorder analyze OWNER/REPO --since 2026-01-01 --limit 20
 ```
 
-### LLM provider setup
+The cache includes PR titles and bodies, review bodies, inline comments, file paths,
+GitHub logins, and small repository context files fetched through the GitHub API.
+Treat a private repository's `.tricorder/` directory as private review data.
 
-Tricorder can synthesize with Anthropic or Gemini. Pick one active profile in `~/.learn-from-work/config` and point it at the right environment variable for the key.
+### LLM providers
 
-Anthropic example:
-```bash
-cat > ~/.learn-from-work/config <<'EOF'
+Tricorder supports Anthropic and Gemini. Provider selection can come from CLI flags,
+environment overrides, or `~/.learn-from-work/config`. The config names the provider,
+model, and environment variable; it should not contain the secret itself.
+
+```text
 provider=anthropic
 model=claude-sonnet-4-6
 api_key_env=ANTHROPIC_API_KEY
-EOF
-export ANTHROPIC_API_KEY=sk-ant-...
 ```
-
-Gemini example:
-```bash
-cat > ~/.learn-from-work/config <<'EOF'
-provider=gemini
-model=gemini-2.0-flash
-api_key_env=GEMINI_API_KEY
-EOF
-export GEMINI_API_KEY=...
-```
-
-If both keys are present on the same machine, pass `--provider anthropic` or `--provider gemini` on `tricorder synthesize` so tricorder does not guess.
-
----
-
-## 3. Pick a repo to analyze
-
-Tricorder works best on repos that:
-- Have **30+ merged PRs** in your target window
-- Have **active inline review comments** (not just LGTM approvals)
-- Use **dbt and/or SQL** — the category taxonomy is calibrated for analytics engineering
-
-It works less well when:
-- Review happens in Slack rather than GitHub comments
-- PRs are rubber-stamped with no inline discussion
-- The repo is not dbt/SQL (output degrades — findings are generic)
-
-Public or private repos both work. Private repos require `repo` scope on your PAT.
-
----
-
-## 4. Check the cost first
-
-Before spending any API credits, run the cost probe if you're on Anthropic. It pulls a sample of real PRs, assembles the exact prompts, counts tokens, and prints a cost table.
 
 ```bash
-tricorder probe OWNER/REPO --limit 20
+export ANTHROPIC_API_KEY=...
+tricorder learn OWNER/REPO --provider anthropic --visibility private
 ```
 
-Read the output:
-- **Per-PR cost** — typical: ~$0.015
-- **Projected total** — shown for 30 / 60 / 90 / 150 / 300 PR windows
-- **Warnings** — thin review signal, low description quality, etc.
+If both supported provider keys are present, pass `--provider` or set
+`TRICORDER_LLM_PROVIDER`; Tricorder otherwise refuses to guess. Anthropic keys can
+also be resolved from the configured macOS Keychain service. Before running an LLM
+level, confirm that your provider account, retention settings, region, and agreement
+permit transmission of the repository's review data.
 
-If the projected cost looks right, proceed. If the per-PR cost is much higher than expected, check the warning section — very long PR descriptions or many inline comments will inflate it.
+## Run the v2 levels
 
----
-
-## 5. Harvest
-
-Pull merged PRs from GitHub into a local cache. No LLM API spend.
+### 1. Discover the repository
 
 ```bash
-tricorder harvest OWNER/REPO --since 2026-01-01
+tricorder discover
+tricorder discover --history
 ```
 
-**Flags:**
-- `--since YYYY-MM-DD` — only pull PRs merged on or after this date. A 90-day window (3 months) is a good starting point.
-- `--limit N` — stop after N PRs (useful for a test run before committing)
-- `--force` — re-fetch PRs that are already cached
+Level 0 writes a profile and fingerprint. Level 1 adds contributor, hotspot, and
+timeline artifacts based on local git history.
 
-**What it does:**
-- Pulls PR metadata, descriptions, formal review threads, and inline diff comments
-- Fetches repo context: `dbt_project.yml`, `.sqlfluff`, and the PR template
-- Filters out bot PRs (Dependabot etc.)
-- Marks which comments received replies (a proxy for substantive discussion)
-- Writes everything to `~/.learn-from-work/cache/OWNER__REPO/`
-
-**Incremental:** re-running without `--force` only fetches PRs newer than the last harvest. Safe to run on a schedule.
-
-**Output:**
-```
-✓ Harvest complete
-  PRs fetched (new):    142
-  PRs cached (skipped): 0
-  Total in cache:       142
-  Contributors:         12
-  Date range:           2026-01-01 → 2026-06-01
-```
-
----
-
-## 6. Synthesize
-
-Run the four-phase LLM analysis. This is where the API spend happens.
+### 2. Analyze review history
 
 ```bash
-tricorder synthesize OWNER/REPO --visibility private
+tricorder analyze OWNER/REPO --since 2026-01-01
 ```
 
-**Flags:**
-- `--visibility private|team|public` — controls what appears in the output report. `private` includes author growth profiles by name. `team` redacts them. `public` anonymizes everything. Default: `private`.
-- `--provider anthropic|gemini` — override the active LLM provider for this run.
-- `--model NAME` — override the active model for this run.
-- `--api-key-env NAME` — override the environment variable name that contains the key.
-- `--keychain-service NAME` — override the macOS keychain service used for key lookup.
-- `--out PATH` — directory to write the Markdown report. Default: `~/Documents/dev/adventures-in-ai/tricorder/` if it exists, otherwise `./output/`.
+Useful flags are `--limit N` for a small validation run, `--force` to refresh cached
+records, and `--deny`/`--allow` to filter reviewer logins. This level calls GitHub
+but not an LLM. Artifacts are stored below `.tricorder/OWNER__REPO/`, including raw
+per-PR caches in `.raw/`.
 
-**What the four phases do:**
-
-| Phase | One call per | What it returns |
-|-------|-------------|-----------------|
-| 1 | PR | Patterns extracted, evidence quotes, author signals, reviewer signals |
-| 2 | Reviewer | Focus fingerprint: primary areas, blind spots, signal quality |
-| 3 | Author | Growth profile: strengths, recurring gaps, trajectory |
-| 4 | Team (aggregate) | Team gaps, institutionalization candidates, review culture observation |
-
-**How long it takes:**
-- ~15–20 seconds per PR for Phase 1 (the bulk of the time)
-- Phases 2–4 are fast aggregate calls
-- 100 PRs ≈ 25–30 minutes total
-
-**Resume-safe:** if synthesis is interrupted, re-running skips already-completed phases. The intermediate JSON is cached in `~/.learn-from-work/cache/OWNER__REPO/synthesis/`.
-
-**Output:**
-```
-✓ Report written to: ./output/2026-06-01-owner__repo.md
-```
-
----
-
-## 7. View your results
-
-### Markdown report
-
-The report is at the path printed at the end of synthesis. Open it on GitHub or any Markdown viewer. Sections:
-
-1. **Patterns ready to institutionalize** — table of candidates with current maturity, next step, and target maturity
-2. **Reviewer focus fingerprints** — per-reviewer narrative: what they consistently catch, what they consistently miss
-3. **Author growth profiles** — per-author narrative: strengths, growth areas, trajectory, support recommendations
-4. **Team gap analysis** — team strengths, gaps by type, institutionalization candidates, review culture observation
-
-### Interactive explorer
-
-Generate and open the local explorer:
+### 3. Learn from review content
 
 ```bash
-tricorder render OWNER/REPO
-open explorer/index.html
+tricorder learn OWNER/REPO --provider anthropic --visibility private --out ./reports
 ```
 
-Or, if you've pushed the repo to GitHub with Pages enabled, the live URL is:
-`https://YOURUSERNAME.github.io/tricorder/explorer/`
+This sends PR descriptions, formal review text, inline comments, file paths, and
+associated GitHub identities/context to the configured LLM as needed for per-PR
+patterns, reviewer fingerprints, author growth profiles, and team gaps. Intermediate
+responses are cached under `.tricorder/OWNER__REPO/.raw/synthesis/` for resume.
 
----
+`--visibility` currently controls the optional Markdown report:
 
-## 8. Anonymize for sharing (optional)
+- `private`: includes named reviewer and author profiles;
+- `team`: omits author profiles, but reviewer identities remain;
+- `public`: omits author profiles, but is **not** a complete anonymization guarantee.
 
-If you want to share results without exposing contributor names, create a name map before rendering:
+All modes still generate named local JSON artifacts and synthesis caches. Do not
+publish them. Visibility is an output-format choice, not an access-control boundary.
 
-**Create `~/.tricorder/OWNER__REPO-name-map.json`:**
+### 4. Interpret with a lens
+
+```bash
+tricorder interpret OWNER/REPO --lens analytics-engineering
+```
+
+Interpretation reads Level 3 artifacts and sends relevant material to the chosen LLM
+for domain-specific judgment. Lenses are experimental; review citations and
+recommendations rather than treating them as authoritative.
+
+### 5. Produce an improvement plan
+
+```bash
+tricorder improve OWNER/REPO
+```
+
+This uses prior artifacts and the configured LLM to write a prioritized roadmap.
+`--forge` can create repository changes and GitHub objects; review its prompts and
+target carefully before authorizing that separate write workflow.
+
+### 6. Build and inspect the explorer
+
+```bash
+tricorder build OWNER/REPO --open
+```
+
+The local server uses `http://localhost:7372`. A hosted sample is available at the
+[live explorer](https://dhk.github.io/tricorder/explorer/).
+
+`build` writes `explorer/data.js`, a portable JavaScript data file. With no name map,
+it contains real identities and is labeled private. A name map replaces configured
+login strings with aliases and changes the explorer label to team, but aliases alone
+do not remove identifying quotations, repository names, file paths, rare events, or
+other context. Inspect the complete generated file before any publication.
+
 ```json
 {
   "mapping": {
-    "real-github-login": "Alias",
-    "another-login": "AnotherAlias"
+    "github-login": "Reviewer-A"
   }
 }
 ```
 
-Then re-render:
-```bash
-tricorder render OWNER/REPO
-```
+Save that example as `~/.tricorder/OWNER__REPO-name-map.json`, or pass
+`--name-map PATH`. Never commit the source map.
 
-The renderer auto-detects the map and applies it to all names in `data.js`. Push `explorer/data.js` to GitHub and Pages updates automatically.
-
----
-
-## 9. Run from Codespaces
-
-The repo includes a devcontainer. Open it in Codespaces or VS Code:
-
-1. Open the repo in Codespaces (or locally with Dev Containers)
-2. Set secrets in GitHub repo settings → **Secrets → Codespaces**:
-   - `GITHUB_TOKEN`
-   - `ANTHROPIC_API_KEY`
-3. Run synthesis as normal — credentials are available as env vars
-
-Use `--out ./output` since the default output path (`~/Documents/dev/adventures-in-ai/tricorder/`) won't exist in a Codespace:
+## Run the complete pipeline
 
 ```bash
-tricorder synthesize OWNER/REPO --out ./output
+tricorder make-it-so OWNER/REPO
 ```
 
----
+This is convenient after you understand the boundaries. It skips levels whose
+credentials are unavailable. Running commands individually is safer for a first use
+because you can inspect artifacts before GitHub or LLM access is added.
 
-## Troubleshooting
+## Troubleshooting and cleanup
 
-**`GITHUB_TOKEN not set`**
-```bash
-export GITHUB_TOKEN=$(security find-generic-password -a "$USER" -s "github-tricorder-pat" -w)
-```
+- `No GitHub token found`: set a valid `GITHUB_TOKEN` or authenticate `gh`.
+- `review-observations.json not found`: run `tricorder analyze` for the same repo.
+- LLM key missing or ambiguous: set one provider key and/or pass `--provider`.
+- Interrupted `learn`: rerun it; completed intermediate responses are reused.
+- To remove local analysis, delete the specific repository subdirectory under
+  `.tricorder/` after confirming it is the intended target.
 
-**`No harvest cache found`**
-Run `tricorder harvest` first. Synthesis requires the cache.
+## v1 history and compatibility reference
 
-**Synthesis stops mid-run**
-Re-run the same command. It skips completed phases and picks up from where it stopped.
+The original interface used `ready`, `probe`, `harvest`, `synthesize`, `render`, and
+`demo`. Those commands still dispatch to the historical scripts so existing callers
+are not broken. They are compatibility entry points, not the current workflow.
 
-**`credit balance too low`**
-Top up at https://console.anthropic.com for Anthropic runs, or check your Gemini quota if you are using Gemini. Then delete any errored synthesis files and re-run:
-```bash
-# Remove error files from Phase 1
-for f in ~/.learn-from-work/cache/OWNER__REPO/synthesis/pr/*.json; do
-  python3 -c "import json,sys; d=json.load(open('$f')); sys.exit(0 if not d.get('_error') else 1)" 2>/dev/null || rm "$f"
-done
-# Re-run
-tricorder synthesize OWNER/REPO
-```
+| Historical v1 concept | Authoritative v2 path |
+|---|---|
+| readiness scan | `tricorder discover` |
+| harvest GitHub data | `tricorder analyze` |
+| synthesize report | `tricorder learn` |
+| render explorer | `tricorder build` |
+| end-to-end sequence | `tricorder make-it-so` |
 
-**Explorer shows only rule/deterministic patterns in pipeline**
-Re-render — an older version of the renderer had a sorting bug. Fixed in v1.2+:
-```bash
-tricorder render OWNER/REPO
-```
-
----
-
-## Quick reference
-
-```bash
-# 1. Install
-git clone https://github.com/dhk/tricorder && cd tricorder
-pip install -e .
-export GITHUB_TOKEN=ghp_...
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# 2. Cost check
-tricorder probe OWNER/REPO --limit 20
-
-# 3. Harvest
-tricorder harvest OWNER/REPO --since 2026-01-01
-
-# 4. Synthesize
-tricorder synthesize OWNER/REPO
-
-# 5. View
-tricorder render OWNER/REPO
-open explorer/index.html
-```
-
----
-
-## What each file does
-
-| File | Purpose |
-|------|---------|
-| `tricorder-harvest.py` | Pull PRs from GitHub → local cache |
-| `tricorder-cost-probe.py` | Estimate token cost before synthesis |
-| `tricorder-synthesize.py` | Run 4-phase LLM analysis → Markdown report |
-| `tricorder-render-explorer.py` | Generate explorer/data.js from synthesis cache |
-| `tricorder-demo.py` | Scripted 4-minute live demo (no API spend) |
-| `explorer/` | Interactive HTML explorer |
-| `DESIGN.md` | Architecture and design decisions |
-| `SKILL.md` | Claude skill spec |
-| `DEMO.md` | Presenter guide for live demos |
+For architectural history, see [EVOLUTION.md](docs/EVOLUTION.md). For current
+behavior, use this guide, [README.md](README.md), and command `--help` output.

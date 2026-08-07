@@ -1,7 +1,7 @@
 {
   "name": "tricorder",
   "version": "1.0.1",
-  "description": "Repository learning system — PR review analysis, progressive trust model, discipline lenses.",
+  "description": "Repository learning system for review patterns, team knowledge, and improvement planning.",
   "keywords": ["code-review", "analytics", "dbt", "llm", "agent"],
   "homepage": "https://github.com/dhk/tricorder",
   "repository": {
@@ -12,6 +12,7 @@
   "scripts": {
     "postinstall": "node install.js"
   },
+  "tricorderPostinstallNotice": "postinstall invokes pip install -e and modifies the Python environment selected by pip3 or pip; see HOWTO.md",
   "engines": {
     "node": ">=16"
   }

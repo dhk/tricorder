@@ -11,6 +11,9 @@ const pkg = path.resolve(__dirname);
 
 console.log("\ntricorder — Python package installer");
 console.log("─────────────────────────────────────");
+console.log("  NOTICE: npm postinstall will invoke pip install -e.");
+console.log("  This modifies the Python environment selected by pip3/pip.");
+console.log("  For isolation, cancel and follow HOWTO.md's virtualenv install.\n");
 
 // Detect pip
 function findPip() {

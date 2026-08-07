@@ -2,105 +2,90 @@
 
 > *"A room full of data people and you named it tricorder instead of data. Yes, on purpose."*
 
-<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/106d5cca-03eb-47ee-a5fe-281ca98063d2" />
+<img width="1672" height="941" alt="Tricorder explorer showing review-pattern maturity, team gaps, reviewer coverage, and author profiles" src="https://github.com/user-attachments/assets/106d5cca-03eb-47ee-a5fe-281ca98063d2" />
 
-A repository learning system. Reads what your team produces during code review — the comments, the back-and-forth, the patterns that recur — and returns a structured map of what the team knows, what it misses, and what is ready to institutionalize.
+A repository learning system. Tricorder turns local repository evidence, git history,
+and code-review discussions into an inspectable map of what a team knows, repeatedly
+misses, and could move upstream into guidance, tooling, or automation.
 
----
+**[Try the live explorer](https://dhk.github.io/tricorder/explorer/)** (sample data) ·
+[How to use Tricorder](HOWTO.md) · [Documentation index](docs/README.md) ·
+[Privacy and data flow](docs/PRIVACY.md)
 
 ## Install
 
-```bash
-# pip
-pip install git+https://github.com/dhk/tricorder.git
-
-# npm (auto-installs via pip postinstall)
-npm install dhk/tricorder
-```
-
 Requires Python 3.9+.
 
----
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install git+https://github.com/dhk/tricorder.git
+```
+
+> **npm side effect:** `npm install dhk/tricorder` runs this repository's
+> `postinstall` script, which invokes `pip install -e` and changes the Python
+> environment selected by `pip3`/`pip`. Use the isolated Python install above if
+> you do not want npm to install Python packages. See [HOWTO.md](HOWTO.md#npm-bridge).
 
 ## Quick start
 
 ```bash
-# From inside any git repository:
+# From inside a git repository
 tricorder make-it-so
 ```
 
-That's it. Runs the full pipeline. Skips levels it can't reach (e.g. no GitHub token → skips API fetch). Opens the explorer when done.
+The orchestrator runs what available credentials permit, stores artifacts under
+`.tricorder/`, and skips locked levels. Run the levels individually when you want
+to inspect the boundary before granting more access:
 
----
+| Command | Access added | Result |
+|---|---|---|
+| `tricorder discover` | local files | repository profile and technology fingerprint |
+| `tricorder discover --history` | local git history | contributors, hotspots, timeline |
+| `tricorder analyze OWNER/REPO` | GitHub read credential | review observations, patterns, expertise map |
+| `tricorder learn OWNER/REPO` | configured LLM provider | learnings and named reviewer/author profiles |
+| `tricorder interpret OWNER/REPO` | LLM provider + lens | domain interpretation |
+| `tricorder improve OWNER/REPO` | LLM provider | prioritized roadmap |
+| `tricorder build --open` | local artifacts | interactive explorer at `localhost:7372` |
 
-## The pipeline
+```text
+local files ──> git history ──> GitHub review data ──> LLM analysis ──> explorer
+   no key          no key          GitHub credential      provider key     publishable
+```
 
-Six levels. Each one unlocks more signal. Each one is also useful on its own.
-
-| Command | Level | Needs | Output |
-|---------|-------|-------|--------|
-| `tricorder discover` | 0 | nothing | repo archetype, tech fingerprint, tooling gaps |
-| `tricorder discover --history` | 1 | git | contributors, hotspots, evolution timeline |
-| `tricorder analyze` | 2 | GitHub token | PR review data, expertise map |
-| `tricorder learn` | 3 | LLM API key | patterns, reviewer fingerprints, author profiles, team gaps |
-| `tricorder interpret` | 4 | LLM API key | lens-specific interpretation against domain standards |
-| `tricorder improve` | 5 | LLM API key | prioritized improvement roadmap |
-| `tricorder build --open` | — | Level 3 | interactive explorer at `localhost:7372` |
-
-Every level writes artifacts to `.tricorder/` in the current repo. Each level reads from the previous one — no re-fetching.
-
----
+The practical consequence: value begins locally, while every later step crosses a
+clearer trust boundary. `analyze` can read private review history; `learn` sends
+selected review content and identities to the configured LLM provider; local caches
+retain source and generated data; and explorer output may be publishable. Read
+[Privacy and data flow](docs/PRIVACY.md) before using credentials or sharing output.
 
 ## Credentials
 
-```bash
-# GitHub (for analyze)
-export GITHUB_TOKEN=ghp_...
-# or: gh auth login
+`analyze` checks `GITHUB_TOKEN`, then `gh auth token`, then supported macOS
+Keychain entries. A credential must be able to read the target repository; private
+repositories require corresponding private-repository access.
 
-# LLM (for learn / interpret / improve)
-export ANTHROPIC_API_KEY=sk-ant-...
-# or:
-export GEMINI_API_KEY=...
-```
-
-Provider config lives in `~/.learn-from-work/config`. Defaults to Anthropic if both keys are present and no config is set. Override per-run with `--provider`.
-
----
-
-## Discipline lenses
-
-`discover` auto-detects the repo's archetype from the filesystem and proposes a lens. `interpret` applies it.
-
-| Lens | Domain |
-|------|--------|
-| `analytics-engineering` | dbt, SQL, BigQuery / Snowflake |
-| `agent-engineering` | AI agents, MCP servers, skills, evals |
-| `product-engineering` | web apps, APIs, backend services |
-| `platform-engineering` | infrastructure, IaC, SRE |
-| `security` | appsec, infra security |
-
-Override at any point: `tricorder interpret --lens agent-engineering`
-
----
-
-## Selected flags
+`learn`, `interpret`, and `improve` use Anthropic or Gemini. Set exactly one provider
+key, or choose a provider explicitly:
 
 ```bash
-tricorder make-it-so --open          # full pipeline + open browser
-tricorder learn --minority-report    # run Phase 4 with all available LLMs, compare
-tricorder improve --forge            # implement skill-shaped recommendations as SKILL.md files
-tricorder build --open               # serve explorer at localhost:7372
+export GITHUB_TOKEN=...           # never commit it
+export ANTHROPIC_API_KEY=...      # or GEMINI_API_KEY
+tricorder learn OWNER/REPO --provider anthropic --visibility private
 ```
 
----
+Configuration and credential details are in [HOWTO.md](HOWTO.md#credentials).
 
-## What it isn't
+## Compatibility and maturity
 
-Not a metrics dashboard. Not a performance review tool. Not a replacement for live code review. Those answer questions about activity. Tricorder answers questions about knowledge.
+The v2 interface above is authoritative. The v1 commands `ready`, `probe`,
+`harvest`, `synthesize`, `render`, and `demo` remain available through legacy script
+dispatch for compatibility, but new usage and documentation should use v2.
 
----
+Tricorder is under active development. The six-level v2 command surface is shipped;
+discipline lenses and generated judgments remain experimental and require human
+review. Tricorder is not a performance-review system, a live code reviewer, or a
+guarantee that anonymized output is safe to publish.
 
-## Status
-
-Active development. v2 pipeline complete. First production run: 190 PRs, 15 contributors, `cal-itp/data-infra`. Design doc: `DESIGN.md`. Technical spec: `SKILL.md`.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and test instructions and
+[SECURITY.md](SECURITY.md) for private vulnerability reporting.

@@ -1,7 +1,11 @@
 # tricorder — explorer
 
+The [live explorer](https://dhk.github.io/tricorder/explorer/) contains sample data.
+Do not publish a generated `data.js` until it has passed the privacy review in
+[docs/PRIVACY.md](../docs/PRIVACY.md).
+
 The interactive React artifact for a synthesis run. Five tabs over the output of
-`tricorder synthesize`, in priority order (maturity pipeline is the action output, so
+`tricorder learn`, in priority order (maturity pipeline is the action output, so
 it leads):
 
 | Tab | Reads | Shows |
@@ -24,7 +28,7 @@ cd explorer && python -m http.server 8000   # then open http://localhost:8000
 ## Wiring in a real run
 
 All tabs are data-driven from one global, `window.TRICORDER_DATA`, defined in `data.js`.
-The synthesize step should overwrite `data.js` (or inject the same global) with the
+The `tricorder build` step overwrites `data.js` (or injects the same global) with the
 run's output. Shape:
 
 ```js
