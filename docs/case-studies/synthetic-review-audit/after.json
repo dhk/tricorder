@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "fixture": "synthetic",
+  "decisions": [
+    {
+      "recommendation_ref": "REC-01",
+      "status": "revised-and-accepted-for-trial",
+      "decision": "Use an optional prompt, permit not-applicable with rationale, and review after two weeks.",
+      "measure": "Completion rate plus anonymous reviewer usefulness feedback.",
+      "review_date": "invented-week-03"
+    },
+    {
+      "recommendation_ref": "REC-02",
+      "status": "rejected",
+      "decision": "Do not create individual rankings; the sample and evidence boundary cannot support them."
+    }
+  ],
+  "outcome": "No outcome is claimed yet; the trial must produce new evidence."
+}
