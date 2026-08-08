@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic Tricorder review audit</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 72rem; margin: auto; padding: 2rem; background: #f6f7f9; color: #172033 }
+  header, section { background: white; border: 1px solid #d9dfE8; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0 }
+  .banner { border-left: 6px solid #7c3aed }
+  nav button { margin: .25rem; padding: .55rem .8rem }
+  pre { overflow: auto; background: #111827; color: #e5e7eb; padding: 1rem; border-radius: 8px }
+</style>
+<header class="banner">
+  <h1>Synthetic review audit</h1>
+  <p>Entirely invented teaching data—not anonymized people or evidence, and not a personnel assessment.</p>
+</header>
+<nav aria-label="Audit stages">
+  <button data-file="before.json">Before: evidence</button>
+  <button data-file="audit.json">Audit: inference + recommendation</button>
+  <button data-file="after.json">After: human decision</button>
+</nav>
+<section>
+  <h2 id="stage">Choose a stage</h2>
+  <p>Each stage is checked in and requires no API key or live service.</p>
+  <pre id="data" aria-live="polite">Select a button above.</pre>
+</section>
+<script>
+  const output = document.querySelector('#data');
+  const heading = document.querySelector('#stage');
+  document.querySelectorAll('button').forEach(button => button.addEventListener('click', async () => {
+    const file = button.dataset.file;
+    heading.textContent = button.textContent;
+    output.textContent = 'Loading local fixture…';
+    const response = await fetch(file);
+    output.textContent = JSON.stringify(await response.json(), null, 2);
+  }));
+</script>
+</html>

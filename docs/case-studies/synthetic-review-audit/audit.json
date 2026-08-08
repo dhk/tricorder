@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "fixture": "synthetic",
+  "inferences": [
+    {
+      "id": "INF-01",
+      "statement": "The pull-request template may not consistently prompt for rollback planning.",
+      "evidence_refs": ["SYN-101", "SYN-103"],
+      "evidence_class": "deterministic_api_fact",
+      "judgment_class": "model_generated_inference",
+      "confidence": "low",
+      "limitations": [
+        "The fixture contains only three invented pull requests.",
+        "A missing note does not show that rollback was not discussed elsewhere."
+      ],
+      "alternatives": [
+        "The changes may have been considered trivially reversible.",
+        "Rollback planning may have occurred outside the pull-request description."
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "REC-01",
+      "inference_refs": ["INF-01"],
+      "action": "Trial an optional rollback-or-not-applicable prompt for two weeks.",
+      "class": "recommendation",
+      "reversibility": "high",
+      "owner_review_required": true,
+      "success_measure": "Compare completion and reviewer usefulness feedback during the trial."
+    },
+    {
+      "id": "REC-02",
+      "inference_refs": ["INF-01"],
+      "action": "Rank contributors by rollback awareness.",
+      "class": "recommendation",
+      "reversibility": "low",
+      "owner_review_required": true,
+      "warning": "Unsupported and unsuitable for personnel use."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "fixture": "synthetic",
+  "repository": "example/lantern-service",
+  "capture_window": "invented-week-01",
+  "pull_requests": [
+    {
+      "id": "SYN-101",
+      "author": "Engineer-A",
+      "files_changed": 4,
+      "description_sections": ["context", "testing"],
+      "source_quote": "Synthetic quote: the cache falls back to the primary store.",
+      "rollback_note_present": false
+    },
+    {
+      "id": "SYN-102",
+      "author": "Engineer-B",
+      "files_changed": 2,
+      "description_sections": ["context", "testing", "rollback"],
+      "source_quote": "Synthetic quote: disable the flag to restore the old path.",
+      "rollback_note_present": true
+    },
+    {
+      "id": "SYN-103",
+      "author": "Engineer-C",
+      "files_changed": 5,
+      "description_sections": ["context", "testing"],
+      "source_quote": "Synthetic quote: metrics cover errors and request latency.",
+      "rollback_note_present": false
+    }
+  ],
+  "aggregates": {
+    "pr_count": 3,
+    "rollback_note_present": 1,
+    "rollback_note_absent": 2
+  }
+}
