@@ -4,13 +4,21 @@
 
 <img width="1672" height="941" alt="Tricorder explorer showing review-pattern maturity, team gaps, reviewer coverage, and author profiles" src="https://github.com/user-attachments/assets/106d5cca-03eb-47ee-a5fe-281ca98063d2" />
 
-A repository learning system. Tricorder turns local repository evidence, git history,
-and code-review discussions into an inspectable map of what a team knows, repeatedly
-misses, and could move upstream into guidance, tooling, or automation.
+Tricorder helps teams understand how well they build and systematically raise the standard.
+
+Today it does that as a repository learning system: it turns local repository evidence, git history, and code-review discussions into an inspectable map of recurring standards, repeated correction, expertise concentration, team gaps, and opportunities to move useful knowledge upstream into education, workflow, tooling, or automation.
 
 **[Try the live explorer](https://dhk.github.io/tricorder/explorer/)** (sample data) ·
 [How to use Tricorder](HOWTO.md) · [Documentation index](docs/README.md) ·
 [Privacy and data flow](docs/PRIVACY.md)
+
+## Product governance
+
+Product intent follows this hierarchy:
+
+**[Constitution](CONSTITUTION.md) → [Product Vision](PRODUCT_VISION.md) → [Product Strategy](PRODUCT_STRATEGY.md) → [Roadmap](ROADMAP.md) → Issues and PRs**
+
+[DESIGN.md](DESIGN.md) describes the system architecture. [BRIEF.md](BRIEF.md) is a compatibility summary for older links, not a competing product authority.
 
 ## Install
 
@@ -84,8 +92,7 @@ dispatch for compatibility, but new usage and documentation should use v2.
 
 Tricorder is under active development. The six-level v2 command surface is shipped;
 discipline lenses and generated judgments remain experimental and require human
-review. Tricorder is not a performance-review system, a live code reviewer, or a
-guarantee that anonymized output is safe to publish.
+review. Tricorder is not a performance-review system, a developer ranking system, a live code reviewer, or a guarantee that anonymized output is safe to publish.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and test instructions and
 [SECURITY.md](SECURITY.md) for private vulnerability reporting.
