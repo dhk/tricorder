@@ -1,7 +1,8 @@
 name: Bump build number
 
 # Runs on every push to main EXCEPT version-bump commits (which contain [skip ci]).
-# Reads VERSION, increments the 4th component (build), writes back, commits.
+# Reads VERSION, increments the 4th component (build), and opens a pull request
+# with the change — main requires PRs, so this cannot commit directly.
 #
 # Version format: MAJOR.MINOR.PATCH.BUILD
 #   BUILD — auto-incremented here on every merge
@@ -23,13 +24,17 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
 
     permissions:
+      # contents: write to push the bump branch; pull-requests: write
+      # because the job now opens a PR rather than pushing to main.
       contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
         with:
-          # Use a PAT so the push triggers Pages deployment.
-          # Falls back to GITHUB_TOKEN (won't re-trigger workflows, but Pages still deploys).
+          # GITHUB_TOKEN is sufficient: this job pushes a branch and opens a
+          # PR, neither of which needs bypass rights. Pages deploys from main
+          # when that PR is merged, by the human doing the merging.
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
@@ -44,10 +49,45 @@ jobs:
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
           echo "Bumped: $VERSION → $NEW_VERSION"
 
-      - name: Commit version bump
+      # main is a protected branch — "Changes must be made through a pull
+      # request." This job used to `git push` straight to main and was rejected
+      # on every run since protection was enabled (GH006), which is why VERSION
+      # sat at 1.0.1.17 while the workflow burned a runner failing identically
+      # each time. `permissions: contents: write` grants repository write; it
+      # does not exempt a push from a branch rule.
+      #
+      # So it opens a pull request instead — the same route a human takes.
+      - name: Open a pull request for the bump
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.version.outputs.version }}
         run: |
+          set -euo pipefail
+          BRANCH="chore/build-${NEW_VERSION}"
+
+          # Reruns and repeated pushes must not stack duplicate PRs.
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$OPEN" != "0" ]; then
+            echo "PR for $BRANCH is already open; nothing to do."
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
           git add VERSION
-          git commit -m "chore: build ${{ steps.version.outputs.version }} [skip ci]"
-          git push
+          git commit -m "chore: build ${NEW_VERSION}"
+          git push -u origin "$BRANCH"
+
+          cat > /tmp/pr-body.md <<'BODY'
+          Automated build-number bump to \`${NEW_VERSION}\`.
+
+          VERSION is the source of truth for the package version: pyproject.toml
+          reads it via \`version = {file = "VERSION"}\`, and cli.py,
+          commands/build.py and tricorder-render-explorer.py read it at runtime.
+
+          Opened by the "Bump build number" workflow, which cannot push to main
+          directly because the branch requires pull requests.
+          BODY
+
+          gh pr create --title "chore: build ${NEW_VERSION}" --body-file /tmp/pr-body.md
