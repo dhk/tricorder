@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "tricorder",
+  "project_id": "fbf82a84-fafe-4b66-9cb8-0b0f23a669cc"
+}

@@ -8,3 +8,9 @@ __pycache__/
 
 # Local tricorder artifact store (self-run analysis; may contain named individuals)
 .tricorder/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
