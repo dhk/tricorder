@@ -16,6 +16,16 @@ name: Bump build number
 on:
   push:
     branches: [main]
+    # A merge that only bumps VERSION must not trigger another bump. The
+    # [skip ci] guard below cannot catch this on its own: a squash merge takes
+    # its commit message from the PR *title*, so the marker never reaches the
+    # message this workflow inspects, and each merged bump would open the next
+    # one indefinitely. paths-ignore keys on what changed instead of on how the
+    # commit happens to be worded.
+    #
+    # It skips only when VERSION is the *sole* change — a merge carrying real
+    # work alongside a bump still runs, which is what we want.
+    paths-ignore: [VERSION]
 
 jobs:
   bump:
@@ -76,7 +86,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
           git add VERSION
-          git commit -m "chore: build ${NEW_VERSION}"
+          git commit -m "chore: build ${NEW_VERSION} [skip ci]"
           git push -u origin "$BRANCH"
 
           cat > /tmp/pr-body.md <<'BODY'
