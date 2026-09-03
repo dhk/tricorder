@@ -239,11 +239,12 @@ Detection scores every lens from the repository's file paths after dropping the 
 | `analytics-engineering` | dbt, SQL, warehouse modeling | experimental | cal-itp/data-infra (v1 runs; detection selects it with platform-engineering as a mixed runner-up) |
 | `product-engineering` | product software, parent of the sub-profiles | experimental | fallback when no sub-profile matches |
 | `product-engineering-desktop` | Tauri/Electron-class desktop apps: webview UI + native core | **validated** | block/berd, 2026-09-03: score 32, margin 28, both checks pass, Phase 1 `other` 4%, zero smoke hits, ten on-axis gaps ([record](docs/research/repo-lens/findings/perplexity-lenses/VALIDATION.md)) |
+| `product-engineering-mobile` | Flutter/Dart mobile apps with Swift/Kotlin shells | experimental | Flutter-shaped fixture selects it (score 30, margin 26); block/buzz deliberately falls back to the parent (mobile scores 2) because Dart is 12% of bytes in a desktop-heavy monorepo |
 | `platform-engineering` | IaC, Kubernetes, CI/CD, supply chain | experimental | none yet |
 | `security` | security engineering | experimental | rarely auto-selected; use `--lens security` or `learn --focus-on security` |
 | `agent-engineering` | agent systems, MCP servers, evals | experimental | none yet |
 
-A lens moves from `experimental` to `validated` after one successful production-repository evaluation: detection selects it with margin, both checks pass, the Phase 1 `other` share stays under 15%, and the smoke checks find nothing. Mobile, backend-service, library, and CLI sub-profiles of `product-engineering` are planned (beads epic `tricorder-8t5`).
+A lens moves from `experimental` to `validated` after one successful production-repository evaluation: detection selects it with margin, both checks pass, the Phase 1 `other` share stays under 15%, and the smoke checks find nothing. Backend-service, library, and CLI sub-profiles of `product-engineering` are planned (beads epic `tricorder-8t5`). A multi-archetype monorepo such as block/buzz (Flutter mobile client, Rust backend, Tauri desktop) is not served well by any single lens; the honest path is a per-path lens scoped to one component, which is future work.
 
 The maturity ladder maps onto published practice: rustc's `allow / warn / deny / forbid` lint levels and Google's enforce-in-build versus advise-in-review split both operationalize the same idea. `warn`-level tooling sits at the `convention`/`rule` boundary; `deny` or `forbid` in CI is `deterministic`; documented but unenforced is `rule`; an unwritten team habit is `convention`; a one-off reviewer catch is `judgment`.
 
