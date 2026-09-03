@@ -277,7 +277,7 @@ function IntroTab({ onSelect }) {
                 { label: "readme", value: "README.md",  href: `${REPO_URL}#readme` },
                 { label: "spec",   value: "SKILL.md",   href: `${REPO_URL}/blob/main/SKILL.md` },
                 { label: "how-to", value: "HOWTO.md",   href: `${REPO_URL}/blob/main/HOWTO.md` },
-                { label: "research", value: "lens research (primary sources)", href: `${REPO_URL}/blob/main/docs/research/repo-lens/findings/perplexity-findings.md` },
+                { label: "research", value: "lens research (primary sources)", href: `${REPO_URL}/blob/main/docs/research/repo-lens/tricorder-lens-methodology-research.md` },
               ].map(({ label, value, href }) => (
                 <div key={label} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                   <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", minWidth: 62 }}>{label}</Mono>

@@ -86,8 +86,8 @@ The lens design is not an opinion about how repositories should be read. It foll
 commissioned research pass, answered from primary sources, that is checked into this
 repository so the reasoning can be audited and challenged:
 
-- [Tricorder lens research: findings](docs/research/repo-lens/findings/perplexity-findings.md)
-  (2026-09-02). Seven questions, each answered with a verdict table and citations
+- [How tricorder reads and recognizes a repository](docs/research/repo-lens/tricorder-lens-methodology-research.md)
+  (lens methodology research, 2026-09-02). Seven questions, each answered with a verdict table and citations
   carrying title, publisher, URL, and retrieval date.
 - [The brief](docs/research/repo-lens/brief.md) that traces every question to the code it
   was meant to fix, and [the handoff prompt](docs/research/repo-lens/handoff-prompt.md)
@@ -125,7 +125,7 @@ What the research established, in brief:
   than guess.
 
 The research also records what it could not settle, in its
-[open gaps](docs/research/repo-lens/findings/perplexity-findings.md#open-gaps): no
+[open gaps](docs/research/repo-lens/tricorder-lens-methodology-research.md#open-gaps): no
 authoritative `unsafe`-Rust checklist, partial Biome coverage of the React hook rules,
 no primary standard for desktop telemetry review or for infrastructure-as-code change
 semantics. Those limits are carried into the lenses as maturity ceilings, not papered over.
