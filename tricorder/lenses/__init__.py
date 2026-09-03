@@ -167,6 +167,13 @@ class Lens:
     def tooling_gates(self) -> list[dict]:
         return list(self.raw.get("tooling_gates") or [])
 
+    def axis_tags(self, axis_id: str) -> list[str]:
+        """File tags that carry an axis's evidence (optional in the lens file)."""
+        for x in self.axes:
+            if x.get("id") == axis_id:
+                return list(x.get("tags") or [])
+        return []
+
     def prompt_context(self, phase: str) -> str:
         return ((self.raw.get("prompt_context") or {}).get(phase) or "").strip()
 
@@ -273,6 +280,10 @@ def validate(raw: dict[str, Any]) -> list[str]:
         mm = x.get("max_maturity")
         if mm and mm not in MATURITY_LEVELS:
             errs.append(f"axis {x.get('id')} max_maturity not in {MATURITY_LEVELS}: {mm!r}")
+        known_tags = {t.get("tag") for t in raw.get("file_tags") or []}
+        for t in x.get("tags") or []:
+            if t not in known_tags:
+                errs.append(f"axis {x.get('id')} -> unknown file tag {t!r}")
     for c in cats:
         for ax in c.get("axes") or []:
             if ax not in axis_ids:

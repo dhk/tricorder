@@ -48,6 +48,7 @@ from tricorder.lenses.prompting import (
     authorities_markdown, coerce_categories, secondary_block, smoke_check, system_prompt,
 )
 from tricorder.lenses.cache import load_cached, save_cached, synthesis_dir, write_current
+from tricorder.oversight import compute as compute_oversight, normalize_legacy, oversight_prompt_block
 
 
 # ── payload assembly ──────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ def call_llm(client, system: str, user: str, retries: int = 2, max_tokens: int =
 
 # ── markdown report ───────────────────────────────────────────────────────────
 def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, visibility, repo_slug,
-                    lens: Lens | None = None, gates: list | None = None):
+                    lens: Lens | None = None, gates: list | None = None, oversight: dict | None = None):
     today    = datetime.now(timezone.utc).date().isoformat()
     dr       = manifest["date_range"]
     n        = manifest["pr_count"]
@@ -167,6 +168,23 @@ def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, te
             lines.append(f"| {c['pattern']} | — | {c['current_maturity']} | {c['next_step']} | {c.get('standard_citation') or std} |")
     else:
         lines.append("*No strong institutionalization candidates identified in this window.*")
+
+    if oversight:
+        lines += ["", "---", "", "## 1b. Oversight Density", "",
+                  "Computed from the harvested record, no model involved. In agentic development, review is where human oversight concentrates; this section shows where it does and does not land.", ""]
+        osum = oversight["summary"]
+        lines.append(f"- PRs with no human engagement (approve-only or nothing): **{osum['prs_without_human_engagement']} of {osum['prs']}**")
+        lines.append(f"- Silent approvals (approve with no comment): **{osum['silent_approvals']} of {osum['approvals']}**")
+        if osum.get("prs_with_changed_files"):
+            lines += ["", "| Axis | High-stakes | PRs touching | Without any human comment | Silent share | Comments | Reviewers |", "|---|---|---:|---:|---:|---:|---:|"]
+            for a in oversight["per_axis"]:
+                if a.get("prs_touching") is None:
+                    continue
+                lines.append(f"| {a['axis']} | {'yes' if a['high_stakes'] else ''} | {a['prs_touching']} | {a['prs_touching_without_comment']} | {(a['silent_share'] or 0):.0%} | {a['comments']} | {a['distinct_reviewers']} |")
+        lines += ["", "| Reviewer | PRs | Approvals | Silent approvals | Silent share | Inline comments / PR |", "|---|---:|---:|---:|---:|---:|"]
+        for r in oversight["per_reviewer"]:
+            share = f"{r['silent_share']:.0%}" if r["silent_share"] is not None else "—"
+            lines.append(f"| {r['reviewer']} | {r['prs']} | {r['approvals']} | {r['silent_approvals']} | {share} | {r['comments_per_pr']} |")
 
     lines += ["", "---", "", "## 2. Reviewer Focus Fingerprints", ""]
     for rp in reviewer_profiles:
@@ -430,6 +448,21 @@ def main():
 
     print(f"\n  ✓ {len(pr_results)} PRs processed\n")
 
+    # ── Oversight density (no LLM): where human attention lands, from the harvest ──
+    records = []
+    for pr_path in pr_files:
+        pr = json.loads(pr_path.read_text())
+        rv = cache_dir / "reviews" / f"{pr['number']}-reviews.json"
+        cm = cache_dir / "comments" / f"{pr['number']}-comments.json"
+        records.append(normalize_legacy(pr, json.loads(rv.read_text()) if rv.exists() else [],
+                                        json.loads(cm.read_text()) if cm.exists() else []))
+    oversight = compute_oversight(records, lens)
+    (synth_dir / "oversight.json").write_text(json.dumps(oversight, indent=2))
+    ov = oversight["summary"]
+    print(f"Oversight — {ov['prs_without_human_engagement']}/{ov['prs']} PRs with no human engagement; "
+          f"silent approvals {ov['silent_approvals']}/{ov['approvals']}; "
+          f"changed-file lists for {ov['prs_with_changed_files']} PRs\n")
+
     # ── Prompt 2: reviewer fingerprints ──────────────────────────────────────
     reviewers = manifest.get("contributors", [])
     print(f"Phase 2 — Reviewer fingerprints ({len(reviewers)} reviewers)...")
@@ -555,6 +588,8 @@ def main():
             "",
             "Reviewer fingerprints:",
             json.dumps([{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles], indent=2)[:4000],
+            "",
+            oversight_prompt_block(oversight),
         ]
 
         team_gaps = call_llm(client, sys_p4, "\n".join(team_prompt_lines), max_tokens=8192)
@@ -588,7 +623,7 @@ def main():
     today     = datetime.now(timezone.utc).date().isoformat()
     out_file  = out_dir / f"{today}-{repo_slug}.md"
 
-    md = render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, args.visibility, args.repo, lens, gates)
+    md = render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, args.visibility, args.repo, lens, gates, oversight)
     with open(out_file, "w") as f:
         f.write(md)
 

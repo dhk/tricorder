@@ -206,6 +206,18 @@ def extract_pr_template_sections(content: str) -> list[str]:
     return sections
 
 
+def fetch_changed_files(gh: GitHub, owner: str, repo: str, num: int) -> list:
+    """Paths (with status and line counts) of every file a PR changed. Empty list on error."""
+    try:
+        items = gh.paginate(f"/repos/{owner}/{repo}/pulls/{num}/files")
+    except Exception as e:
+        print(f"\n    ⚠  files error on #{num}: {e}")
+        return []
+    return [{"filename": f.get("filename", ""), "status": f.get("status", ""),
+             "additions": f.get("additions", 0), "deletions": f.get("deletions", 0)}
+            for f in items if f.get("filename")]
+
+
 def fetch_repo_context(gh: GitHub, owner: str, repo: str) -> dict:
     """Fetch dbt_project.yml, .sqlfluff, and PR template from the repo."""
     print("  Fetching repo context…", end=" ", flush=True)
@@ -412,7 +424,17 @@ def harvest(args):
 
         if pr_path.exists() and rev_path.exists() and com_path.exists() and not args.force:
             prs_cached += 1
-            print(f"  [{i:03d}/{total}] #{num:5d}  {login:<16}  (cached)")
+            # backfill changed files for PRs cached before the harvester recorded them
+            try:
+                cached_rec = json.loads(pr_path.read_text())
+            except Exception:
+                cached_rec = {}
+            if "files" not in cached_rec:
+                cached_rec["files"] = fetch_changed_files(gh, owner, repo_name, num)
+                pr_path.write_text(json.dumps(cached_rec, indent=2))
+                print(f"  [{i:03d}/{total}] #{num:5d}  {login:<16}  (cached; files backfilled: {len(cached_rec['files'])})")
+            else:
+                print(f"  [{i:03d}/{total}] #{num:5d}  {login:<16}  (cached)")
             continue
 
         print(f"  [{i:03d}/{total}] #{num:5d}  {login:<16}  {title:<50}", end="", flush=True)
@@ -431,6 +453,9 @@ def harvest(args):
         except Exception as e:
             print(f"\n    ⚠  comments error: {e}")
             comments = []
+
+        # Changed files (paths only): needed for oversight density
+        changed_files = fetch_changed_files(gh, owner, repo_name, num)
 
         # Count review iterations (CHANGES_REQUESTED before approval)
         review_iterations = sum(
@@ -454,6 +479,7 @@ def harvest(args):
             "changedFiles":       pr.get("changed_files", 0),
             "description_quality": score_description(pr.get("body") or ""),
             "review_iterations":  review_iterations,
+            "files":              changed_files,
         }
 
         # Reviews: keep only fields synthesize needs

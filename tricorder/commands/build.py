@@ -104,6 +104,7 @@ window.TRICORDER_DATA = (function () {{
   const RADAR_CATEGORIES = {radar_categories};
   const CATEGORY_GROUP = {category_group};
   const lens = {lens_js};
+  const oversight = {oversight_js};
 
   const patterns = {patterns};
 
@@ -122,6 +123,7 @@ window.TRICORDER_DATA = (function () {{
     visibility:       {visibility_js},
     version:          {version_js},
     lens,
+    oversight,
     CATEGORIES,
     RADAR_CATEGORIES,
     CATEGORY_GROUP,
@@ -514,6 +516,7 @@ def run(args: list[str]) -> int:
         radar_categories = json.dumps(taxonomy["radar"]),
         category_group   = json.dumps(taxonomy["groups"]),
         lens_js          = json.dumps(taxonomy["lens"]),
+        oversight_js     = json.dumps(_apply_map(learnings.get("oversight"), name_map) if learnings.get("oversight") else None, indent=2),
         patterns         = json.dumps(patterns, indent=2),
         reviewers        = json.dumps(reviewers, indent=2),
         authors          = json.dumps(authors, indent=2),

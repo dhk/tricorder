@@ -417,6 +417,7 @@ window.TRICORDER_DATA = (function () {{
   const RADAR_CATEGORIES = {radar_categories};
   const CATEGORY_GROUP = {category_group};
   const lens = {lens_js};
+  const oversight = {oversight_js};
 
   const patterns = {patterns};
 
@@ -435,6 +436,7 @@ window.TRICORDER_DATA = (function () {{
     visibility:      {visibility_js},
     version:         {version_js},
     lens,
+    oversight,
     CATEGORIES,
     RADAR_CATEGORIES,
     CATEGORY_GROUP,
@@ -491,6 +493,11 @@ def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymize
     gaps = load_gaps(gaps_file, name_map)
     print(f"    → {len(gaps)} gaps")
 
+    ov_file = synth / "oversight.json"
+    oversight = apply_map(json.loads(ov_file.read_text()), name_map) if ov_file.exists() else None
+    if oversight:
+        print(f"  Oversight: {oversight['summary']['prs_without_human_engagement']}/{oversight['summary']['prs']} PRs without human engagement")
+
     dr          = manifest.get("date_range", {})
     window_str  = f"{dr.get('from','')} → {dr.get('to','')}"
     pr_count    = manifest.get("pr_count", 0)
@@ -517,6 +524,7 @@ def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymize
         radar_categories = json.dumps(taxonomy["radar"]),
         category_group   = json.dumps(taxonomy["groups"]),
         lens_js          = json.dumps(taxonomy.get("lens")),
+        oversight_js     = json.dumps(oversight, indent=2),
         patterns         = json.dumps(patterns, indent=2),
         reviewers        = json.dumps(reviewers, indent=2),
         authors          = json.dumps(authors, indent=2),

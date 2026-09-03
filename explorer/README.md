@@ -40,6 +40,12 @@ window.TRICORDER_DATA = {
   visibility: "private",                    // private -> Author Profiles render; team|public -> withheld notice
   lens: { name: "product-engineering-desktop", version: 1, status: "experimental", archetype: "product-engineering" },
                                             // null for runs that predate lens tracking; Start Here shows it
+  oversight: {                              // computed from the harvest, no LLM; null for older runs
+    summary: { prs, prs_with_changed_files, prs_without_human_engagement, approvals, silent_approvals, silent_approval_share },
+    per_reviewer: [{ reviewer, prs, approvals, silent_approvals, silent_share, inline_comments, comments_per_pr }],
+    per_axis: [{ axis, tags, high_stakes, prs_touching, prs_touching_without_comment, silent_share, comments, distinct_reviewers }],
+    per_tag: { /* same shape per lens file tag */ },
+  },                                        // Team Gaps shows the per-axis table; Reviewer Fingerprints shows silent approvals per card
 
   // taxonomy — comes from the lens: every lens category is a coverage-grid column,
   // the radar uses the 9 core categories (correctness … dependencies, minus "other")

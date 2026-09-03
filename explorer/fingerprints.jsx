@@ -41,6 +41,7 @@ function ReviewerCard({ r }) {
     category: c,
     value: r.category_freq[c] ?? 0,
   }));
+  const ov = (DATA.oversight && DATA.oversight.per_reviewer || []).find(x => x.reviewer === r.login);
 
   return (
     <div style={{
@@ -51,6 +52,15 @@ function ReviewerCard({ r }) {
         <div>
           <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 18, lineHeight: 1.2 }}>{r.login}</div>
           <Mono dim style={{ fontSize: 11, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>{r.review_style} reviewer</Mono>
+          {ov && ov.approvals > 0 && (
+            <div style={{ marginTop: 6, display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap" }}>
+              <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em" }}>silent approvals</Mono>
+              <Mono style={{ fontSize: 12.5, color: (ov.silent_share || 0) >= 0.5 ? "var(--accent-orange)" : "var(--text)" }}>
+                {ov.silent_approvals} of {ov.approvals} · {Math.round((ov.silent_share || 0) * 100)}%
+              </Mono>
+              <Mono dim style={{ fontSize: 11 }}>· {ov.comments_per_pr} comments / PR</Mono>
+            </div>
+          )}
         </div>
         <SignalBadge q={r.signal_quality} />
       </div>
