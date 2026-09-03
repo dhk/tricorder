@@ -57,7 +57,7 @@ function IntroProse({ children, dim, style }) {
   return (
     <p style={{
       margin: "0 0 10px", fontFamily: "var(--font-sans)",
-      fontWeight: dim ? 300 : 400, fontSize: dim ? 14 : 15, lineHeight: 1.6,
+      fontWeight: 400, fontSize: dim ? 14 : 15, lineHeight: 1.6,
       color: dim ? "var(--text-dim)" : "var(--text)", ...style,
     }}>{children}</p>
   );
@@ -268,8 +268,8 @@ function IntroTab({ onSelect }) {
 
           <IntroCard title="Back to the source">
             <IntroProse dim>
-              This explorer is one output of an open, self-hostable tool. The repository holds the code, the README, and the
-              agent-facing spec that describes every phase in detail.
+              This explorer is one output of an open, self-hostable tool. The repository holds the code, the README, the
+              agent-facing spec that describes every phase in detail, and the primary-source research the lens methodology rests on.
             </IntroProse>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
               {[
@@ -277,6 +277,7 @@ function IntroTab({ onSelect }) {
                 { label: "readme", value: "README.md",  href: `${REPO_URL}#readme` },
                 { label: "spec",   value: "SKILL.md",   href: `${REPO_URL}/blob/main/SKILL.md` },
                 { label: "how-to", value: "HOWTO.md",   href: `${REPO_URL}/blob/main/HOWTO.md` },
+                { label: "research", value: "lens research (primary sources)", href: `${REPO_URL}/blob/main/docs/research/repo-lens/tricorder-lens-methodology-research.md` },
               ].map(({ label, value, href }) => (
                 <div key={label} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
                   <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", minWidth: 62 }}>{label}</Mono>

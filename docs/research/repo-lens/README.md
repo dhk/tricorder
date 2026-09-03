@@ -4,6 +4,7 @@ Opened 2026-09-02. Motivated by the known limitation recorded in [SKILL.md](../.
 
 ## Read in this order
 
+0. [tricorder-lens-methodology-research.md](tricorder-lens-methodology-research.md) — the standing research document: how tricorder reads and recognizes a repository. Start here if you want the evidence rather than the process.
 1. [brief.md](brief.md) — the research questions, each traced to the code or design decision it is meant to fix.
 2. [findings/](findings/) — one file per independent source, named `<source-slug>-findings.md`, all following [findings/TEMPLATE.md](findings/TEMPLATE.md). Lens YAML files from a source go in `findings/<source-slug>-lenses/`.
 3. [handoff-prompt.md](handoff-prompt.md) — the brief, the Tricorder contract, the `block/berd` fingerprint, and the output format bundled into one self-contained prompt for a tool or person with no repository access. Copy it into Perplexity as-is.
@@ -20,7 +21,7 @@ Each source answers the same brief without seeing the others' work. If a second 
 | Brief | written |
 | Scaffold | written |
 | Handoff prompt | sent to Perplexity 2026-09-02 |
-| Findings: Perplexity | received 2026-09-02: `findings/perplexity-findings.md` + `findings/perplexity-lenses/product-engineering-desktop.yaml`. Referenced `platform-engineering.yaml` and `detection-rubric.yaml` were not delivered (tracked as tricorder-8t5.10) |
+| Findings: Perplexity | received 2026-09-02, promoted to [`tricorder-lens-methodology-research.md`](tricorder-lens-methodology-research.md) ("How tricorder reads and recognizes a repository"); lens file at `findings/perplexity-lenses/product-engineering-desktop.yaml`. Referenced `platform-engineering.yaml` and `detection-rubric.yaml` were not delivered (tracked as tricorder-8t5.10) |
 | Findings: Claude | not started (tricorder-8t5.11) |
 | Synthesis | blocked on the Claude findings pass (tricorder-8t5.11) |
 
