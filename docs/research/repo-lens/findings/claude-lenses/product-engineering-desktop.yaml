@@ -1,0 +1,963 @@
+# Lens: product-engineering-desktop
+# Source: Claude (independent pass, Claude Code subagent), 2026-09-03
+# Schema: docs/research/repo-lens/handoff-prompt.md, Part 4, Artifact B.
+# Signal-weight semantics are defined in detection-rubric.yaml (each pattern
+# contributes its weight at most once, regardless of how many files match).
+
+lens:
+  name: product-engineering-desktop
+  version: 1
+  status: experimental
+  extends: product-engineering
+  domain: >-
+    A desktop application whose user interface is a web view (React/TypeScript
+    here) driven by a native core written in Rust, packaged with Tauri and shipped
+    as signed installers for macOS, Windows and Linux. Review concerns a service
+    lens misses: the IPC boundary between the web view and the Rust core, the
+    capability and permission manifests that scope that boundary, Content
+    Security Policy for the web view, unsafe Rust and FFI into platform code
+    (Swift, Objective-C, PowerShell), code signing, notarization and the signed
+    updater, release channels, telemetry consent, accessibility of the UI, and
+    end-to-end tests that exercise the UI the way a user would.
+
+  detection:
+    signals:
+      - pattern: "src-tauri/tauri.conf.json"
+        weight: 10
+        rationale: "Tauri's primary configuration file; the Tauri docs call it the marker file the Tauri CLI looks for."
+        source: "https://v2.tauri.app/start/project-structure/"
+      - pattern: "src-tauri/**"
+        weight: 8
+        rationale: "The Rust half of a Tauri project lives in src-tauri/ by convention; the directory alone is strong evidence even when the config file is not enumerated."
+        source: "https://v2.tauri.app/start/project-structure/"
+      - pattern: "src-tauri/capabilities/**"
+        weight: 3
+        rationale: "Capability files are defined inside src-tauri/capabilities; their presence confirms a Tauri v2 permission model is in use."
+        source: "https://v2.tauri.app/security/capabilities/"
+      - pattern: "src-tauri/Cargo.toml"
+        weight: 3
+        rationale: "The Rust project in src-tauri/ is a standard Cargo project."
+        source: "https://v2.tauri.app/start/project-structure/"
+      - pattern: "**/tauri.{linux,windows,macos}.conf.json"
+        weight: 3
+        rationale: "Platform-specific Tauri config files are merged into the main configuration; they only exist for multi-platform desktop targets."
+        source: "https://v2.tauri.app/reference/config/"
+      - pattern: "{electron-builder.yml,electron-builder.json,forge.config.js,forge.config.ts}"
+        weight: 8
+        rationale: "Electron packaging config identifies the other common web-view desktop shell. Included so the lens is not Tauri-only; weight is a placeholder pending a primary citation (see Open gaps)."
+        source: "none found (see findings Q1 open gaps)"
+      - pattern: "**/*.entitlements"
+        weight: 3
+        rationale: "macOS entitlements files accompany Hardened Runtime and notarization, which Apple requires for Developer ID distribution."
+        source: "https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution"
+      - pattern: "**/*.{wxs,nsi}"
+        weight: 3
+        rationale: "WiX and NSIS installer sources exist only for Windows desktop packaging."
+        source: "https://v2.tauri.app/distribute/sign/windows/"
+      - pattern: "**/*.swift"
+        weight: 2
+        rationale: "Native macOS code alongside a web-view app indicates platform integration a pure web app would not carry."
+        source: "https://v2.tauri.app/reference/config/"
+      - pattern: "**/*.m"
+        weight: 2
+        rationale: "Objective-C alongside a web-view app indicates macOS platform integration. Note .m is ambiguous (MATLAB) in Linguist; weight kept low."
+        source: "https://github.com/github-linguist/linguist/blob/main/docs/how-linguist-works.md"
+      - pattern: "distro/**"
+        weight: 2
+        rationale: "Repository-specific packaging directory observed in the test case; low weight because the name is not a published convention."
+        source: "none found (repository-specific; see findings Q7)"
+      - pattern: "playwright.config.ts"
+        weight: 2
+        rationale: "Browser-driven end-to-end tests; shared with web front-ends, so weak on its own."
+        source: "https://playwright.dev/docs/best-practices"
+      - pattern: "index.html"
+        weight: 2
+        rationale: "A root index.html plus package.json is the static-site shape Tauri bundles into the binary; weak on its own because ordinary web apps share it."
+        source: "https://v2.tauri.app/start/project-structure/"
+      - pattern: "biome.json"
+        weight: 1
+        rationale: "TypeScript/JavaScript toolchain presence; near-zero discriminating power across product sub-profiles."
+        source: "https://biomejs.dev/linter/"
+    counter_signals:
+      - pattern: "dbt_project.yml"
+        weight: -10
+        rationale: "dbt project root; a data-modeling repository, not a desktop app."
+      - pattern: "**/*.tf"
+        weight: -4
+        rationale: "Terraform sources indicate infrastructure ownership; a desktop app repo rarely carries more than a token amount (the test case has 60 bytes of HCL)."
+      - pattern: "{helm,charts,k8s,kubernetes,manifests}/**"
+        weight: -4
+        rationale: "Deployment manifests belong to services, not installed desktop applications."
+      - pattern: "{Chart.yaml,docker-compose.yml,docker-compose.yaml}"
+        weight: -2
+        rationale: "Service composition. Low weight: desktop repos sometimes carry compose files for build tooling."
+      - pattern: "**/*.{xcodeproj,pbxproj}"
+        weight: -3
+        rationale: "A native Xcode project as the primary build indicates a native (non-web-view) app; belongs to a mobile or native-desktop sub-profile."
+    ignore_for_detection:
+      - "CLAUDE.md"
+      - "CLAUDE.local.md"
+      - ".claude/**"
+      - "AGENTS.md"
+      - "**/AGENTS.md"
+      - ".agents/**"
+      - ".cursor/**"
+      - ".cursorrules"
+      - ".github/copilot-instructions.md"
+      - ".windsurf/**"
+      - ".windsurfrules"
+      - ".clinerules"
+      - ".devin/**"
+      - "GEMINI.md"
+      - ".gemini/**"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "GOVERNANCE.md"
+      - "CODEOWNERS"
+      - ".github/CODEOWNERS"
+      - "LICENSE"
+      - "LICENCE"
+      - "README.md"
+      - "CHANGELOG.md"
+      - ".github/workflows/**"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - "node_modules/**"
+      - "**/node_modules/**"
+      - "dist/**"
+      - "vendor/**"
+      - "target/**"
+    min_score: 10
+    min_margin: 5
+    composition_check:
+      languages_expected: [TypeScript, Rust, JavaScript, Swift, Objective-C, PowerShell, Shell, CSS, HTML]
+      languages_unexpected: [SQL, HCL, Go, Java, Kotlin]
+    review_path_check:
+      min_share_of_comments_on_tagged_paths: 0.7
+
+  file_tags:
+    - glob: "src-tauri/capabilities/**"
+      tag: "capability-manifest"
+    - glob: "src-tauri/tauri.conf.json"
+      tag: "tauri-config"
+    - glob: "src-tauri/**/*.rs"
+      tag: "desktop-core-rust"
+    - glob: "src-tauri/**/*.{swift,m,h}"
+      tag: "platform-native"
+    - glob: "crates/**/*.rs"
+      tag: "shared-rust-crate"
+    - glob: "bb-cli/**"
+      tag: "companion-cli"
+    - glob: "**/*.{test,spec}.{ts,tsx}"
+      tag: "test-unit"
+    - glob: "**/e2e/**"
+      tag: "test-e2e"
+    - glob: "playwright*.config.ts"
+      tag: "test-e2e"
+    - glob: "src/**/*.tsx"
+      tag: "ui-react"
+    - glob: "src/**/*.{ts,mjs,js}"
+      tag: "ui-typescript"
+    - glob: "src/**/*.css"
+      tag: "ui-style"
+    - glob: "**/*.{swift,m,h}"
+      tag: "platform-native"
+    - glob: "**/*.{ps1,psm1}"
+      tag: "platform-native"
+    - glob: "{distro,docker}/**"
+      tag: "packaging"
+    - glob: "scripts/**"
+      tag: "build-script"
+    - glob: "**/*.sh"
+      tag: "build-script"
+    - glob: "justfile"
+      tag: "build-script"
+    - glob: ".github/**"
+      tag: "ci"
+    - glob: "lefthook.yml"
+      tag: "ci"
+    - glob: "{biome.json,tsconfig*.json,postcss.config.js,rustfmt.toml,clippy.toml,deny.toml}"
+      tag: "tool-config"
+    - glob: "**/*.lock.json"
+      tag: "dependency-lock"
+    - glob: "{pnpm-lock.yaml,Cargo.lock}"
+      tag: "dependency-lock"
+    - glob: "{TELEMETRY.md,SECURITY.md,PRODUCT.md,DESIGN.md}"
+      tag: "policy-doc"
+    - glob: "LAWS/**"
+      tag: "policy-doc"
+    - glob: "docs/**"
+      tag: "docs"
+    - glob: "**/*.md"
+      tag: "docs"
+
+  # Domain-neutral core (core: true) is identical in platform-engineering.yaml.
+  categories:
+    - id: functional-defect
+      core: true
+      description: "The change does not do what it intends: wrong logic, missed edge case, unchecked return, resource leak, race, wrong interface use."
+      example_comment: "If the workspace path has a trailing slash this strip_prefix returns None and we silently fall through; handle it."
+      axes: [functional-defect]
+    - id: design-structure
+      core: true
+      description: "Organization and solution approach: where code lives, duplication, complexity, module boundaries, whether the change belongs here at all."
+      example_comment: "This duplicates the session-lookup logic in session.rs; pull it into one helper so the two paths cannot drift."
+      axes: [design-structure]
+    - id: naming
+      core: true
+      description: "Identifiers, file names, and messages that do not communicate what the thing is or does, or violate the language's casing convention."
+      example_comment: "`data2` does not say what it holds; call it `pending_messages`."
+      axes: [naming]
+    - id: documentation
+      core: true
+      description: "Missing or misleading comments, doc comments, README or changelog updates for a change that alters behavior or interface."
+      example_comment: "This command changes what the frontend can pass in; document the new argument in the doc comment and the changelog."
+      axes: [documentation]
+    - id: style
+      core: true
+      description: "Formatting and visual layout that a formatter or linter would normalize."
+      example_comment: "Run cargo fmt; the match arms are misaligned."
+      axes: [style]
+    - id: testing
+      core: true
+      description: "Missing, incorrect, or unconvincing tests; test structure; flakiness; test data."
+      example_comment: "Add a test for the empty-transcript case; the PR only covers the happy path."
+      axes: [testing, e2e-ui-coverage]
+    - id: error-handling
+      core: true
+      description: "How failures are represented, propagated, logged, retried, and surfaced; crashes or aborts on reachable paths."
+      example_comment: "This unwrap will panic if the model server is down; return an error the UI can show instead."
+      axes: [error-handling]
+    - id: performance
+      core: true
+      description: "Unnecessary work, allocation, blocking, or resource use with observable cost."
+      example_comment: "This re-serializes the whole conversation on every keystroke; memoize or diff it."
+      axes: [performance, react-state-effects]
+    - id: security
+      core: true
+      description: "Vulnerabilities and unsafe trust assumptions not covered by a more specific category."
+      example_comment: "The API key is being written to the debug log at info level; redact it."
+      axes: [security]
+    - id: dependency-supply-chain
+      core: true
+      description: "Adding, upgrading, pinning, licensing, or auditing third-party dependencies and CI actions."
+      example_comment: "This crate pulls in openssl-sys; we standardized on rustls, and cargo-deny will flag the duplicate."
+      axes: [dependency-supply-chain]
+    - id: process
+      core: true
+      description: "PR hygiene: description, scope, evidence required by the template, changelog, commit structure."
+      example_comment: "The template asks for a before/after recording for UI changes; please attach one."
+      axes: [process]
+    - id: question
+      core: true
+      description: "A request for understanding rather than a finding; the reviewer is asking what or why."
+      example_comment: "Why does this need to run on the main thread? Is it the webview handle?"
+      axes: [design-structure]
+    - id: other
+      core: true
+      description: "Does not fit any category; must be rare, and frequent use indicates the lens is wrong."
+      example_comment: "Unrelated to this change, but the CI badge in the README is stale."
+      axes: [process]
+    - id: ipc-boundary
+      description: "Data crossing the Rust/webview boundary: command argument validation, serialization shape, scoping of paths and URLs, event payload trust."
+      example_comment: "This command accepts an arbitrary path from the frontend; resolve and check it against the workspace scope before reading."
+      axes: [ipc-boundary]
+    - id: capability-scope
+      description: "Capability and permission manifests: which windows or webviews may call which commands, allow/deny scopes, plugin permission sets."
+      example_comment: "The new command is not in any capability file, so this only works because the default capability is too broad; add an explicit permission."
+      axes: [capability-scope]
+    - id: csp-webview
+      description: "Content Security Policy and remote content in the webview: script sources, wasm-unsafe-eval, loading remote assets, isolation pattern."
+      example_comment: "Adding the CDN host to script-src widens the CSP for every window; bundle the library instead."
+      axes: [csp-webview]
+    - id: react-state-effects
+      description: "React purity and hook rules: effect dependencies, state derived in render, side effects during render, keys, component identity."
+      example_comment: "This effect reads `sessionId` but it is missing from the dependency array; it will keep the stale id after switching sessions."
+      axes: [react-state-effects]
+    - id: rust-unsafe
+      description: "unsafe blocks, FFI into Swift/Objective-C/Win32, raw pointers, and whether the safety invariant is stated and upheld."
+      example_comment: "Add a `// SAFETY:` comment explaining why this pointer outlives the callback; otherwise this is unsound if the window closes first."
+      axes: [rust-unsafe]
+    - id: rust-api-idiom
+      description: "Idiomatic Rust per the API Guidelines and Clippy: ownership, conversions, trait impls, error types, clippy warnings."
+      example_comment: "Return `impl Iterator` rather than collecting into a Vec the caller immediately iterates."
+      axes: [rust-api-idiom]
+    - id: packaging-signing
+      description: "Bundling, code signing, notarization, installer configuration, entitlements, platform build scripts."
+      example_comment: "The PowerShell installer step runs unsigned; SmartScreen will warn until the certificateThumbprint is set in the bundle config."
+      axes: [packaging-signing]
+    - id: updater-release
+      description: "Updater endpoints and signatures, release channels, version bumps and semantic versioning, changelog for releases."
+      example_comment: "This bumps the version but the updater manifest URL still points at the beta channel."
+      axes: [updater-release]
+    - id: platform-native
+      description: "Swift, Objective-C, PowerShell and shell code that integrates with the host OS: entitlements, keychain, notifications, window management."
+      example_comment: "This Swift bridge calls into AppKit off the main thread; dispatch to main before touching NSWindow."
+      axes: [platform-native]
+    - id: telemetry-privacy
+      description: "What is collected, when consent is obtained, what is redacted, and whether behavior matches the repository's telemetry policy."
+      example_comment: "This adds the full prompt text to the telemetry event; TELEMETRY.md says we only send event names and counts."
+      axes: [telemetry-privacy]
+    - id: accessibility
+      description: "Keyboard operability, focus management, labels and roles, contrast, and screen-reader behavior of the UI."
+      example_comment: "The new icon button has no accessible name; add aria-label so screen readers announce it."
+      axes: [accessibility]
+    - id: e2e-ui-coverage
+      description: "Playwright coverage of UI changes: locators, web-first assertions, isolation, flakiness, CI execution."
+      example_comment: "Use getByRole('button', { name: 'Send' }) rather than the CSS class; the class changes with the theme."
+      axes: [e2e-ui-coverage]
+
+  authorities:
+    - id: biome-linter
+      name: "Biome linter (rule groups and domains)"
+      publisher: "Biome project"
+      url: "https://biomejs.dev/linter/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [style, accessibility, react-state-effects, security, performance]
+    - id: biome-domains
+      name: "Biome linter domains (react, test, playwright)"
+      publisher: "Biome project"
+      url: "https://biomejs.dev/linter/domains/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [react-state-effects, e2e-ui-coverage]
+    - id: biome-exhaustive-deps
+      name: "Biome rule useExhaustiveDependencies"
+      publisher: "Biome project"
+      url: "https://biomejs.dev/linter/rules/use-exhaustive-dependencies/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [react-state-effects]
+    - id: react-rules
+      name: "Rules of React"
+      publisher: "Meta (react.dev)"
+      url: "https://react.dev/reference/rules"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [react-state-effects, performance]
+    - id: typescript-strict
+      name: "TSConfig reference: strict"
+      publisher: "Microsoft (typescriptlang.org)"
+      url: "https://www.typescriptlang.org/tsconfig/#strict"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [functional-defect, error-handling]
+    - id: rust-api-guidelines
+      name: "Rust API Guidelines checklist"
+      publisher: "Rust project"
+      url: "https://rust-lang.github.io/api-guidelines/checklist.html"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [rust-api-idiom, naming, documentation, error-handling]
+    - id: clippy
+      name: "Clippy lint categories"
+      publisher: "Rust project"
+      url: "https://doc.rust-lang.org/clippy/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [rust-api-idiom, performance, style, error-handling]
+    - id: clippy-undocumented-unsafe
+      name: "Clippy lint undocumented_unsafe_blocks (source)"
+      publisher: "Rust project"
+      url: "https://github.com/rust-lang/rust-clippy/blob/master/clippy_lints/src/undocumented_unsafe_blocks.rs"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [rust-unsafe]
+    - id: rust-reference-unsafety
+      name: "The Rust Reference: Unsafety"
+      publisher: "Rust project"
+      url: "https://doc.rust-lang.org/reference/unsafety.html"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [rust-unsafe]
+    - id: rustonomicon
+      name: "The Rustonomicon"
+      publisher: "Rust project"
+      url: "https://doc.rust-lang.org/nomicon/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [rust-unsafe, platform-native]
+    - id: rust-std-safety-comments
+      name: "Rust standard library developers guide: Safety comments"
+      publisher: "Rust project"
+      url: "https://std-dev-guide.rust-lang.org/policy/safety-comments.html"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [rust-unsafe, documentation]
+    - id: rustfmt
+      name: "rustfmt"
+      publisher: "Rust project"
+      url: "https://github.com/rust-lang/rustfmt"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [style]
+    - id: cargo-deny
+      name: "cargo-deny book"
+      publisher: "Embark Studios"
+      url: "https://embarkstudios.github.io/cargo-deny/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [dependency-supply-chain]
+    - id: cargo-audit
+      name: "cargo-audit README"
+      publisher: "RustSec"
+      url: "https://github.com/rustsec/rustsec/blob/main/cargo-audit/README.md"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [dependency-supply-chain]
+    - id: tauri-security
+      name: "Tauri Security overview"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/security/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [security, ipc-boundary]
+    - id: tauri-ipc
+      name: "Tauri Inter-Process Communication"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/concept/inter-process-communication/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [ipc-boundary]
+    - id: tauri-isolation
+      name: "Tauri Isolation Pattern"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/concept/inter-process-communication/isolation/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [ipc-boundary, csp-webview]
+    - id: tauri-permissions
+      name: "Tauri Permissions"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/security/permissions/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [capability-scope]
+    - id: tauri-capabilities
+      name: "Tauri Capabilities"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/security/capabilities/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [capability-scope]
+    - id: tauri-scope
+      name: "Tauri Command Scopes"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/security/scope/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [capability-scope, ipc-boundary]
+    - id: tauri-csp
+      name: "Tauri Content Security Policy"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/security/csp/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [csp-webview]
+    - id: tauri-config
+      name: "Tauri Configuration reference"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/reference/config/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [csp-webview, packaging-signing, capability-scope, platform-native]
+    - id: tauri-project-structure
+      name: "Tauri Project Structure"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/start/project-structure/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [design-structure]
+    - id: tauri-updater
+      name: "Tauri Updater plugin"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/plugin/updater/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [updater-release]
+    - id: tauri-lifecycle
+      name: "Tauri Application Lifecycle Threats"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/security/lifecycle/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [dependency-supply-chain, packaging-signing, updater-release, security]
+    - id: tauri-sign-macos
+      name: "Tauri: macOS Code Signing"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/distribute/sign/macos/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [packaging-signing]
+    - id: tauri-sign-windows
+      name: "Tauri: Windows Code Signing"
+      publisher: "Tauri Programme (v2.tauri.app)"
+      url: "https://v2.tauri.app/distribute/sign/windows/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [packaging-signing]
+    - id: apple-notarization
+      name: "Notarizing macOS software before distribution"
+      publisher: "Apple Developer Documentation"
+      url: "https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [packaging-signing, platform-native]
+    - id: ms-authenticode
+      name: "Authenticode Digital Signatures"
+      publisher: "Microsoft Learn"
+      url: "https://learn.microsoft.com/en-us/windows-hardware/drivers/install/authenticode"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [packaging-signing]
+    - id: semver
+      name: "Semantic Versioning 2.0.0"
+      publisher: "semver.org (Tom Preston-Werner)"
+      url: "https://semver.org/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [updater-release]
+    - id: wcag22
+      name: "Web Content Accessibility Guidelines (WCAG) 2.2"
+      publisher: "W3C"
+      url: "https://www.w3.org/TR/WCAG22/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [accessibility]
+    - id: wcag2ict
+      name: "Guidance on Applying WCAG 2 to Non-Web ICT (WCAG2ICT)"
+      publisher: "W3C"
+      url: "https://www.w3.org/TR/wcag2ict-22/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [accessibility]
+    - id: playwright-best-practices
+      name: "Playwright Best Practices"
+      publisher: "Microsoft (playwright.dev)"
+      url: "https://playwright.dev/docs/best-practices"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [e2e-ui-coverage, testing]
+    - id: lefthook
+      name: "Lefthook"
+      publisher: "Evil Martians"
+      url: "https://lefthook.dev/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [process, style]
+    - id: gh-actions-hardening
+      name: "Security hardening for GitHub Actions"
+      publisher: "GitHub Docs"
+      url: "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [dependency-supply-chain, security]
+    - id: gh-protected-branches
+      name: "About protected branches"
+      publisher: "GitHub Docs"
+      url: "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [process, testing]
+    - id: google-looking-for
+      name: "What to look for in a code review"
+      publisher: "Google Engineering Practices"
+      url: "https://google.github.io/eng-practices/review/reviewer/looking-for.html"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [functional-defect, design-structure, naming, documentation, style, testing]
+    - id: berd-telemetry-policy
+      name: "block/berd TELEMETRY.md (repository-local telemetry policy)"
+      publisher: "block/berd maintainers"
+      url: "https://github.com/block/berd/blob/main/TELEMETRY.md"
+      kind: secondary
+      retrieved: 2026-09-03
+      covers: [telemetry-privacy]
+
+  axes:
+    - id: ipc-boundary
+      question: "Are Tauri commands validated at the boundary (argument types, path and URL scoping, serializable return types) and are event payloads treated as untrusted?"
+      categories: [ipc-boundary]
+      authorities: [tauri-ipc, tauri-scope, tauri-security, tauri-isolation]
+      enforceable_by:
+        - tool: "tauri capabilities manifest"
+          config: "src-tauri/capabilities/*.json"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: capability-scope
+      question: "Is every command exposed to the webview covered by an explicit permission in a capability file, with allow/deny scopes that are as narrow as the feature needs?"
+      categories: [capability-scope]
+      authorities: [tauri-capabilities, tauri-permissions, tauri-scope, tauri-config]
+      enforceable_by:
+        - tool: "tauri capabilities manifest"
+          config: "src-tauri/capabilities/*.json"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: csp-webview
+      question: "Is app.security.csp set and restrictive, is remote content avoided, and is the isolation pattern considered for untrusted frontend dependencies?"
+      categories: [csp-webview]
+      authorities: [tauri-csp, tauri-config, tauri-isolation]
+      enforceable_by:
+        - tool: "tauri config"
+          config: "src-tauri/tauri.conf.json"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: react-state-effects
+      question: "Do components and hooks follow the Rules of React: pure render, correct effect dependencies, hooks at top level, stable keys, no state derived during render?"
+      categories: [react-state-effects, performance]
+      authorities: [react-rules, biome-domains, biome-exhaustive-deps]
+      enforceable_by:
+        - tool: "biome"
+          config: "biome.json"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: rust-unsafe
+      question: "Does every unsafe block and FFI call carry a SAFETY comment stating the invariant, and is the invariant actually upheld?"
+      categories: [rust-unsafe]
+      authorities: [rust-reference-unsafety, rustonomicon, rust-std-safety-comments, clippy-undocumented-unsafe]
+      enforceable_by:
+        - tool: "clippy"
+          config: "src-tauri/Cargo.toml [lints] or clippy.toml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: rust-api-idiom
+      question: "Does the Rust follow the API Guidelines (naming, conversions, common traits, error types) and pass Clippy at the team's configured level?"
+      categories: [rust-api-idiom, naming, error-handling]
+      authorities: [rust-api-guidelines, clippy, rustfmt]
+      enforceable_by:
+        - tool: "clippy"
+          config: "src-tauri/Cargo.toml [lints] or clippy.toml"
+          coverage: partial
+        - tool: "rustfmt"
+          config: "rustfmt.toml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: dependency-supply-chain
+      question: "Are new crates and npm packages audited for advisories and licenses, are CI actions pinned, and are critical dependencies pinned by hash or lockfile?"
+      categories: [dependency-supply-chain]
+      authorities: [cargo-deny, cargo-audit, tauri-lifecycle, gh-actions-hardening]
+      enforceable_by:
+        - tool: "cargo-deny"
+          config: "deny.toml"
+          coverage: full
+        - tool: "cargo-audit"
+          config: "Cargo.lock"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: packaging-signing
+      question: "Are installers built, signed and notarized per platform (Developer ID plus notarization on macOS, Authenticode on Windows), with entitlements and bundle config reviewed when they change?"
+      categories: [packaging-signing, platform-native]
+      authorities: [tauri-sign-macos, tauri-sign-windows, apple-notarization, ms-authenticode, tauri-config]
+      enforceable_by:
+        - tool: "tauri config"
+          config: "src-tauri/tauri.conf.json"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: updater-release
+      question: "Are updates signed with the updater key, served over TLS, versioned per SemVer, and are release channels and changelogs kept consistent?"
+      categories: [updater-release]
+      authorities: [tauri-updater, semver, tauri-lifecycle]
+      enforceable_by:
+        - tool: "tauri updater plugin"
+          config: "src-tauri/tauri.conf.json"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: platform-native
+      question: "Is native Swift, Objective-C, PowerShell and shell code reviewed for threading, entitlements, and OS API misuse, and is the Rust side of each FFI bridge sound?"
+      categories: [platform-native, rust-unsafe]
+      authorities: [rustonomicon, apple-notarization, tauri-config]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: telemetry-privacy
+      question: "Does every new telemetry event match the repository's telemetry policy on what is collected, consent, and redaction?"
+      categories: [telemetry-privacy]
+      authorities: [berd-telemetry-policy, tauri-lifecycle]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: accessibility
+      question: "Are new UI elements keyboard-operable, labeled, focus-managed and contrast-checked per WCAG 2.2 as applied to non-web software?"
+      categories: [accessibility]
+      authorities: [wcag22, wcag2ict, biome-linter]
+      enforceable_by:
+        - tool: "biome"
+          config: "biome.json"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: e2e-ui-coverage
+      question: "Do UI changes come with Playwright coverage that uses role-based locators and web-first assertions, runs in CI, and is isolated per test?"
+      categories: [e2e-ui-coverage, testing]
+      authorities: [playwright-best-practices, biome-domains]
+      enforceable_by:
+        - tool: "playwright"
+          config: "playwright.config.ts"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: functional-defect
+      question: "Does the change do what the author intended, including edge cases the reviewer can see and the author missed?"
+      categories: [functional-defect, question]
+      authorities: [google-looking-for, typescript-strict]
+      enforceable_by:
+        - tool: "tsc"
+          config: "tsconfig.json"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+    - id: design-structure
+      question: "Is the change in the right place, at the right size, without duplication, and consistent with how the codebase is organized (src/ UI, src-tauri/ core, crates/ shared, bb-cli/ companion)?"
+      categories: [design-structure, question]
+      authorities: [google-looking-for, tauri-project-structure]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: naming
+      question: "Do names communicate purpose and follow the language's casing conventions (RFC 430 casing in Rust, camelCase/PascalCase in TypeScript and React)?"
+      categories: [naming]
+      authorities: [google-looking-for, rust-api-guidelines]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: documentation
+      question: "Are doc comments, README, changelog and policy documents updated when behavior, interfaces, or telemetry change?"
+      categories: [documentation]
+      authorities: [google-looking-for, rust-api-guidelines, rust-std-safety-comments]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: style
+      question: "Is formatting left to Biome and rustfmt, and do reviewers avoid spending comments on it?"
+      categories: [style]
+      authorities: [biome-linter, rustfmt, lefthook]
+      enforceable_by:
+        - tool: "biome"
+          config: "biome.json"
+          coverage: full
+        - tool: "rustfmt"
+          config: "rustfmt.toml"
+          coverage: full
+        - tool: "lefthook"
+          config: "lefthook.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+    - id: testing
+      question: "Are unit tests present, correct and useful for the change, and does CI block merge on them?"
+      categories: [testing]
+      authorities: [google-looking-for, gh-protected-branches]
+      enforceable_by:
+        - tool: "github-actions"
+          config: ".github/workflows/*.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: error-handling
+      question: "Are errors typed and propagated rather than unwrapped, and does the UI receive something it can show?"
+      categories: [error-handling]
+      authorities: [rust-api-guidelines, clippy, typescript-strict]
+      enforceable_by:
+        - tool: "clippy"
+          config: "src-tauri/Cargo.toml [lints] or clippy.toml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+    - id: performance
+      question: "Does the change avoid observable cost: unnecessary re-renders, blocking the UI thread, redundant serialization across IPC, allocation in hot loops?"
+      categories: [performance]
+      authorities: [react-rules, clippy]
+      enforceable_by:
+        - tool: "clippy"
+          config: "src-tauri/Cargo.toml [lints] or clippy.toml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+    - id: security
+      question: "Beyond the IPC and capability axes, are secrets, logs, file permissions and CI workflows handled safely?"
+      categories: [security]
+      authorities: [tauri-security, gh-actions-hardening, tauri-lifecycle]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: process
+      question: "Does the PR follow the template (summary, related issue, testing evidence with screenshots or recording for UI changes) and keep scope reviewable?"
+      categories: [process, other]
+      authorities: [lefthook, gh-protected-branches, google-looking-for]
+      enforceable_by:
+        - tool: "lefthook"
+          config: "lefthook.yml"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: false
+
+  tooling_gates:
+    - tool: biome
+      config_file: "biome.json"
+      enforces: [style, react-state-effects, accessibility]
+      source: "https://biomejs.dev/linter/"
+    - tool: rustfmt
+      config_file: "rustfmt.toml"
+      enforces: [style]
+      source: "https://github.com/rust-lang/rustfmt"
+    - tool: clippy
+      config_file: "clippy.toml"
+      enforces: [rust-api-idiom, rust-unsafe, error-handling, performance]
+      source: "https://doc.rust-lang.org/clippy/"
+    - tool: cargo-deny
+      config_file: "deny.toml"
+      enforces: [dependency-supply-chain]
+      source: "https://embarkstudios.github.io/cargo-deny/"
+    - tool: playwright
+      config_file: "playwright.config.ts"
+      enforces: [e2e-ui-coverage]
+      source: "https://playwright.dev/docs/best-practices"
+    - tool: lefthook
+      config_file: "lefthook.yml"
+      enforces: [style, process]
+      source: "https://lefthook.dev/"
+    - tool: tauri-capabilities
+      config_file: "src-tauri/capabilities/default.json"
+      enforces: [capability-scope]
+      source: "https://v2.tauri.app/security/capabilities/"
+    - tool: tauri-config
+      config_file: "src-tauri/tauri.conf.json"
+      enforces: [csp-webview, packaging-signing, updater-release]
+      source: "https://v2.tauri.app/reference/config/"
+    - tool: tsc
+      config_file: "tsconfig.json"
+      enforces: [functional-defect]
+      source: "https://www.typescriptlang.org/tsconfig/#strict"
+
+  prompt_context:
+    phase1_pr_extraction: |
+      This repository is a Tauri desktop application: a React/TypeScript web view
+      (src/) driven by a Rust core (src-tauri/, crates/) with a companion CLI
+      (bb-cli/) and native macOS/Windows integration (Swift, Objective-C,
+      PowerShell). Classify each review pattern with the lens categories. Prefer
+      the specific category (ipc-boundary, capability-scope, csp-webview,
+      react-state-effects, rust-unsafe, rust-api-idiom, packaging-signing,
+      updater-release, platform-native, telemetry-privacy, accessibility,
+      e2e-ui-coverage) over a core category when the comment is about that
+      concern. Use the file tag shown next to each inline comment to decide which
+      side of the IPC boundary the comment addresses. Cite standards only from the
+      lens authority list: Tauri security docs, Rules of React, Biome, Rust API
+      Guidelines, Clippy, the Rustonomicon, cargo-deny, Playwright, WCAG 2.2, and
+      the platform signing docs. A pattern is deterministic only if a tool
+      present in this repository (Biome, rustfmt, Clippy, cargo-deny, Playwright,
+      lefthook, GitHub Actions) enforces it.
+    phase2_reviewer_fingerprint: |
+      Describe each reviewer's focus in this desktop application's terms. Meaningful
+      focus areas are: the Rust/webview IPC boundary and command scoping; capability
+      and permission manifests; CSP and remote content; React state, effects and
+      hook hygiene; unsafe Rust and FFI soundness; idiomatic Rust and Clippy;
+      dependency and license auditing; packaging, signing and notarization; the
+      signed updater and release channels; native platform code; telemetry and
+      privacy; accessibility; and Playwright coverage of UI changes. Note whether a
+      reviewer works mostly on src/ (UI), src-tauri/ and crates/ (core), or bb-cli/,
+      and whether their comments are findings or questions. A blind spot is an axis
+      the reviewer never touches even when the files they comment on are the ones
+      where it would arise. Cite only authorities from the lens list.
+    phase3_author_growth: |
+      Describe growth for a contributor to a Tauri desktop app. Strengths and growth
+      areas should be stated as lens axes: for example, learning to scope commands
+      and add capability entries, adopting SAFETY comments on unsafe blocks, fixing
+      effect dependency arrays, attaching Playwright coverage and recordings to UI
+      changes, or handling signing and updater configuration carefully. Support in
+      this domain looks like: pairing on the Rust side of the boundary for UI-first
+      authors, or on React hooks for Rust-first authors; pointing to the Tauri
+      security docs, Rules of React, the Rust API Guidelines and the Rustonomicon;
+      and asking for a recording with UI changes. Track whether an author's
+      persistent growth areas cluster on one side of the IPC boundary.
+    phase4_team_gaps: |
+      This is a Tauri desktop application. The named best practices whose absence
+      from the review record is itself a finding are: explicit validation and
+      scoping of Tauri commands; every exposed command covered by a capability
+      file; a restrictive CSP with no remote scripts; Rules of React and exhaustive
+      effect dependencies; SAFETY comments on every unsafe block and FFI call;
+      Clippy and rustfmt as gates; cargo-deny or cargo-audit for advisories and
+      licenses; pinned GitHub Actions and least-privilege tokens; Developer ID
+      signing plus notarization on macOS and Authenticode on Windows; a signed,
+      TLS-only updater; telemetry that matches TELEMETRY.md; WCAG 2.2 accessibility
+      of new UI; and Playwright coverage of UI changes. Type each gap as
+      coverage_gap, knowledge_gap or blind_spot. Institutionalization candidates
+      are patterns a reviewer keeps raising that Biome, Clippy, cargo-deny,
+      Playwright, lefthook or a capability file could enforce instead.
+    interpret: |
+      Map findings to the lens authorities: Tauri security, IPC, capabilities,
+      permissions, scopes, CSP, updater and signing docs; Rules of React and Biome;
+      the Rust API Guidelines, Clippy, the Rust Reference on unsafety, the
+      Rustonomicon and the std-dev-guide safety-comment policy; cargo-deny and
+      cargo-audit; Apple notarization and Microsoft Authenticode; WCAG 2.2 and
+      WCAG2ICT; Playwright best practices; SemVer. Domain blind spots are lens axes
+      with phase4_absence_is_finding set that no review touched. Quick wins are
+      review patterns already at convention or rule that a tool present in the
+      repository can make deterministic. Summarize the lens as: a React/TypeScript
+      web view over a Rust core, shipped as signed desktop installers, reviewed at
+      the IPC boundary, in the capability manifests, and in the packaging and
+      update path.
+
+  must_not:
+    - "Cite dbt, SQLFluff, Kimball, dbt-project-evaluator, or any data-warehouse practice."
+    - "Report gaps about grain, fact models, dimensional modeling, source freshness, incremental models, exposures, or macros."
+    - "Recommend Kubernetes manifests, Helm charts, Terraform, or service deployment practices for this application."
+    - "Treat CLAUDE.md, AGENTS.md, or .agents/ as evidence that the team builds AI agents."
+    - "Describe the companion CLI (bb-cli/) as the primary product."
+
+  validation:
+    test_repo: "block/berd"
+    expected_selection: true
+    expected_score_min: 19
+    expected_runner_up: "platform-engineering"
+    evidence:
+      - axis: ipc-boundary
+        evidence: "168 of 471 inline comments are under src-tauri/ and 170 are on .rs files, while 267 are under src/ (131 .tsx, 131 .ts); both sides of the boundary are actively reviewed."
+      - axis: capability-scope
+        evidence: "src-tauri/ is confirmed from comment paths; Tauri v2 stores capability files under src-tauri/capabilities, so command exposure is reviewable there (4 comments on .json files)."
+      - axis: csp-webview
+        evidence: "index.html at the repository root and 23,999 bytes of HTML with 88,839 bytes of CSS: a bundled web view whose CSP lives in tauri.conf.json."
+      - axis: react-state-effects
+        evidence: "131 inline comments on .tsx files and 15.3 MB of TypeScript; biome.json is present, and Biome's react domain auto-enables from package.json."
+      - axis: rust-unsafe
+        evidence: "170 .rs comments, 76,479 bytes of Objective-C, 28,306 bytes of Swift and 3,434 bytes of C: FFI surface exists where unsafe blocks are needed."
+      - axis: rust-api-idiom
+        evidence: "3,781,965 bytes of Rust across src-tauri/ and crates/; 1 comment on a .toml file."
+      - axis: dependency-supply-chain
+        evidence: "pnpm-lock.yaml, acp-tools.lock.json, goose-backend.lock.json and node-runtime.lock.json at the root; 4 comments on .json files."
+      - axis: packaging-signing
+        evidence: "distro/ directory, 205,723 bytes of PowerShell, 173,036 bytes of Shell, 12 comments on .sh files, 7 on .swift and 4 on .m."
+      - axis: updater-release
+        evidence: "CHANGELOG.md at the root and a versioned desktop app; the updater plugin's signature requirement applies to every release."
+      - axis: platform-native
+        evidence: "7 comments on .swift and 4 on .m files; Swift, Objective-C and PowerShell bytes present."
+      - axis: telemetry-privacy
+        evidence: "TELEMETRY.md at the repository root is a repository-local policy reviewers can hold changes to."
+      - axis: accessibility
+        evidence: "131 .tsx comments on a user-facing UI; no a11y-specific comment is visible in the histogram, which is why absence is a finding."
+      - axis: e2e-ui-coverage
+        evidence: "playwright.config.ts and playwright.table-overflow.config.ts at the root; the PR template requires before/after screenshots or a recording for UI changes."
+      - axis: testing
+        evidence: "PR template has a Testing section; CI present under .github/ (2 comments on .github/ paths, 2 on .yml)."
+      - axis: process
+        evidence: "PR template with Summary, Related issue, Testing sections; lefthook.yml present; 4 comments on .md and 4 under LAWS/."
+    smoke_checks:
+      - "grain"
+      - "fact model"
+      - "dbt"
+      - "SQLFluff"
+      - "Kimball"
+      - "source freshness"
+      - "dimensional model"
+      - "Helm chart"
+      - "Kubernetes"
+      - "data warehouse"

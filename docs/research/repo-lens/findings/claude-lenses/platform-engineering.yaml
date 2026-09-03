@@ -1,0 +1,688 @@
+# Lens: platform-engineering
+# Source: Claude (independent pass, Claude Code subagent), 2026-09-03
+# Schema: docs/research/repo-lens/handoff-prompt.md, Part 4, Artifact B.
+# Signal-weight semantics are defined in detection-rubric.yaml.
+
+lens:
+  name: platform-engineering
+  version: 1
+  status: experimental
+  domain: >-
+    A repository whose primary artifacts are the infrastructure, delivery
+    pipeline and runtime configuration for services: container images,
+    Kubernetes manifests or Helm charts, Terraform or other infrastructure as
+    code, CI/CD workflow definitions, deployment and rollout tooling, and the
+    observability and reliability configuration around them. Reviewers here
+    care about image hygiene, least privilege in workloads and CI tokens,
+    reproducible and pinned builds, provenance and signing of artifacts,
+    secrets handling, monitoring of the four golden signals, API contracts and
+    versioning of anything other teams consume, and whether a change can be
+    rolled out and rolled back safely.
+
+  detection:
+    signals:
+      - pattern: "**/*.tf"
+        weight: 6
+        rationale: "Terraform configuration is the clearest infrastructure-as-code indicator; the HashiCorp style guide defines its review conventions."
+        source: "https://developer.hashicorp.com/terraform/language/style"
+      - pattern: "{terraform,infra,infrastructure}/**"
+        weight: 3
+        rationale: "Conventional IaC directories; weaker than the .tf files themselves."
+        source: "https://developer.hashicorp.com/terraform/language/style"
+      - pattern: "**/Chart.yaml"
+        weight: 6
+        rationale: "Helm chart root; a packaged Kubernetes deployment. Weight placeholder pending a Helm primary citation (see Open gaps)."
+        source: "none found (see findings Q1 open gaps)"
+      - pattern: "{k8s,kubernetes,manifests,deploy,deployment}/**/*.{yaml,yml}"
+        weight: 5
+        rationale: "Kubernetes resource manifests kept in version control, as the Kubernetes configuration guidance recommends."
+        source: "https://kubernetes.io/docs/concepts/configuration/overview/"
+      - pattern: "**/Dockerfile"
+        weight: 4
+        rationale: "Container image definition. Medium weight: desktop and library repos also carry Dockerfiles for CI images (the test case has one under docker/)."
+        source: "https://docs.docker.com/build/building/best-practices/"
+      - pattern: "**/*.Dockerfile"
+        weight: 3
+        rationale: "Multiple named image definitions indicate image ownership rather than a build convenience."
+        source: "https://docs.docker.com/build/building/best-practices/"
+      - pattern: "{docker-compose.yml,docker-compose.yaml,compose.yml,compose.yaml}"
+        weight: 3
+        rationale: "Multi-service composition for local or test environments."
+        source: "https://docs.docker.com/build/building/best-practices/"
+      - pattern: "**/*.hcl"
+        weight: 2
+        rationale: "HCL outside .tf files (Packer, Nomad, Vault) still indicates infrastructure tooling; low weight because of small incidental files (60 bytes in the test case)."
+        source: "https://developer.hashicorp.com/terraform/language/style"
+      - pattern: "{ansible,playbooks}/**"
+        weight: 4
+        rationale: "Configuration management. Weight placeholder pending an Ansible primary citation (see Open gaps)."
+        source: "none found (see findings Q1 open gaps)"
+      - pattern: "{openapi,swagger}.{yaml,yml,json}"
+        weight: 4
+        rationale: "An HTTP API contract in the OpenAPI format identifies a service repository or platform API."
+        source: "https://spec.openapis.org/oas/latest.html"
+      - pattern: "**/openapi/**"
+        weight: 2
+        rationale: "OpenAPI documents in a directory; weaker than a root contract file."
+        source: "https://spec.openapis.org/oas/latest.html"
+      - pattern: "go.mod"
+        weight: 2
+        rationale: "Go is common for platform tooling, but go.mod only marks a Go module root; it does not by itself say what the module is."
+        source: "https://go.dev/ref/mod#go-mod-file"
+      - pattern: "{Procfile,serverless.yml,Pulumi.yaml,skaffold.yaml,kustomization.yaml}"
+        weight: 4
+        rationale: "Deployment descriptors for PaaS, serverless, Pulumi, Skaffold or Kustomize. Weight placeholder pending primary citations (see Open gaps)."
+        source: "none found (see findings Q1 open gaps)"
+      - pattern: ".hadolint.yaml"
+        weight: 2
+        rationale: "A Dockerfile linter config indicates the team treats images as first-class reviewed artifacts."
+        source: "https://github.com/hadolint/hadolint"
+    counter_signals:
+      - pattern: "src-tauri/tauri.conf.json"
+        weight: -8
+        rationale: "A Tauri desktop application; container files there are build tooling, not the product."
+      - pattern: "src-tauri/**"
+        weight: -6
+        rationale: "Tauri Rust core directory; the repository is a desktop app."
+      - pattern: "dbt_project.yml"
+        weight: -10
+        rationale: "dbt project root; analytics engineering."
+      - pattern: "**/*.{xcodeproj,pbxproj}"
+        weight: -4
+        rationale: "Native Apple app project."
+      - pattern: "{electron-builder.yml,forge.config.js,forge.config.ts}"
+        weight: -6
+        rationale: "Electron desktop packaging."
+    ignore_for_detection:
+      - "CLAUDE.md"
+      - "CLAUDE.local.md"
+      - ".claude/**"
+      - "AGENTS.md"
+      - "**/AGENTS.md"
+      - ".agents/**"
+      - ".cursor/**"
+      - ".cursorrules"
+      - ".github/copilot-instructions.md"
+      - ".windsurf/**"
+      - ".windsurfrules"
+      - ".clinerules"
+      - ".devin/**"
+      - "GEMINI.md"
+      - ".gemini/**"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "GOVERNANCE.md"
+      - "CODEOWNERS"
+      - ".github/CODEOWNERS"
+      - "LICENSE"
+      - "LICENCE"
+      - "README.md"
+      - "CHANGELOG.md"
+      - ".github/workflows/**"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
+      - "node_modules/**"
+      - "**/node_modules/**"
+      - "dist/**"
+      - "vendor/**"
+      - "target/**"
+    min_score: 10
+    min_margin: 5
+    composition_check:
+      languages_expected: [HCL, Dockerfile, Shell, Go, Python, YAML, Makefile, Smarty]
+      languages_unexpected: [Swift, Objective-C, SQL, Kotlin, TSX]
+    review_path_check:
+      min_share_of_comments_on_tagged_paths: 0.7
+
+  file_tags:
+    - glob: "**/*.tf"
+      tag: "iac-terraform"
+    - glob: "**/*.tfvars"
+      tag: "iac-terraform"
+    - glob: "**/*.hcl"
+      tag: "iac-hcl"
+    - glob: "**/Chart.yaml"
+      tag: "helm-chart"
+    - glob: "**/charts/**"
+      tag: "helm-chart"
+    - glob: "**/templates/**/*.{yaml,yml,tpl}"
+      tag: "helm-chart"
+    - glob: "{k8s,kubernetes,manifests,deploy,deployment}/**"
+      tag: "k8s-manifest"
+    - glob: "**/kustomization.yaml"
+      tag: "k8s-manifest"
+    - glob: "**/Dockerfile"
+      tag: "container-image"
+    - glob: "**/*.Dockerfile"
+      tag: "container-image"
+    - glob: "**/.dockerignore"
+      tag: "container-image"
+    - glob: "{docker-compose,compose}.{yml,yaml}"
+      tag: "container-compose"
+    - glob: ".github/workflows/**"
+      tag: "ci-workflow"
+    - glob: "{.gitlab-ci.yml,Jenkinsfile,.circleci/**}"
+      tag: "ci-workflow"
+    - glob: "{ansible,playbooks}/**"
+      tag: "config-mgmt"
+    - glob: "{openapi,swagger}.{yaml,yml,json}"
+      tag: "api-contract"
+    - glob: "**/openapi/**"
+      tag: "api-contract"
+    - glob: "**/*.proto"
+      tag: "api-contract"
+    - glob: "{monitoring,observability,alerts,dashboards}/**"
+      tag: "observability"
+    - glob: "**/*_test.go"
+      tag: "test"
+    - glob: "**/test*/**"
+      tag: "test"
+    - glob: "**/*.{test,spec}.{ts,js,py}"
+      tag: "test"
+    - glob: "**/*.go"
+      tag: "service-go"
+    - glob: "**/*.py"
+      tag: "service-python"
+    - glob: "**/*.{ts,js}"
+      tag: "service-typescript"
+    - glob: "**/*.sh"
+      tag: "script"
+    - glob: "{Makefile,justfile}"
+      tag: "script"
+    - glob: "{go.mod,go.sum,pyproject.toml,package.json,pnpm-lock.yaml,package-lock.json}"
+      tag: "dependency-manifest"
+    - glob: "docs/**"
+      tag: "docs"
+    - glob: "**/*.md"
+      tag: "docs"
+
+  # Domain-neutral core (core: true) is identical in product-engineering-desktop.yaml.
+  categories:
+    - id: functional-defect
+      core: true
+      description: "The change does not do what it intends: wrong logic, missed edge case, unchecked return, resource leak, race, wrong interface use."
+      example_comment: "The readiness probe hits /health before the DB pool is initialized, so the pod reports ready and then 500s; probe /ready instead."
+      axes: [functional-defect]
+    - id: design-structure
+      core: true
+      description: "Organization and solution approach: where code lives, duplication, complexity, module boundaries, whether the change belongs here at all."
+      example_comment: "Three environments now copy the same 200 lines of module wiring; make it one module with a variables map."
+      axes: [design-structure]
+    - id: naming
+      core: true
+      description: "Identifiers, file names, and messages that do not communicate what the thing is or does, or violate the language's casing convention."
+      example_comment: "Resource name `aws_s3_bucket.bucket2` says nothing; name it for what it stores, and do not repeat the type."
+      axes: [naming]
+    - id: documentation
+      core: true
+      description: "Missing or misleading comments, doc comments, README or changelog updates for a change that alters behavior or interface."
+      example_comment: "Every variable needs a type and a description; `region` has neither."
+      axes: [documentation]
+    - id: style
+      core: true
+      description: "Formatting and visual layout that a formatter or linter would normalize."
+      example_comment: "Run terraform fmt; the alignment is off in the locals block."
+      axes: [style]
+    - id: testing
+      core: true
+      description: "Missing, incorrect, or unconvincing tests; test structure; flakiness; test data."
+      example_comment: "Add a plan-diff test for this module; nothing proves the new variable is wired through."
+      axes: [testing]
+    - id: error-handling
+      core: true
+      description: "How failures are represented, propagated, logged, retried, and surfaced; crashes or aborts on reachable paths."
+      example_comment: "This retries forever on a 4xx; only retry on 5xx and add a cap."
+      axes: [error-handling, reliability-rollout]
+    - id: performance
+      core: true
+      description: "Unnecessary work, allocation, blocking, or resource use with observable cost."
+      example_comment: "Each layer reinstalls apt packages because the COPY comes first; move the COPY after the RUN to keep the cache."
+      axes: [performance, container-image]
+    - id: security
+      core: true
+      description: "Vulnerabilities and unsafe trust assumptions not covered by a more specific category."
+      example_comment: "The service account is bound to cluster-admin; scope a Role to the namespace it needs."
+      axes: [security, workload-least-privilege]
+    - id: dependency-supply-chain
+      core: true
+      description: "Adding, upgrading, pinning, licensing, or auditing third-party dependencies and CI actions."
+      example_comment: "Pin actions/checkout to a full commit SHA, not @v4; a tag can be moved."
+      axes: [dependency-supply-chain, ci-workflow-security]
+    - id: process
+      core: true
+      description: "PR hygiene: description, scope, evidence required by the template, changelog, commit structure."
+      example_comment: "This changes a production security group; the PR needs a rollback plan in the description."
+      axes: [process]
+    - id: question
+      core: true
+      description: "A request for understanding rather than a finding; the reviewer is asking what or why."
+      example_comment: "Why does this job need contents: write? I only see it reading the repo."
+      axes: [design-structure]
+    - id: other
+      core: true
+      description: "Does not fit any category; must be rare, and frequent use indicates the lens is wrong."
+      example_comment: "Unrelated, but the README diagram still shows the old cluster layout."
+      axes: [process]
+    - id: container-image
+      description: "Dockerfile hygiene: base image pinning, multi-stage builds, non-root USER, layer ordering, .dockerignore, no secrets in layers."
+      example_comment: "Use a digest-pinned base image and drop to a non-root USER in the final stage."
+      axes: [container-image]
+    - id: k8s-manifest
+      description: "Kubernetes resources: API versions, resource requests and limits, probes, labels, no naked pods, image tags not :latest."
+      example_comment: "Set resource requests and limits on this container, and use a versioned image tag instead of :latest."
+      axes: [k8s-manifest, workload-least-privilege]
+    - id: iac-terraform
+      description: "Terraform and other IaC: module structure, version pinning, variable types and descriptions, state and secrets handling, fmt and validate."
+      example_comment: "Pin the module to a major.minor and set required_version; unpinned modules will drift between applies."
+      axes: [iac-terraform]
+    - id: ci-workflow-security
+      description: "CI workflow safety: pinned actions, least-privilege GITHUB_TOKEN, no script injection from untrusted input, OIDC over long-lived secrets."
+      example_comment: "`${{ github.event.issue.title }}` is interpolated straight into run:; assign it to an env var first to avoid script injection."
+      axes: [ci-workflow-security]
+    - id: supply-chain-provenance
+      description: "Build provenance, signed releases, SBOMs, reproducibility, and SLSA build-level requirements."
+      example_comment: "Publish provenance for this release artifact; without it we are at SLSA Build L0 for the image."
+      axes: [supply-chain-provenance]
+    - id: workload-least-privilege
+      description: "RBAC, service accounts, network policy, pod security, IAM roles: does the workload get more than it needs?"
+      example_comment: "This IAM policy grants s3:* on all buckets; restrict to the one bucket and the two actions the job uses."
+      axes: [workload-least-privilege]
+    - id: secrets-config
+      description: "How secrets and environment configuration reach the workload: no plaintext in repo or logs, masking, secret managers."
+      example_comment: "The API token is in terraform.tfvars in the repo; move it to the secrets manager and read it via a data source."
+      axes: [secrets-config]
+    - id: observability
+      description: "Metrics, logs, traces and alerts covering latency, traffic, errors and saturation for the changed component."
+      example_comment: "The new endpoint has no latency histogram or error counter; add both before we route traffic to it."
+      axes: [observability]
+    - id: reliability-rollout
+      description: "Rollout and rollback safety: readiness and liveness probes, health checks, canaries, migrations, backward compatibility, timeouts and retries."
+      example_comment: "This migration drops a column the old pods still read; deploy the code that stops reading it first."
+      axes: [reliability-rollout]
+    - id: api-contract
+      description: "HTTP or RPC contracts other teams consume: OpenAPI accuracy, backward compatibility, semantic versioning of breaking changes."
+      example_comment: "Renaming this response field is a breaking change; bump the major version or add the new field alongside."
+      axes: [api-contract]
+
+  authorities:
+    - id: docker-best-practices
+      name: "Building best practices (Dockerfile)"
+      publisher: "Docker Inc. (docs.docker.com)"
+      url: "https://docs.docker.com/build/building/best-practices/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [container-image, performance, security]
+    - id: hadolint
+      name: "hadolint: Dockerfile linter"
+      publisher: "hadolint maintainers"
+      url: "https://github.com/hadolint/hadolint"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [container-image]
+    - id: k8s-config-good-practices
+      name: "Kubernetes: Configuration Best Practices"
+      publisher: "The Kubernetes Authors"
+      url: "https://kubernetes.io/docs/concepts/configuration/overview/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [k8s-manifest, documentation]
+    - id: terraform-style
+      name: "Terraform Style Guide"
+      publisher: "HashiCorp"
+      url: "https://developer.hashicorp.com/terraform/language/style"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [iac-terraform, naming, documentation, style, secrets-config]
+    - id: gh-actions-hardening
+      name: "Security hardening for GitHub Actions"
+      publisher: "GitHub Docs"
+      url: "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [ci-workflow-security, dependency-supply-chain, secrets-config]
+    - id: gh-protected-branches
+      name: "About protected branches"
+      publisher: "GitHub Docs"
+      url: "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [process, testing]
+    - id: slsa-levels
+      name: "SLSA v1.0 Security levels"
+      publisher: "OpenSSF (slsa.dev)"
+      url: "https://slsa.dev/spec/v1.0/levels"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [supply-chain-provenance]
+    - id: ossf-scorecard-checks
+      name: "OpenSSF Scorecard checks"
+      publisher: "OpenSSF"
+      url: "https://github.com/ossf/scorecard/blob/main/docs/checks.md"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [supply-chain-provenance, ci-workflow-security, dependency-supply-chain, process]
+    - id: sre-golden-signals
+      name: "Site Reliability Engineering, ch. 6 Monitoring Distributed Systems (four golden signals)"
+      publisher: "Google / O'Reilly"
+      url: "https://sre.google/sre-book/monitoring-distributed-systems/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [observability, reliability-rollout]
+    - id: owasp-asvs
+      name: "OWASP Application Security Verification Standard 5.0"
+      publisher: "OWASP Foundation"
+      url: "https://owasp.org/www-project-application-security-verification-standard/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [security, secrets-config, workload-least-privilege]
+    - id: openapi-spec
+      name: "OpenAPI Specification 3.2.0"
+      publisher: "OpenAPI Initiative (Linux Foundation)"
+      url: "https://spec.openapis.org/oas/latest.html"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [api-contract]
+    - id: semver
+      name: "Semantic Versioning 2.0.0"
+      publisher: "semver.org (Tom Preston-Werner)"
+      url: "https://semver.org/"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [api-contract]
+    - id: google-looking-for
+      name: "What to look for in a code review"
+      publisher: "Google Engineering Practices"
+      url: "https://google.github.io/eng-practices/review/reviewer/looking-for.html"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [functional-defect, design-structure, naming, documentation, style, testing]
+    - id: codeowners
+      name: "About code owners"
+      publisher: "GitHub Docs"
+      url: "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"
+      kind: primary
+      retrieved: 2026-09-03
+      covers: [process]
+
+  axes:
+    - id: container-image
+      question: "Are images built from pinned minimal bases with multi-stage builds, a non-root user, cache-friendly layer order and no secrets baked in?"
+      categories: [container-image, performance]
+      authorities: [docker-best-practices, hadolint]
+      enforceable_by:
+        - tool: "hadolint"
+          config: ".hadolint.yaml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: k8s-manifest
+      question: "Do manifests use stable API versions, set requests and limits, define probes, use labels, avoid naked pods and avoid :latest image tags?"
+      categories: [k8s-manifest]
+      authorities: [k8s-config-good-practices]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: iac-terraform
+      question: "Is Terraform formatted and validated, are modules and providers version-pinned, do variables and outputs have types and descriptions, and is state kept out of the repo?"
+      categories: [iac-terraform, naming, documentation]
+      authorities: [terraform-style]
+      enforceable_by:
+        - tool: "terraform fmt"
+          config: "*.tf"
+          coverage: partial
+        - tool: "terraform validate"
+          config: "*.tf"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: ci-workflow-security
+      question: "Are actions pinned to full commit SHAs, are GITHUB_TOKEN permissions least-privilege, is untrusted input kept out of shell interpolation, and is OIDC used instead of long-lived cloud secrets?"
+      categories: [ci-workflow-security, dependency-supply-chain]
+      authorities: [gh-actions-hardening, ossf-scorecard-checks]
+      enforceable_by:
+        - tool: "openssf-scorecard"
+          config: ".github/workflows/scorecard.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: supply-chain-provenance
+      question: "Are release artifacts built on a hosted platform with signed provenance, and are dependencies pinned and updated by tooling?"
+      categories: [supply-chain-provenance, dependency-supply-chain]
+      authorities: [slsa-levels, ossf-scorecard-checks]
+      enforceable_by:
+        - tool: "openssf-scorecard"
+          config: ".github/workflows/scorecard.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: workload-least-privilege
+      question: "Do service accounts, RBAC, IAM policies and network policies grant only what the workload needs?"
+      categories: [workload-least-privilege, security, k8s-manifest]
+      authorities: [owasp-asvs, k8s-config-good-practices]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: secrets-config
+      question: "Are secrets kept out of the repository, logs and image layers, and read from a secrets manager or masked at runtime?"
+      categories: [secrets-config]
+      authorities: [terraform-style, gh-actions-hardening, owasp-asvs]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: observability
+      question: "Does the change expose latency, traffic, errors and saturation for the component it touches, with alerts on the ones that page?"
+      categories: [observability]
+      authorities: [sre-golden-signals]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: true
+    - id: reliability-rollout
+      question: "Can the change be rolled out and rolled back safely: probes, backward-compatible migrations, timeouts, retries with caps, canaries?"
+      categories: [reliability-rollout, error-handling]
+      authorities: [sre-golden-signals, k8s-config-good-practices]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: true
+    - id: api-contract
+      question: "Do API changes keep the OpenAPI document accurate and follow SemVer for breaking changes?"
+      categories: [api-contract]
+      authorities: [openapi-spec, semver]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: false
+    - id: functional-defect
+      question: "Does the change do what the author intended, including edge cases the reviewer can see and the author missed?"
+      categories: [functional-defect, question]
+      authorities: [google-looking-for]
+      enforceable_by: []
+      max_maturity: judgment
+      phase4_absence_is_finding: false
+    - id: design-structure
+      question: "Is the change in the right place, at the right size, without duplication, and consistent with how the repository is organized?"
+      categories: [design-structure, question]
+      authorities: [google-looking-for, terraform-style]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: naming
+      question: "Do resource, variable and module names communicate purpose and follow the tool's convention (descriptive nouns, underscores, no type in the identifier)?"
+      categories: [naming]
+      authorities: [terraform-style, google-looking-for]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: documentation
+      question: "Are variables, outputs, manifests and runbooks documented when behavior or interfaces change?"
+      categories: [documentation]
+      authorities: [terraform-style, k8s-config-good-practices, google-looking-for]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: style
+      question: "Is formatting left to terraform fmt and equivalent formatters rather than review comments?"
+      categories: [style]
+      authorities: [terraform-style]
+      enforceable_by:
+        - tool: "terraform fmt"
+          config: "*.tf"
+          coverage: full
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+    - id: testing
+      question: "Are tests present and useful, and does CI block merge on them?"
+      categories: [testing]
+      authorities: [google-looking-for, gh-protected-branches, ossf-scorecard-checks]
+      enforceable_by:
+        - tool: "github-actions"
+          config: ".github/workflows/*.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: error-handling
+      question: "Are failures represented, retried with caps, timed out, and surfaced with enough context to act on?"
+      categories: [error-handling]
+      authorities: [sre-golden-signals, google-looking-for]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: performance
+      question: "Does the change avoid observable cost in build time, image size, or runtime resource use?"
+      categories: [performance]
+      authorities: [docker-best-practices]
+      enforceable_by:
+        - tool: "hadolint"
+          config: ".hadolint.yaml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+    - id: security
+      question: "Beyond least privilege and secrets, does the change follow ASVS controls for the service it configures (input handling, auth, configuration)?"
+      categories: [security]
+      authorities: [owasp-asvs, gh-actions-hardening]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: dependency-supply-chain
+      question: "Are dependencies and CI actions pinned, audited and updated by tooling?"
+      categories: [dependency-supply-chain]
+      authorities: [ossf-scorecard-checks, gh-actions-hardening]
+      enforceable_by:
+        - tool: "openssf-scorecard"
+          config: ".github/workflows/scorecard.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: process
+      question: "Does the PR carry a rollout and rollback note for production-affecting changes, get review from the owning team, and pass required checks?"
+      categories: [process, other]
+      authorities: [gh-protected-branches, codeowners, google-looking-for]
+      enforceable_by:
+        - tool: "github branch protection"
+          config: "repository settings (not a file)"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: false
+
+  tooling_gates:
+    - tool: hadolint
+      config_file: ".hadolint.yaml"
+      enforces: [container-image, performance]
+      source: "https://github.com/hadolint/hadolint"
+    - tool: terraform-fmt
+      config_file: ".terraform-version"
+      enforces: [style, iac-terraform]
+      source: "https://developer.hashicorp.com/terraform/language/style"
+    - tool: openssf-scorecard
+      config_file: ".github/workflows/scorecard.yml"
+      enforces: [ci-workflow-security, supply-chain-provenance, dependency-supply-chain]
+      source: "https://github.com/ossf/scorecard/blob/main/docs/checks.md"
+
+  prompt_context:
+    phase1_pr_extraction: |
+      This repository owns infrastructure and delivery: container images,
+      Kubernetes manifests or Helm charts, Terraform, CI workflows, deployment
+      tooling and the observability around services. Classify each review pattern
+      with the lens categories, preferring the specific ones (container-image,
+      k8s-manifest, iac-terraform, ci-workflow-security, supply-chain-provenance,
+      workload-least-privilege, secrets-config, observability, reliability-rollout,
+      api-contract) over a core category when the comment is about that concern.
+      Use the file tag next to each inline comment to tell an image definition
+      from a manifest from a workflow. Cite standards only from the lens authority
+      list: Docker build best practices, hadolint, Kubernetes configuration
+      guidance, the Terraform style guide, GitHub Actions security hardening, SLSA,
+      OpenSSF Scorecard, the SRE book's golden signals, OWASP ASVS, OpenAPI and
+      SemVer. A pattern is deterministic only if a tool present in this repository
+      (hadolint, terraform fmt/validate, Scorecard, CI checks) enforces it.
+    phase2_reviewer_fingerprint: |
+      Describe each reviewer's focus in platform terms. Meaningful focus areas are:
+      image hygiene and layer caching; manifest correctness, probes, requests and
+      limits; Terraform structure, pinning and state; CI workflow security (pinned
+      actions, token permissions, injection); provenance and signed releases;
+      least privilege for workloads and IAM; secrets handling; golden-signal
+      observability; rollout and rollback safety; and API contract compatibility.
+      Note which artifact types a reviewer comments on (images, manifests,
+      workflows, IaC, service code) and whether their comments are findings or
+      questions. A blind spot is an axis the reviewer never raises on the artifact
+      types where it would arise. Cite only authorities from the lens list.
+    phase3_author_growth: |
+      Describe growth for a contributor to infrastructure and delivery code.
+      Strengths and growth areas should be stated as lens axes: for example,
+      learning to pin base images and actions, to set requests, limits and probes,
+      to keep secrets out of tfvars and layers, to add golden-signal metrics with
+      a new endpoint, or to sequence migrations for safe rollout. Support in this
+      domain looks like: pairing on a first Terraform module or Helm chart,
+      pointing to the Terraform style guide, Docker best practices, the Kubernetes
+      configuration guidance and GitHub's Actions hardening guide, and reviewing a
+      rollout plan before it reaches production. Track whether an author's
+      persistent growth areas cluster on one artifact type.
+    phase4_team_gaps: |
+      This repository owns infrastructure and delivery. The named best practices
+      whose absence from the review record is itself a finding are: digest-pinned
+      minimal base images with non-root users; manifests with stable API
+      versions, requests, limits, probes and versioned image tags; Terraform that
+      is formatted, validated, version-pinned and documented with state kept out
+      of the repo; workflows with SHA-pinned actions, least-privilege tokens and
+      no untrusted interpolation; signed provenance for released artifacts;
+      least-privilege RBAC and IAM; secrets in a manager rather than the repo;
+      latency, traffic, error and saturation signals for changed components; and
+      safe rollout and rollback sequencing. Type each gap as coverage_gap,
+      knowledge_gap or blind_spot. Institutionalization candidates are patterns a
+      reviewer keeps raising that hadolint, terraform fmt/validate, Scorecard, a
+      policy check or a required CI status could enforce instead.
+    interpret: |
+      Map findings to the lens authorities: Docker build best practices and
+      hadolint; Kubernetes configuration guidance; the Terraform style guide;
+      GitHub Actions security hardening and branch protection; SLSA build levels
+      and OpenSSF Scorecard checks; the SRE book's four golden signals; OWASP ASVS;
+      OpenAPI and SemVer. Domain blind spots are lens axes with
+      phase4_absence_is_finding set that no review touched. Quick wins are review
+      patterns already at convention or rule that a tool present in the repository
+      can make deterministic. Summarize the lens as: infrastructure and delivery
+      code reviewed for image and manifest hygiene, pinned and provenance-bearing
+      builds, least privilege, secrets, observability, and rollout safety.
+
+  must_not:
+    - "Cite dbt, SQLFluff, Kimball, dbt-project-evaluator, or any data-warehouse practice."
+    - "Report gaps about grain, fact models, dimensional modeling, source freshness, incremental models, exposures, or macros."
+    - "Recommend Tauri capabilities, code signing, notarization, or app updaters unless the repository ships a desktop application."
+    - "Treat CLAUDE.md, AGENTS.md, or .agents/ as evidence that the team builds AI agents."
+    - "Treat a Dockerfile used only to build CI images as evidence that the repository is a service."
+
+  validation:
+    test_repo: "block/berd"
+    expected_selection: false
+    expected_score_min: 0
+    expected_runner_up: "product-engineering-desktop"
+    evidence:
+      - axis: container-image
+        evidence: "Berd has 2,561 bytes of Dockerfile under docker/ (one **/Dockerfile match, +4) and 60 bytes of HCL (+2 via **/*.hcl only if a .hcl file exists; not confirmed). Counter-signal src-tauri/** (-6) drives the total to at most 0, below min_score 10, so this lens must not be selected for the test repo."
+    smoke_checks:
+      - "grain"
+      - "fact model"
+      - "dbt"
+      - "SQLFluff"
+      - "Kimball"
+      - "source freshness"
+      - "tauri.conf.json"
+      - "notarization"
+      - "data warehouse"

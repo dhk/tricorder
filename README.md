@@ -107,6 +107,11 @@ repository so the reasoning can be audited and challenged:
   that was sent, including the `block/berd` fingerprint used as the test case.
 - [The lens file the research produced](docs/research/repo-lens/findings/perplexity-lenses/product-engineering-desktop.yaml),
   now shipped as `tricorder/lenses/data/product-engineering-desktop.yaml`.
+- [An independent second pass](docs/research/repo-lens/findings/claude-findings.md) answered the same
+  brief without seeing the first, and [the synthesis](docs/research/repo-lens/synthesis.md) compares
+  them question by question. They agree on every structural decision; the second pass adds the
+  formal grounding for abstention (Chow's reject option, selective classification) and a tighter
+  rule for mixed repositories.
 
 What the research established, in brief:
 
