@@ -19,7 +19,15 @@ Each source answers the same brief without seeing the others' work. If a second 
 |-------|-------|
 | Brief | written |
 | Scaffold | written |
-| Handoff prompt | written, not yet sent |
-| Findings: Perplexity | pending |
-| Findings: Claude | not started |
-| Synthesis | blocked on two or more findings |
+| Handoff prompt | sent to Perplexity 2026-09-02 |
+| Findings: Perplexity | received 2026-09-02: `findings/perplexity-findings.md` + `findings/perplexity-lenses/product-engineering-desktop.yaml`. Referenced `platform-engineering.yaml` and `detection-rubric.yaml` were not delivered (tracked as tricorder-8t5.10) |
+| Findings: Claude | not started (tricorder-8t5.11) |
+| Synthesis | blocked on the Claude findings pass (tricorder-8t5.11) |
+
+## Tracking
+
+Work is tracked in beads under epic `tricorder-8t5` (label `repo-lens`). Run `bd list -l repo-lens` for the tree and `bd ready` for what is unblocked.
+
+## Implementation
+
+The lens contract from the handoff prompt is implemented in `tricorder/lenses/` (loader, validator, detection, verification, prompt assembly) with the six lens files under `tricorder/lenses/data/`. Detection results on 2026-09-02: `block/berd` selects `product-engineering-desktop` (score 32, margin 28, both checks pass); `cal-itp/data-infra` is `mixed` with `analytics-engineering` 26 ahead of `platform-engineering` 23; `block/buzz` selects the parent `product-engineering` (11 vs 7) pending a mobile sub-profile.

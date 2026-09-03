@@ -38,13 +38,16 @@ window.TRICORDER_DATA = {
   window: "YYYY-MM-DD → YYYY-MM-DD",
   pr_count: 190,
   visibility: "private",                    // private -> Author Profiles render; team|public -> withheld notice
+  lens: { name: "product-engineering-desktop", version: 1, status: "experimental", archetype: "product-engineering" },
+                                            // null for runs that predate lens tracking; Start Here shows it
 
-  // taxonomy — the 9 categories drive BOTH the coverage grid columns and the radar axes
+  // taxonomy — comes from the lens: every lens category is a coverage-grid column,
+  // the radar uses the 9 core categories (correctness … dependencies, minus "other")
   CATEGORIES: [
-    "grain","naming","testing","documentation","style",
-    "performance","modeling","schema","business-logic"
+    "correctness","security","testing","documentation","style","performance",
+    "error-handling","maintainability","dependencies","other", /* + lens extensions */
   ],
-  RADAR_CATEGORIES: [ /* same 9, or a subset */ ],
+  RADAR_CATEGORIES: [ /* the 9 core categories */ ],
   CATEGORY_GROUP: { grain: "data", naming: "pattern", testing: "tool", /* … */ }, // tag color family per category
                                                                                   // pattern=green tool=purple data=blue team=orange
 

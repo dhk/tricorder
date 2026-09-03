@@ -120,6 +120,7 @@ function IntroTab({ onSelect }) {
           <IntroStat label="contributors" value={contributors} />
           <IntroStat label="dimensions" value={dims} />
           <IntroStat label="visibility" value={DATA.visibility} />
+          <IntroStat label="lens" value={DATA.lens && DATA.lens.name ? `${DATA.lens.name} v${DATA.lens.version || 1} · ${DATA.lens.status || "experimental"}` : undefined} />
           <IntroStat label="version" value={DATA.version ? `v${DATA.version}` : undefined} />
         </div>
 
@@ -230,7 +231,9 @@ function IntroTab({ onSelect }) {
             <ul style={{ margin: 0, padding: "0 0 0 18px", color: "var(--text-dim)", fontSize: 13.5, fontWeight: 300, lineHeight: 1.55 }}>
               <li style={{ marginBottom: 6 }}>Every finding is model-generated from review comments. The quotes are real; the interpretation is a model's. Treat standard citations as leads, not verdicts.</li>
               <li style={{ marginBottom: 6 }}>Signal scales with review volume. A reviewer with a handful of PRs gets a low signal-quality grade for a reason.</li>
-              <li>Findings are read through a discipline lens. The analytics-engineering lens (dbt, SQL) is the only one validated so far; on other kinds of repository, citations can drift off-domain.</li>
+              <li>{DATA.lens && DATA.lens.name
+                ? `Findings are read through the ${DATA.lens.name} lens (${DATA.lens.status || "experimental"}). ${DATA.lens.status === "validated" ? "It has passed a production-repository evaluation." : "It has not yet passed a production-repository evaluation, so treat domain citations as leads."}`
+                : "Findings are read through a discipline lens. This run predates lens tracking; on repositories that are not dbt/SQL projects, citations can drift off-domain."}</li>
             </ul>
           </IntroCard>
 

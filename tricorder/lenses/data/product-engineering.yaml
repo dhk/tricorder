@@ -1,0 +1,358 @@
+# Tricorder lens: product engineering (parent archetype).
+# Sub-profiles (desktop, mobile, backend-service, library, cli) extend this lens.
+# Thin port of interpret.py LENS_CONTEXT; experimental until validated on a production repo.
+lens:
+  name: product-engineering
+  version: 1
+  status: experimental
+  domain: >-
+    Product software in general: web apps, APIs, backend services, mobile and
+    desktop clients, SDKs, and CLIs. This parent lens carries the
+    domain-neutral review core. Prefer a sub-profile (for example
+    product-engineering-desktop) when detection finds one; this lens is the
+    fallback when the artifact type is clear but no sub-profile matches.
+
+  detection:
+    signals:
+      - pattern: "package.json"
+        weight: 3
+        rationale: "Node/npm package root."
+        source: "https://docs.npmjs.com/cli/v11/configuring-npm/package-json/"
+      - pattern: "pyproject.toml"
+        weight: 2
+        rationale: "Python project metadata."
+        source: "https://packaging.python.org/en/latest/specifications/pyproject-toml/"
+      - pattern: "go.mod"
+        weight: 4
+        rationale: "Go module root."
+        source: "https://go.dev/ref/mod#go-mod-file"
+      - pattern: "Cargo.toml"
+        weight: 2
+        rationale: "Rust crate root."
+        source: "https://doc.rust-lang.org/cargo/reference/manifest.html"
+      - pattern: "Gemfile"
+        weight: 3
+        rationale: "Ruby application."
+        source: "https://bundler.io/guides/gemfile.html"
+      - pattern: "pom.xml"
+        weight: 3
+        rationale: "Maven project."
+        source: "https://maven.apache.org/pom.html"
+      - pattern: "build.gradle"
+        weight: 3
+        rationale: "Gradle project."
+        source: "https://docs.gradle.org/current/userguide/build_file_basics.html"
+      - pattern: "src/components/**"
+        weight: 3
+        rationale: "Component tree of a web UI."
+        source: "https://react.dev/learn/thinking-in-react"
+      - pattern: "app/**/*.tsx"
+        weight: 2
+        rationale: "App-router style frontend."
+        source: "https://react.dev/learn/thinking-in-react"
+      - pattern: "src/**/*.ts"
+        weight: 1
+        rationale: "TypeScript source."
+        source: "https://www.typescriptlang.org/docs/"
+      - pattern: "src/**/*.py"
+        weight: 1
+        rationale: "Python source under src/."
+        source: "https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/"
+      - pattern: "**/pubspec.yaml"
+        weight: 4
+        rationale: "Flutter/Dart application (mobile sub-profile pending)."
+        source: "https://dart.dev/tools/pub/pubspec"
+      - pattern: "**/Cargo.toml"
+        weight: 1
+        rationale: "Rust crate somewhere in the tree."
+        source: "https://doc.rust-lang.org/cargo/reference/manifest.html"
+      - pattern: "**/package.json"
+        weight: 1
+        rationale: "Node package somewhere in a monorepo."
+        source: "https://docs.npmjs.com/cli/v11/configuring-npm/package-json/"
+    counter_signals:
+      - pattern: "dbt_project.yml"
+        weight: -10
+        rationale: "dbt project; analytics-engineering evidence."
+      - pattern: "**/*.tf"
+        weight: -3
+        rationale: "Terraform; platform-engineering evidence."
+    ignore_for_detection:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".cursor/**"
+      - ".windsurf/**"
+      - ".github/copilot-instructions.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "CHANGELOG.md"
+      - "CODEOWNERS"
+      - "LICENSE"
+    min_score: 6
+    min_margin: 3
+    composition_check:
+      languages_expected: []
+      languages_unexpected: [SQL]
+    review_path_check:
+      min_share_of_comments_on_tagged_paths: 0.6
+
+  file_tags:
+    - glob: "**/*.test.*"
+      tag: "test"
+    - glob: "**/*.spec.*"
+      tag: "test"
+    - glob: "**/tests/**"
+      tag: "test"
+    - glob: "**/test/**"
+      tag: "test"
+    - glob: "**/src/**"
+      tag: "source"
+    - glob: "**/app/**"
+      tag: "source"
+    - glob: "**/lib/**"
+      tag: "source"
+    - glob: "**/pkg/**"
+      tag: "source"
+    - glob: "**/cmd/**"
+      tag: "source"
+    - glob: "**/crates/**"
+      tag: "source"
+    - glob: "**/*.dart"
+      tag: "source"
+    - glob: "**/*.rs"
+      tag: "source"
+    - glob: "**/*.kt"
+      tag: "source"
+    - glob: "**/*.swift"
+      tag: "source"
+    - glob: "**/*.ts"
+      tag: "source"
+    - glob: "**/*.tsx"
+      tag: "source"
+    - glob: "**/*.py"
+      tag: "source"
+    - glob: "**/*.go"
+      tag: "source"
+    - glob: "**/*.sh"
+      tag: "scripts"
+    - glob: ".github/workflows/*.yml"
+      tag: "ci"
+    - glob: "**/Dockerfile"
+      tag: "build-infra"
+    - glob: "**/*.md"
+      tag: "docs"
+    - glob: "**/*.json"
+      tag: "config"
+    - glob: "**/*.yml"
+      tag: "config"
+    - glob: "**/*.yaml"
+      tag: "config"
+    - glob: "**/*.toml"
+      tag: "config"
+
+  categories:
+    - id: correctness
+      core: true
+      description: "Functional or logic defects: wrong behavior, broken state transitions, off-by-one, race conditions."
+      example_comment: "This returns the cached value even after invalidate() ran; check the version stamp."
+      axes: [error-handling]
+    - id: security
+      core: true
+      description: "Vulnerabilities and trust-boundary violations: injection, authz gaps, secrets, unsafe deserialization."
+      example_comment: "This builds the query with string concatenation; use a parameterized statement."
+      axes: [security-hygiene]
+    - id: testing
+      core: true
+      description: "Presence and quality of unit, integration, and contract tests."
+      example_comment: "Can we get a test for the empty-list path? Only the happy path is covered."
+      axes: [test-coverage]
+    - id: documentation
+      core: true
+      description: "READMEs, ADRs, inline docs for non-obvious decisions, changelog accuracy."
+      example_comment: "This changes the retry semantics; please note it in the ADR and the README."
+      axes: [documentation]
+    - id: style
+      core: true
+      description: "Formatting, naming, idiomatic usage, lint hygiene."
+      example_comment: "Nit: the linter will reorder these imports; run the formatter before pushing."
+      axes: []
+    - id: performance
+      core: true
+      description: "Latency, allocations, N+1 queries, bundle size, startup cost."
+      example_comment: "This issues one query per item; batch it or preload the relation."
+      axes: []
+    - id: error-handling
+      core: true
+      description: "Error propagation, user-facing failure behavior, swallowed exceptions."
+      example_comment: "The catch block logs and continues; the caller now gets a partial result with no signal."
+      axes: [error-handling]
+    - id: maintainability
+      core: true
+      description: "Readability, structure, duplication, dead code, module boundaries."
+      example_comment: "This is the third copy of the pagination helper; hoist it into the shared package."
+      axes: []
+    - id: dependencies
+      core: true
+      description: "Dependency additions, upgrades, pins, and supply-chain awareness."
+      example_comment: "What pulls in this new transitive package? The lockfile diff adds 40 entries for one utility."
+      axes: [dependency-management]
+    - id: other
+      core: true
+      description: "Anything that does not fit another category."
+      example_comment: "Flagging for awareness: this touches the feature-flag registry."
+      axes: []
+    - id: api-contract
+      description: "Breaking changes to public APIs, versioning, backward compatibility."
+      example_comment: "Renaming this response field breaks mobile clients on the old version; add the new field alongside."
+      axes: [api-contract-stability]
+    - id: observability
+      description: "Logging, tracing, metrics, and alerting hooks."
+      example_comment: "This new background job has no metric; emit a counter so we can alert on failures."
+      axes: [observability]
+
+  authorities:
+    - id: google-code-review
+      name: "Google Engineering Practices: code review"
+      publisher: "Google"
+      url: "https://google.github.io/eng-practices/review/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [maintainability, documentation, style, testing]
+    - id: dora
+      name: "DORA research"
+      publisher: "DORA / Google Cloud"
+      url: "https://dora.dev/research/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [testing, observability]
+    - id: owasp-top-10
+      name: "OWASP Top 10"
+      publisher: "OWASP"
+      url: "https://owasp.org/www-project-top-ten/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [security]
+    - id: semver
+      name: "Semantic Versioning 2.0.0"
+      publisher: "semver.org"
+      url: "https://semver.org/"
+      kind: primary
+      retrieved: 2026-09-02
+      covers: [api-contract, dependencies]
+    - id: pragmatic-programmer
+      name: "The Pragmatic Programmer (Hunt & Thomas)"
+      publisher: "Addison-Wesley"
+      url: "https://pragprog.com/titles/tpp20/the-pragmatic-programmer-20th-anniversary-edition/"
+      kind: secondary
+      retrieved: 2026-06-01
+      covers: [maintainability, error-handling]
+
+  axes:
+    - id: test-coverage
+      question: "Do changes ship with unit, integration, or contract tests that cover the new behavior and its failure paths?"
+      categories: [testing]
+      authorities: [google-code-review, dora]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: api-contract-stability
+      question: "Are breaking changes to public interfaces flagged, versioned, and communicated?"
+      categories: [api-contract]
+      authorities: [semver]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: error-handling
+      question: "Are errors surfaced and handled explicitly rather than swallowed or converted to silent partial results?"
+      categories: [error-handling, correctness]
+      authorities: [pragmatic-programmer, google-code-review]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: observability
+      question: "Do new code paths carry logging, tracing, or metrics sufficient to debug them in production?"
+      categories: [observability]
+      authorities: [dora]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: true
+    - id: security-hygiene
+      question: "Are secrets, input validation, and authorization checks handled per OWASP guidance?"
+      categories: [security]
+      authorities: [owasp-top-10]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: dependency-management
+      question: "Are dependency additions justified and pinned, with supply-chain awareness?"
+      categories: [dependencies]
+      authorities: [semver]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: false
+    - id: documentation
+      question: "Are non-obvious decisions documented in READMEs, ADRs, or inline where they are made?"
+      categories: [documentation]
+      authorities: [google-code-review]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+
+  tooling_gates:
+    - tool: pre-commit
+      config_file: ".pre-commit-config.yaml"
+      enforces: [style]
+      source: "https://pre-commit.com/"
+    - tool: eslint
+      config_file: "**/.eslintrc*"
+      enforces: [style]
+      source: "https://eslint.org/docs/latest/rules/"
+    - tool: biome
+      config_file: "biome.json"
+      enforces: [style]
+      source: "https://biomejs.dev/linter/"
+
+  prompt_context:
+    phase1_pr_extraction: |
+      This is a product software repository (web, API, service, client, or
+      library). Classify each review comment into the lens categories using
+      the file tag shown with it. Cite a standard only when the comment
+      clearly invokes it.
+    phase2_reviewer_fingerprint: |
+      Meaningful focus areas for this domain: test coverage of new behavior,
+      API contract stability, explicit error handling, observability hooks,
+      security hygiene, dependency justification, documentation of
+      decisions. Note blind spots as areas the reviewer touches but never
+      reviews.
+    phase3_author_growth: |
+      Judge author growth against this domain's expectations: tests
+      accompanying changes, backward-compatible API evolution, explicit error
+      paths, observable code, justified dependencies. Ground support
+      recommendations in the lens authorities.
+    phase4_team_gaps: |
+      Report gaps only against this lens's axes. Before reporting a gap, check
+      the tooling gates: a dimension already enforced by a linter or CI check
+      is institutionalized, not a gap. Never import concerns from other kinds
+      of software such as data warehouses or infrastructure-as-code.
+    interpret: |
+      Summarize for a product-engineering team: which review habits are
+      enforced by tooling and which still depend on human attention. Map
+      quick wins to concrete promotions on the maturity ladder.
+
+  must_not:
+    - "Cite dbt, SQLFluff, Kimball, or dbt-project-evaluator."
+    - "Report gaps about grain, fact models, staging models, source freshness, or exposure contracts."
+    - "Treat CLAUDE.md, AGENTS.md, or .agents/ content as evidence about the code archetype."
+
+  validation:
+    test_repo: null
+    smoke_checks:
+      - "grain"
+      - "fact model"
+      - "dbt"
+      - "SQLFluff"
+      - "Kimball"
+      - "source freshness"

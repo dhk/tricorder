@@ -1,0 +1,276 @@
+# Tricorder lens: security engineering. Rarely auto-selected: SECURITY.md is a
+# community-health file present in every kind of repository and is ignored for
+# detection. Use --lens security, or `learn --focus-on security`, to apply deliberately.
+lens:
+  name: security
+  version: 1
+  status: experimental
+  domain: >-
+    Security engineering repositories: application-security tooling, scanners,
+    policy-as-code, vulnerability management. Reviewers in this domain care
+    about input validation, authentication and authorization, secrets
+    management, dependency vulnerabilities, audit logging, least privilege,
+    and threat modeling.
+
+  detection:
+    signals:
+      - pattern: ".snyk"
+        weight: 6
+        rationale: "Snyk policy file."
+        source: "https://docs.snyk.io/manage-risk/policies/the-.snyk-file"
+      - pattern: "bandit.yaml"
+        weight: 4
+        rationale: "Bandit configuration."
+        source: "https://bandit.readthedocs.io/en/latest/config.html"
+      - pattern: "trivy.yaml"
+        weight: 4
+        rationale: "Trivy configuration."
+        source: "https://aquasecurity.github.io/trivy/"
+      - pattern: "**/semgrep/**"
+        weight: 4
+        rationale: "Semgrep rule tree."
+        source: "https://semgrep.dev/docs/"
+      - pattern: "**/cve/**"
+        weight: 5
+        rationale: "CVE tracking directory."
+        source: "https://www.cve.org/"
+      - pattern: "**/security/**/*.py"
+        weight: 3
+        rationale: "Security code module."
+        source: "https://owasp.org/www-project-application-security-verification-standard/"
+      - pattern: "**/threat-model*"
+        weight: 5
+        rationale: "Threat model artifacts."
+        source: "https://owasp.org/www-community/Threat_Modeling"
+    counter_signals:
+      - pattern: "dbt_project.yml"
+        weight: -6
+        rationale: "dbt project; analytics-engineering evidence."
+    ignore_for_detection:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".cursor/**"
+      - ".windsurf/**"
+      - ".github/copilot-instructions.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "CHANGELOG.md"
+      - "CODEOWNERS"
+      - "LICENSE"
+    min_score: 10
+    min_margin: 5
+    composition_check:
+      languages_expected: []
+      languages_unexpected: [SQL]
+    review_path_check:
+      min_share_of_comments_on_tagged_paths: 0.5
+
+  file_tags:
+    - glob: "**/*.test.*"
+      tag: "test"
+    - glob: "**/tests/**"
+      tag: "test"
+    - glob: "**/security/**"
+      tag: "security-code"
+    - glob: "**/auth/**"
+      tag: "auth"
+    - glob: "src/**"
+      tag: "source"
+    - glob: ".github/workflows/*.yml"
+      tag: "ci"
+    - glob: "**/*.md"
+      tag: "docs"
+    - glob: "**/*.yml"
+      tag: "config"
+    - glob: "**/*.yaml"
+      tag: "config"
+    - glob: "**/*.json"
+      tag: "config"
+
+  categories:
+    - id: correctness
+      core: true
+      description: "Functional defects."
+      example_comment: "This check compares the hash to the wrong salt; the verify path always fails."
+      axes: []
+    - id: security
+      core: true
+      description: "Vulnerabilities not captured by a more specific category."
+      example_comment: "This deserializes untrusted input with pickle; use a safe format."
+      axes: [input-validation, threat-modeling]
+    - id: testing
+      core: true
+      description: "Security test coverage: negative cases, fuzzing, regression tests for fixed CVEs."
+      example_comment: "Add a regression test for the path-traversal case this fixes."
+      axes: []
+    - id: documentation
+      core: true
+      description: "Threat models, security notes, runbooks."
+      example_comment: "Document the trust boundary this endpoint assumes."
+      axes: [threat-modeling]
+    - id: style
+      core: true
+      description: "Formatting and lint hygiene."
+      example_comment: "Nit: run the formatter."
+      axes: []
+    - id: performance
+      core: true
+      description: "Performance concerns, including DoS surfaces."
+      example_comment: "This regex is catastrophic-backtracking prone on user input."
+      axes: [input-validation]
+    - id: error-handling
+      core: true
+      description: "Fail-closed behavior, error messages that do not leak internals."
+      example_comment: "The stack trace is returned to the client; return a generic error and log the detail."
+      axes: [audit-logging]
+    - id: maintainability
+      core: true
+      description: "Structure and readability."
+      example_comment: "Centralize the allowlist so it is not duplicated per handler."
+      axes: []
+    - id: dependencies
+      core: true
+      description: "Known CVEs, pins, and update cadence."
+      example_comment: "This version has a known advisory; bump before merge."
+      axes: [dependency-vulnerabilities]
+    - id: other
+      core: true
+      description: "Anything that does not fit another category."
+      example_comment: "Flagging for awareness."
+      axes: []
+    - id: authz
+      description: "Authentication and authorization checks."
+      example_comment: "This endpoint has no permission check; any authenticated user can delete."
+      axes: [authn-authz]
+    - id: secrets
+      description: "Secrets handling and rotation."
+      example_comment: "The API key is hardcoded; load it from the secret store."
+      axes: [secrets-management]
+
+  authorities:
+    - id: owasp-top-10
+      name: "OWASP Top 10"
+      publisher: "OWASP"
+      url: "https://owasp.org/www-project-top-ten/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [security, authz, secrets]
+    - id: owasp-asvs
+      name: "OWASP Application Security Verification Standard"
+      publisher: "OWASP"
+      url: "https://owasp.org/www-project-application-security-verification-standard/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [security, authz, testing]
+    - id: nist-csf
+      name: "NIST Cybersecurity Framework"
+      publisher: "NIST"
+      url: "https://www.nist.gov/cyberframework"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [documentation, error-handling]
+    - id: cis-controls
+      name: "CIS Controls"
+      publisher: "Center for Internet Security"
+      url: "https://www.cisecurity.org/controls"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [dependencies, secrets]
+
+  axes:
+    - id: input-validation
+      question: "Is all untrusted input validated and sanitized at the boundary?"
+      categories: [security, performance]
+      authorities: [owasp-top-10, owasp-asvs]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: authn-authz
+      question: "Are authentication and authorization checks present and tested on every privileged path?"
+      categories: [authz]
+      authorities: [owasp-asvs]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: secrets-management
+      question: "Are secrets kept out of code and rotated per policy?"
+      categories: [secrets]
+      authorities: [cis-controls, owasp-top-10]
+      enforceable_by: []
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: dependency-vulnerabilities
+      question: "Are known CVEs tracked and remediated?"
+      categories: [dependencies]
+      authorities: [cis-controls]
+      enforceable_by: []
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: audit-logging
+      question: "Are security-relevant events logged without leaking sensitive detail?"
+      categories: [error-handling]
+      authorities: [nist-csf]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: threat-modeling
+      question: "Is the threat surface considered in design decisions and documented?"
+      categories: [documentation, security]
+      authorities: [nist-csf, owasp-top-10]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: true
+
+  tooling_gates:
+    - tool: snyk
+      config_file: ".snyk"
+      enforces: [dependencies]
+      source: "https://docs.snyk.io/"
+    - tool: bandit
+      config_file: "bandit.yaml"
+      enforces: [security]
+      source: "https://bandit.readthedocs.io/"
+    - tool: trivy
+      config_file: "trivy.yaml"
+      enforces: [dependencies]
+      source: "https://aquasecurity.github.io/trivy/"
+
+  prompt_context:
+    phase1_pr_extraction: |
+      Classify each review comment into the lens categories. Weight
+      security-adjacent comments heavily even when phrased as style feedback.
+      Cite OWASP, NIST, or CIS only when the comment clearly invokes the
+      practice.
+    phase2_reviewer_fingerprint: |
+      Meaningful focus areas: input validation, authn/authz, secrets,
+      dependency vulnerabilities, audit logging, least privilege, threat
+      modeling. Note reviewers who never raise security concerns on
+      security-relevant code.
+    phase3_author_growth: |
+      Judge author growth against OWASP ASVS expectations: validated inputs,
+      explicit authorization, no secrets in code, dependencies kept current.
+    phase4_team_gaps: |
+      Report gaps only against this lens's axes. If a scanner already enforces
+      a dimension, report it as institutionalized. Flag security issues
+      caught late as knowledge gaps.
+    interpret: |
+      Summarize for a security team: which controls are enforced by scanners
+      and which depend on reviewer attention. Map quick wins to concrete
+      maturity-ladder promotions.
+
+  must_not:
+    - "Cite dbt, SQLFluff, Kimball, or dbt-project-evaluator."
+    - "Report gaps about grain, fact models, staging models, source freshness, or exposure contracts."
+    - "Treat CLAUDE.md, AGENTS.md, or .agents/ content as evidence about the code archetype."
+
+  validation:
+    test_repo: null
+    smoke_checks:
+      - "grain"
+      - "fact model"
+      - "dbt"
+      - "SQLFluff"
+      - "Kimball"

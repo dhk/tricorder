@@ -1,0 +1,330 @@
+# Tricorder lens: agent engineering (AI agent systems, MCP servers, skills, evals).
+# Detection uses code and protocol artifacts only. AI-assistant instruction files
+# (CLAUDE.md, AGENTS.md, .agents/) are ignored globally: they now appear in
+# repositories of every kind and say nothing about the code archetype.
+lens:
+  name: agent-engineering
+  version: 2
+  status: experimental
+  domain: >-
+    Repositories whose engineered artifact is an AI agent system: agentic
+    loops, tool and skill definitions, MCP servers, prompt assets, and
+    evaluation harnesses. Reviewers in this domain care about prompt scope
+    and output contracts, tool description precision, context discipline,
+    loop safety and stop conditions, error surfacing, evals and golden
+    traces, observability of agent decisions, prompt-injection handling,
+    and model selection rationale.
+
+  detection:
+    signals:
+      - pattern: "mcp.json"
+        weight: 7
+        rationale: "MCP server or client configuration at root."
+        source: "https://modelcontextprotocol.io/docs"
+      - pattern: ".mcp.json"
+        weight: 7
+        rationale: "MCP configuration at root."
+        source: "https://modelcontextprotocol.io/docs"
+      - pattern: "**/mcp_server.py"
+        weight: 7
+        rationale: "MCP server implementation."
+        source: "https://modelcontextprotocol.io/docs"
+      - pattern: "**/evals/**"
+        weight: 5
+        rationale: "Evaluation harness for agent behavior."
+        source: "https://www.anthropic.com/research/building-effective-agents"
+      - pattern: "**/prompts/**"
+        weight: 4
+        rationale: "Prompt asset tree."
+        source: "https://docs.anthropic.com"
+      - pattern: "**/tools/**/*.py"
+        weight: 3
+        rationale: "Tool implementations for a model to call."
+        source: "https://docs.anthropic.com"
+      - pattern: "**/agents/**/*.py"
+        weight: 3
+        rationale: "Agent implementations (code, not instruction files)."
+        source: "https://www.anthropic.com/research/building-effective-agents"
+      - pattern: "**/agents/**/*.ts"
+        weight: 3
+        rationale: "Agent implementations (code, not instruction files)."
+        source: "https://www.anthropic.com/research/building-effective-agents"
+      - pattern: "skills/*/SKILL.md"
+        weight: 2
+        rationale: "Skill definitions shipped as a product artifact; weak alone."
+        source: "https://docs.anthropic.com/en/docs/claude-code"
+    counter_signals:
+      - pattern: "dbt_project.yml"
+        weight: -6
+        rationale: "dbt project; analytics-engineering evidence."
+      - pattern: "src-tauri/tauri.conf.json"
+        weight: -8
+        rationale: "Tauri desktop app; its subject may be agents but its archetype is a desktop app."
+    ignore_for_detection:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".cursor/**"
+      - ".windsurf/**"
+      - ".github/copilot-instructions.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "CHANGELOG.md"
+      - "CODEOWNERS"
+      - "LICENSE"
+    min_score: 10
+    min_margin: 5
+    composition_check:
+      languages_expected: [Python, TypeScript]
+      languages_unexpected: [SQL]
+    review_path_check:
+      min_share_of_comments_on_tagged_paths: 0.6
+
+  file_tags:
+    - glob: "**/evals/**"
+      tag: "evals"
+    - glob: "**/prompts/**"
+      tag: "prompt"
+    - glob: "**/*.prompt"
+      tag: "prompt"
+    - glob: "**/tools/**"
+      tag: "tool"
+    - glob: "**/mcp*/**"
+      tag: "mcp"
+    - glob: "**/mcp_server.py"
+      tag: "mcp"
+    - glob: "skills/**"
+      tag: "skill"
+    - glob: "**/*.test.*"
+      tag: "test"
+    - glob: "**/tests/**"
+      tag: "test"
+    - glob: "src/**"
+      tag: "source"
+    - glob: "**/*.py"
+      tag: "source"
+    - glob: ".github/workflows/*.yml"
+      tag: "ci"
+    - glob: "**/*.md"
+      tag: "docs"
+    - glob: "**/*.json"
+      tag: "config"
+    - glob: "**/*.yml"
+      tag: "config"
+    - glob: "**/*.yaml"
+      tag: "config"
+
+  categories:
+    - id: correctness
+      core: true
+      description: "Functional defects in agent or tool code."
+      example_comment: "The loop never increments the turn counter, so the max-iteration guard cannot fire."
+      axes: [loop-safety]
+    - id: security
+      core: true
+      description: "Prompt injection, unsafe tool execution, secret exposure through tool outputs."
+      example_comment: "Tool output is fed straight back as an instruction; wrap it as data and validate before acting."
+      axes: [guardrails]
+    - id: testing
+      core: true
+      description: "Evals, golden traces, and tests of tool contracts."
+      example_comment: "This changes the planner prompt with no eval run; attach the before/after scores."
+      axes: [evals]
+    - id: documentation
+      core: true
+      description: "Tool descriptions, prompt rationale, skill contracts."
+      example_comment: "The tool description says 'search'; say what it searches and what it returns so the model can choose it."
+      axes: [tool-design]
+    - id: style
+      core: true
+      description: "Formatting and lint hygiene."
+      example_comment: "Nit: run the formatter."
+      axes: []
+    - id: performance
+      core: true
+      description: "Latency, token cost, caching of stable prompts."
+      example_comment: "This 6k-token system prompt is rebuilt per call; mark it for prompt caching."
+      axes: [context-discipline]
+    - id: error-handling
+      core: true
+      description: "Tool failures surfaced or swallowed; agent failing loudly."
+      example_comment: "A failed tool call returns an empty string and the agent proceeds as if it succeeded."
+      axes: [error-surfacing]
+    - id: maintainability
+      core: true
+      description: "Prompt and tool code structure, duplication, composability."
+      example_comment: "Three skills re-implement the same file-reading tool; share it."
+      axes: []
+    - id: dependencies
+      core: true
+      description: "Model and SDK version pins, provider coupling."
+      example_comment: "Pin the model id; the alias will silently change behavior on the next release."
+      axes: [model-selection]
+    - id: other
+      core: true
+      description: "Anything that does not fit another category."
+      example_comment: "Flagging for awareness."
+      axes: []
+    - id: prompt-quality
+      description: "System prompt scope, explicit output format, what the agent must not do."
+      example_comment: "The prompt says what to do but not what to refuse; add the negative cases."
+      axes: [prompt-quality]
+    - id: context-management
+      description: "What enters the context window and why; trimming; window pressure."
+      example_comment: "Every prior tool result is re-sent each turn; keep only the last two."
+      axes: [context-discipline]
+    - id: observability
+      description: "Tracing agent decisions and tool calls; replayability."
+      example_comment: "Log the tool call and response with the turn id so we can replay this failure."
+      axes: [observability]
+
+  authorities:
+    - id: anthropic-docs
+      name: "Anthropic model documentation and prompt engineering guide"
+      publisher: "Anthropic"
+      url: "https://docs.anthropic.com"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [prompt-quality, documentation, performance, dependencies]
+    - id: mcp-spec
+      name: "Model Context Protocol specification"
+      publisher: "Model Context Protocol project"
+      url: "https://modelcontextprotocol.io/docs"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [documentation, security]
+    - id: building-effective-agents
+      name: "Building Effective Agents"
+      publisher: "Anthropic"
+      url: "https://www.anthropic.com/research/building-effective-agents"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [correctness, testing, maintainability, context-management]
+    - id: claude-code-sdk
+      name: "Claude Code SDK documentation"
+      publisher: "Anthropic"
+      url: "https://docs.anthropic.com/en/docs/claude-code/sdk"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [documentation, observability]
+    - id: owasp-llm-top-10
+      name: "OWASP Top 10 for LLM Applications"
+      publisher: "OWASP"
+      url: "https://owasp.org/www-project-top-10-for-large-language-model-applications/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [security, error-handling]
+
+  axes:
+    - id: prompt-quality
+      question: "Are system prompts scoped, explicit about output format, and explicit about what the agent must not do?"
+      categories: [prompt-quality]
+      authorities: [anthropic-docs]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: tool-design
+      question: "Are tool names unambiguous and descriptions precise enough for correct selection, with typed, documented parameters?"
+      categories: [documentation]
+      authorities: [mcp-spec, anthropic-docs]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: context-discipline
+      question: "Is context-window content chosen deliberately, trimmed, and cached where stable?"
+      categories: [context-management, performance]
+      authorities: [building-effective-agents, anthropic-docs]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: true
+    - id: loop-safety
+      question: "Do agentic loops define stop conditions, iteration guards, and human escalation?"
+      categories: [correctness]
+      authorities: [building-effective-agents]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: error-surfacing
+      question: "Do tool failures surface loudly to the agent and the operator rather than silently?"
+      categories: [error-handling]
+      authorities: [owasp-llm-top-10, building-effective-agents]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: evals
+      question: "Is there an eval harness with golden traces, and do prompt changes ship with eval results?"
+      categories: [testing]
+      authorities: [building-effective-agents]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: observability
+      question: "Are agent decisions, tool calls, and responses traced so a failure can be replayed?"
+      categories: [observability]
+      authorities: [claude-code-sdk]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: true
+    - id: guardrails
+      question: "Is prompt injection and adversarial input handled explicitly, with outputs validated before acting?"
+      categories: [security]
+      authorities: [owasp-llm-top-10]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: model-selection
+      question: "Is the model choice justified by task complexity and latency, and pinned?"
+      categories: [dependencies]
+      authorities: [anthropic-docs]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+
+  tooling_gates:
+    - tool: pre-commit
+      config_file: ".pre-commit-config.yaml"
+      enforces: [style]
+      source: "https://pre-commit.com/"
+
+  prompt_context:
+    phase1_pr_extraction: |
+      This repository builds an AI agent system. Comments on prompts concern
+      scope and output contracts; comments on tools concern description
+      precision and error surfacing; comments on loops concern stop
+      conditions. Use the file tag shown with each comment. Cite a standard
+      only when the comment clearly invokes it.
+    phase2_reviewer_fingerprint: |
+      Meaningful focus areas for this domain: prompt scope, tool description
+      precision, context discipline, loop safety, error surfacing, evals,
+      observability, injection guardrails, model selection. Note blind spots
+      as areas the reviewer touches but never reviews.
+    phase3_author_growth: |
+      Judge author growth against this domain: scoped prompts with negative
+      cases, precise tool contracts, guarded loops, loud failures, eval
+      results attached to prompt changes. Ground recommendations in the lens
+      authorities.
+    phase4_team_gaps: |
+      Report gaps only against this lens's axes. If a dimension is enforced
+      by an eval gate or linter already present, report it as
+      institutionalized. Do not import data-warehouse or infrastructure
+      concerns.
+    interpret: |
+      Summarize for an agent-engineering team: which practices are enforced
+      by evals and tooling and which depend on reviewer attention. Map quick
+      wins to concrete maturity-ladder promotions.
+
+  must_not:
+    - "Cite dbt, SQLFluff, Kimball, or dbt-project-evaluator."
+    - "Report gaps about grain, fact models, staging models, source freshness, or exposure contracts."
+    - "Treat CLAUDE.md, AGENTS.md, or .agents/ content as evidence about the code archetype."
+
+  validation:
+    test_repo: null
+    smoke_checks:
+      - "grain"
+      - "fact model"
+      - "dbt"
+      - "SQLFluff"
+      - "Kimball"

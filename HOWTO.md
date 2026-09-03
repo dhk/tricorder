@@ -152,6 +152,36 @@ Interpretation reads Level 3 artifacts and sends relevant material to the chosen
 for domain-specific judgment. Lenses are experimental; review citations and
 recommendations rather than treating them as authoritative.
 
+### Lenses: how the domain gets chosen
+
+Every LLM phase (`learn` and `interpret`, and the legacy synthesize script) reads the
+repository through a discipline lens. Lenses are YAML files in
+`tricorder/lenses/data/`; drop an override into `.tricorder/lenses/` (per repository)
+or `~/.tricorder/lenses/` (per user). `discover` selects one from the file tree and
+records it in `repository-profile.yml`; `learn` reads that, or `--lens NAME`, or, when
+neither exists and a GitHub token is available, detects it from the GitHub tree.
+
+Before spending on an LLM run, dry-run:
+
+```bash
+tricorder learn OWNER/REPO --dry-run
+```
+
+This prints the lens, the two verification checks, the tooling gates found, and the
+Phase 1 and Phase 4 system prompts, and makes no LLM calls. Outcomes:
+
+| `discover` says | Meaning | Do |
+|-----------------|---------|----|
+| `selected` | one lens cleared its `min_score` with a `min_margin` lead | run |
+| `mixed` | the runner-up is close; its axes go to Phase 4 as a secondary section, reported only with evidence | run, or choose with `--lens` |
+| `unknown` | nothing cleared `min_score` | pass `--lens NAME`, or write a lens |
+| `composition_check ✗` | the language mix contradicts the lens | pick another lens, or `--force` |
+| `review_path_check ✗` | reviewers comment on paths the lens cannot tag | pick another lens, or `--force` |
+
+After a run, `learnings.json` records the lens, the checks, the tooling gates, and any
+smoke-check hits (off-domain terms the lens forbids). A run with smoke-check hits exits
+non-zero; its cached phase outputs are kept so you can fix the lens and re-run.
+
 ### 5. Produce an improvement plan
 
 ```bash
