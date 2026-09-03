@@ -125,8 +125,10 @@ def load_taxonomy(cache_dir: Path) -> dict:
     Lens-driven when synthesize recorded a lens in synthesis/lens.json;
     the legacy dbt set otherwise (runs that predate lens tracking).
     """
-    lens_file = cache_dir / "synthesis" / "lens.json"
-    info = json.loads(lens_file.read_text()) if lens_file.exists() else {}
+    from tricorder.lenses.cache import current_dir
+    synth = current_dir(cache_dir / "synthesis")
+    lens_file = (synth / "lens.json") if synth else None
+    info = json.loads(lens_file.read_text()) if lens_file and lens_file.exists() else {}
     if info.get("name"):
         try:
             from tricorder.lenses import load_lens
@@ -454,11 +456,14 @@ def read_version(script_dir: Path) -> str:
 
 
 def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymized: bool):
+    from tricorder.lenses.cache import current_dir
     manifest    = load_manifest(cache_dir)
-    pr_dir      = cache_dir / "synthesis" / "pr"
-    reviewer_dir = cache_dir / "synthesis" / "reviewers"
-    author_dir  = cache_dir / "synthesis" / "authors"
-    gaps_file   = cache_dir / "synthesis" / "team-gaps.json"
+    synth       = current_dir(cache_dir / "synthesis") or (cache_dir / "synthesis")
+    print(f"  Synthesis: {synth}")
+    pr_dir      = synth / "pr"
+    reviewer_dir = synth / "reviewers"
+    author_dir  = synth / "authors"
+    gaps_file   = synth / "team-gaps.json"
 
     for required in (pr_dir, reviewer_dir, author_dir, gaps_file):
         if not required.exists():

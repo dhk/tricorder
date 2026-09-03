@@ -40,6 +40,7 @@ from tricorder.lenses.detect import (
     composition_check, detect, fetch_github, github_token, review_path_check,
 )
 from tricorder.lenses.prompting import authorities_markdown, secondary_block, smoke_check, system_prompt
+from tricorder.lenses.cache import load_cached, save_cached, synthesis_dir, write_current
 
 
 # ---------------------------------------------------------------------------
@@ -894,11 +895,11 @@ def run(args: list[str]) -> int:
         print("\nDry run: no LLM calls made.")
         return 0
 
-    # Intermediate synthesis cache
-    synth_dir = tri_dir / ".raw" / "synthesis"
-    (synth_dir / "pr").mkdir(parents=True, exist_ok=True)
-    (synth_dir / "reviewers").mkdir(parents=True, exist_ok=True)
-    (synth_dir / "authors").mkdir(parents=True, exist_ok=True)
+    # Intermediate synthesis cache, keyed by lens so a lens change never reuses
+    # outputs produced under another lens's prompts
+    synth_root = tri_dir / ".raw" / "synthesis"
+    synth_dir = synthesis_dir(synth_root, lens)
+    write_current(synth_root, lens, {"source": lens_source})
 
     # Build LLM client
     client = build_llm_provider(
@@ -968,8 +969,9 @@ def run(args: list[str]) -> int:
     for i, pr in enumerate(prs_with_reviews, 1):
         num = pr["number"]
         cache_path = synth_dir / "pr" / f"{num}.json"
-        if cache_path.exists():
-            pr_results.append(json.loads(cache_path.read_text()))
+        cached = load_cached(cache_path, lens)
+        if cached is not None:
+            pr_results.append(cached)
             print(f"  [{i:03d}/{len(prs_with_reviews)}] #{num:5d}  (cached)")
             continue
 
@@ -977,7 +979,7 @@ def run(args: list[str]) -> int:
         result = _call_llm(client, sys_p1, payload)
         result["_pr_number"] = num
         result["_author"] = pr.get("author", "unknown")
-        cache_path.write_text(json.dumps(result, indent=2))
+        save_cached(cache_path, result, lens)
         pr_results.append(result)
 
         status = "⚠ error" if result.get("_error") else f"{len(result.get('patterns', []))} patterns"
@@ -1005,8 +1007,9 @@ def run(args: list[str]) -> int:
 
     for reviewer in reviewers_list:
         cache_path = synth_dir / "reviewers" / f"{reviewer}.json"
-        if cache_path.exists():
-            reviewer_profiles.append(json.loads(cache_path.read_text()))
+        cached = load_cached(cache_path, lens)
+        if cached is not None:
+            reviewer_profiles.append(cached)
             print(f"  {reviewer:<22}  (cached)")
             continue
 
@@ -1032,7 +1035,7 @@ def run(args: list[str]) -> int:
         lines.insert(1, f"PRs reviewed: {pr_count}")
         result = _call_llm(client, sys_p2, "\n".join(lines))
         result["_reviewer"] = reviewer
-        cache_path.write_text(json.dumps(result, indent=2))
+        save_cached(cache_path, result, lens)
         reviewer_profiles.append(result)
 
         status = "⚠ error" if result.get("_error") else result.get("signal_quality", "?")
@@ -1049,8 +1052,9 @@ def run(args: list[str]) -> int:
 
     for author in authors_list:
         cache_path = synth_dir / "authors" / f"{author}.json"
-        if cache_path.exists():
-            author_profiles.append(json.loads(cache_path.read_text()))
+        cached = load_cached(cache_path, lens)
+        if cached is not None:
+            author_profiles.append(cached)
             print(f"  {author:<22}  (cached)")
             continue
 
@@ -1080,7 +1084,7 @@ def run(args: list[str]) -> int:
 
         result = _call_llm(client, sys_p3, "\n".join(lines))
         result["_author"] = author
-        cache_path.write_text(json.dumps(result, indent=2))
+        save_cached(cache_path, result, lens)
         author_profiles.append(result)
 
         status = "⚠ error" if result.get("_error") else result.get("trajectory", "?")
@@ -1092,10 +1096,8 @@ def run(args: list[str]) -> int:
     # ── Phase 4: team gap analysis ────────────────────────────────────────────
     print("Phase 4 — Team gap analysis ...")
     team_cache = synth_dir / "team-gaps.json"
-    if team_cache.exists() and json.loads(team_cache.read_text()).get("_error"):
-        team_cache.unlink()
-    if team_cache.exists():
-        team_gaps = json.loads(team_cache.read_text())
+    team_gaps = load_cached(team_cache, lens)
+    if team_gaps is not None:
         print("  (cached)\n")
     else:
         all_patterns: list[dict] = []
@@ -1118,7 +1120,7 @@ def run(args: list[str]) -> int:
         ]
 
         team_gaps = _call_llm(client, sys_p4, "\n".join(team_lines), max_tokens=4096)
-        team_cache.write_text(json.dumps(team_gaps, indent=2))
+        save_cached(team_cache, team_gaps, lens)
         if team_gaps.get("_error"):
             print(f"  ⚠ error: {team_gaps['_error']}\n")
         else:
