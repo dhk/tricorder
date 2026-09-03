@@ -197,6 +197,18 @@ def _pr_template_sections(content: str) -> list[str]:
     ]
 
 
+def _fetch_changed_files(gh: "GitHub", owner: str, repo: str, num: int) -> list:
+    """Paths (with status and line counts) of every file a PR changed. Empty list on error."""
+    try:
+        items = gh.paginate(f"/repos/{owner}/{repo}/pulls/{num}/files")
+    except Exception as e:
+        print(f"\n    warning: files error on #{num}: {e}")
+        return []
+    return [{"filename": f.get("filename", ""), "status": f.get("status", ""),
+             "additions": f.get("additions", 0), "deletions": f.get("deletions", 0)}
+            for f in items if f.get("filename")]
+
+
 def _fetch_repo_context(gh: GitHub, owner: str, repo: str) -> dict:
     print("  Fetching repo context …", end=" ", flush=True)
     dbt = _fetch_file(gh, owner, repo, "dbt_project.yml")
@@ -670,7 +682,16 @@ def run(args: list[str]) -> int:
 
         if pr_path.exists() and rev_path.exists() and com_path.exists() and not parsed.force:
             cached += 1
-            print(f"  [{i:03d}/{total}] #{num:5d}  {login:<20}  (cached)")
+            try:
+                cached_rec = json.loads(pr_path.read_text())
+            except Exception:
+                cached_rec = {}
+            if "files" not in cached_rec:
+                cached_rec["files"] = _fetch_changed_files(gh, owner, repo_name, num)
+                pr_path.write_text(json.dumps(cached_rec, indent=2))
+                print(f"  [{i:03d}/{total}] #{num:5d}  {login:<20}  (cached; files backfilled)")
+            else:
+                print(f"  [{i:03d}/{total}] #{num:5d}  {login:<20}  (cached)")
             continue
 
         print(f"  [{i:03d}/{total}] #{num:5d}  {login:<20}  {pr.get('title','')[:45]:<45}", end="", flush=True)
@@ -690,6 +711,8 @@ def run(args: list[str]) -> int:
 
         review_iterations = sum(1 for r in reviews_raw if r.get("state") == "CHANGES_REQUESTED")
 
+        changed_files = _fetch_changed_files(gh, owner, repo_name, num)
+
         # File paths touched (from comments)
         touched_paths = list({c["path"] for c in comments_raw if c.get("path")})
 
@@ -705,6 +728,7 @@ def run(args: list[str]) -> int:
             "description_quality": _score_description(pr.get("body") or ""),
             "review_iterations": review_iterations,
             "file_type_tags": _file_type_tags(touched_paths),
+            "files": changed_files,
             "reviews": [
                 {
                     "reviewer": r.get("user", {}).get("login", "unknown"),

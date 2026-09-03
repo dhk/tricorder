@@ -135,6 +135,18 @@ lens:
       tag: "ci"
     - glob: "justfile"
       tag: "task-runner"
+    - glob: "**/Cargo.toml"
+      tag: "dependency-manifest"
+    - glob: "**/Cargo.lock"
+      tag: "dependency-manifest"
+    - glob: "**/package.json"
+      tag: "dependency-manifest"
+    - glob: "pnpm-lock.yaml"
+      tag: "dependency-manifest"
+    - glob: "**/*.lock.json"
+      tag: "dependency-manifest"
+    - glob: "renovate.json"
+      tag: "dependency-manifest"
     - glob: "**/*.toml"
       tag: "tool-config"
     - glob: "**/*.md"
@@ -391,6 +403,7 @@ lens:
 
   axes:
     - id: ipc-boundary
+      tags: [desktop-core-rust, ui-logic-ts]
       question: "Are Tauri commands validated at the Rust/webview boundary — inputs checked, payloads typed, errors mapped — rather than trusting frontend-supplied values?"
       categories: [ipc-boundary, security]
       authorities: [tauri-security-model, tauri-capabilities]
@@ -401,6 +414,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: capability-minimality
+      tags: [desktop-capabilities, desktop-config]
       question: "Are capabilities and permissions scoped minimally per window/webview, with denies and scopes used instead of broad allows?"
       categories: [capability-scoping]
       authorities: [tauri-capabilities, tauri-permissions]
@@ -414,6 +428,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: webview-csp
+      tags: [desktop-config]
       question: "Is a CSP configured in tauri.conf.json (app.security.csp), free of unsafe-inline/remote sources, and are remote URLs explicitly scoped?"
       categories: [webview-security]
       authorities: [tauri-csp, tauri-config]
@@ -424,6 +439,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: unsafe-discipline
+      tags: [desktop-core-rust, rust-workspace-crate]
       question: "Is every unsafe block justified, minimal, and soundness-reasoned (SAFETY comments), and is unsafe growth in the dependency tree watched?"
       categories: [unsafe-rust]
       authorities: [rustonomicon, rust-api-guidelines]
@@ -437,6 +453,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: rust-idiom
+      tags: [desktop-core-rust, rust-workspace-crate, companion-cli]
       question: "Does the Rust core follow Clippy lints and API-guideline conventions, with lint regressions denied in CI?"
       categories: [rust-idiom, style, correctness]
       authorities: [clippy-lints, rust-api-guidelines, rustc-lint-levels]
@@ -450,6 +467,7 @@ lens:
       max_maturity: deterministic
       phase4_absence_is_finding: false
     - id: dependency-supply-chain
+      tags: [dependency-manifest]
       question: "Are new dependencies (crates and npm) justified, and are advisories, licenses, and update cadence enforced by cargo-deny/cargo-audit and the update bot rather than by memory?"
       categories: [dependencies, security]
       authorities: [cargo-deny, cargo-geiger]
@@ -463,6 +481,7 @@ lens:
       max_maturity: deterministic
       phase4_absence_is_finding: true
     - id: react-hygiene
+      tags: [ui-react]
       question: "Do components follow the Rules of React — hooks at top level, effects with correct dependencies and cleanup, no mutation of props/state, purity during render?"
       categories: [react-hygiene]
       authorities: [react-rules, react-hooks-rules, biome-rules]
@@ -473,6 +492,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: typescript-strictness
+      tags: [ui-logic-ts, ui-react]
       question: "Is type safety preserved — no any-casts hiding real unions, no floating promises, strict narrowing at IPC and storage boundaries?"
       categories: [typescript-strictness]
       authorities: [typescript-eslint-rules]
@@ -486,6 +506,7 @@ lens:
       max_maturity: deterministic
       phase4_absence_is_finding: false
     - id: e2e-practice
+      tags: [test-e2e, test-unit]
       question: "Do UI changes ship with Playwright coverage that follows best practice — role-based locators, web-first assertions, isolated tests, run in CI — and does the PR template's Testing evidence get provided?"
       categories: [e2e-coverage, testing]
       authorities: [playwright-best-practices]
@@ -496,6 +517,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: packaging-sidecars
+      tags: [distribution, build-release-scripts, build-infra, desktop-config]
       question: "Are sidecars staged per target triple (externalBin), per-platform config merges deliberate, and bundle resources explicit — does every platform ship the right binary?"
       categories: [desktop-packaging]
       authorities: [tauri-config]
@@ -506,6 +528,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: updater-signing
+      tags: [desktop-config, ci, build-release-scripts]
       question: "Are updater artifacts signed (Tauri mandates signatures), macOS builds signed and notarized, Windows builds signed, and release-channel changes reviewed?"
       categories: [release-updater, security]
       authorities: [tauri-updater, tauri-macos-signing, tauri-windows-signing]
@@ -516,6 +539,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: telemetry-privacy
+      tags: []
       question: "Do new telemetry events match the published telemetry policy — no raw paths, identifiers hashed, opt-out honored?"
       categories: [telemetry-privacy]
       authorities: [berd-telemetry]
@@ -523,6 +547,7 @@ lens:
       max_maturity: convention
       phase4_absence_is_finding: true
     - id: accessibility
+      tags: [ui-react, ui-style]
       question: "Is the webview UI keyboard operable and semantically marked up, consistent with WCAG 2.2, beyond what Biome's a11y rules catch?"
       categories: [accessibility]
       authorities: [wcag-2-2, biome-rules]
@@ -533,6 +558,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: style-lint
+      tags: [tool-config]
       question: "Is formatting/import/lint hygiene fully delegated to Biome and rustfmt rather than litigated in review comments?"
       categories: [style]
       authorities: [biome-rules, rustc-lint-levels]

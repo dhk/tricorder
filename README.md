@@ -81,6 +81,18 @@ validated on block/berd ([record](docs/research/repo-lens/findings/perplexity-le
 the others are experimental until a production-repository validation passes. Design: [DESIGN.md](DESIGN.md#discipline-lenses);
 evidence: [docs/research/repo-lens](docs/research/repo-lens/README.md).
 
+## Oversight density
+
+In agentic development, code review is where human oversight concentrates, so the
+review record is the audit trail of human judgment over machine-assisted change. The
+failure to detect is rubber-stamping, not a reviewer blind spot. Tricorder therefore
+computes, from the harvested record and without a model, how much human attention each
+reviewer applies (silent approvals: approve with no comment) and how much each lens axis
+receives (PRs that changed files under the axis with no human comment there). Measured
+on block/berd on 2026-09-03: every PR that touched the Tauri capabilities manifest or the
+CSP configuration merged with no human comment on those files. The numbers appear on the
+explorer's Team Gaps and Reviewer Fingerprints tabs and go to Phase 4 as context.
+
 ## Primary research supporting the methodology
 
 The lens design is not an opinion about how repositories should be read. It follows a

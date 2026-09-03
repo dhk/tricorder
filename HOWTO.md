@@ -185,6 +185,13 @@ reusing outputs made under another lens's prompts; a pre-existing flat cache is 
 into a sub-directory on first use, named from its recorded lens or `pre-lens`.
 `synthesis/current.json` names the directory of the most recent run.
 
+`learn` also computes **oversight density** from the harvested record alone, with no
+model involved: per reviewer, how many approvals carried no comment; per lens axis, how
+many PRs changed files under that axis and received no human comment there. It is
+written to `oversight.json` beside the phase outputs, handed to Phase 4 as context, and
+shown on the explorer's Team Gaps and Reviewer Fingerprints tabs. `analyze` now records
+each PR's changed files to make this possible and backfills them for cached PRs.
+
 After a run, `learnings.json` records the lens, the checks, the tooling gates, and any
 smoke-check hits (off-domain terms the lens forbids). A run with smoke-check hits exits
 non-zero; its cached phase outputs are kept so you can fix the lens and re-run.

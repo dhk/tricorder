@@ -41,6 +41,7 @@ from tricorder.lenses.detect import (
 )
 from tricorder.lenses.prompting import authorities_markdown, secondary_block, smoke_check, system_prompt
 from tricorder.lenses.cache import load_cached, save_cached, synthesis_dir, write_current
+from tricorder.oversight import compute as compute_oversight, normalize_v2, oversight_prompt_block
 
 
 # ---------------------------------------------------------------------------
@@ -989,6 +990,13 @@ def run(args: list[str]) -> int:
 
     print(f"\n  ✓ {len(pr_results)} PRs processed\n")
 
+    # ── Oversight density (no LLM) ────────────────────────────────────────────
+    oversight = compute_oversight([normalize_v2(r) for r in pr_records], lens)
+    (synth_dir / "oversight.json").write_text(json.dumps(oversight, indent=2))
+    _os = oversight["summary"]
+    print(f"Oversight — {_os['prs_without_human_engagement']}/{_os['prs']} PRs with no human engagement; "
+          f"silent approvals {_os['silent_approvals']}/{_os['approvals']}\n")
+
     # ── Phase 2: reviewer fingerprints ───────────────────────────────────────
     all_reviewers: set[str] = set()
     for pr in pr_records:
@@ -1117,6 +1125,8 @@ def run(args: list[str]) -> int:
                 [{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles],
                 indent=2
             )[:4000],
+            "",
+            oversight_prompt_block(oversight),
         ]
 
         team_gaps = _call_llm(client, sys_p4, "\n".join(team_lines), max_tokens=4096)
@@ -1153,6 +1163,7 @@ def run(args: list[str]) -> int:
     # ── Write artifacts ───────────────────────────────────────────────────────
     learnings = _build_learnings(pr_results, reviewer_profiles, author_profiles, team_gaps)
     learnings["lens"] = lens.summary()
+    learnings["oversight"] = oversight
     learnings["lens_source"] = lens_source
     learnings["secondary_lens"] = secondary.summary() if secondary else None
     learnings["tooling_gates_present"] = gates
