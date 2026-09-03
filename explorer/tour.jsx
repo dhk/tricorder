@@ -197,9 +197,26 @@ function Onboarding({ active, setActive }) {
           <p style={{ margin: "0 0 10px", fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 15, lineHeight: 1.55 }}>
             tricorder is open and self-hostable. Point it at any GitHub repo, run the cost probe, harvest merged PRs, and synthesize — this explorer is what you get back.
           </p>
-          <p style={{ margin: "0 0 22px", fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-dim)" }}>
+          <p style={{ margin: "0 0 16px", fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-dim)" }}>
             Still early and experimental — the README and <Mono style={{ fontSize: 12.5 }}>SKILL.md</Mono> spec are the place to start.
           </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
+            {[
+              { label: "repo",    value: REPO_URL.replace("https://", "") + " ↗", href: REPO_URL },
+              { label: "contact", value: "tricorder@dhk.io", href: "mailto:tricorder@dhk.io", note: "the author" },
+            ].map(({ label, value, href, note }) => (
+              <div key={label} style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+                <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", minWidth: 64 }}>{label}</Mono>
+                <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener"
+                  style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--accent)", textDecoration: "none",
+                           borderBottom: "1px solid transparent", transition: "color 0.15s, border-color 0.15s" }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = "var(--accent)"}
+                  onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = "transparent"}
+                >{value}</a>
+                {note && <Mono dim style={{ fontSize: 11 }}>{note}</Mono>}
+              </div>
+            ))}
+          </div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <TourButton onClick={() => window.open(REPO_URL, "_blank")} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
               View the repo →
