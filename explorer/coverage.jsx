@@ -53,10 +53,10 @@ function freqToLevel(freq) {
 // Discrete coverage shades — not a continuous heat map.
 function coverageStep(freq) {
   const level = freqToLevel(freq);
-  if (level === 0) return { fill: "#ffffff", border: "var(--border)", on: false, level: 0 };
-  if (level === 1) return { fill: "rgba(22,163,74,0.12)", border: "rgba(22,163,74,0.22)", on: true, level: 1 };
-  if (level === 2) return { fill: "rgba(22,163,74,0.30)", border: "rgba(22,163,74,0.34)", on: true, level: 2 };
-  return { fill: "rgba(22,163,74,0.55)", border: "rgba(22,163,74,0.50)", on: true, level: 3 };
+  if (level === 0) return { fill: "var(--bg)", border: "var(--border)", on: false, level: 0 };
+  if (level === 1) return { fill: "rgba(43,80,232,0.12)", border: "rgba(43,80,232,0.22)", on: true, level: 1 };
+  if (level === 2) return { fill: "rgba(43,80,232,0.30)", border: "rgba(43,80,232,0.34)", on: true, level: 2 };
+  return { fill: "rgba(43,80,232,0.55)", border: "rgba(43,80,232,0.50)", on: true, level: 3 };
 }
 
 function CoverageCell({ data, label, onClick }) {
@@ -78,16 +78,16 @@ function CoverageCell({ data, label, onClick }) {
         all: "unset",
         position: "relative",
         height: 46,
-        borderRadius: "var(--border-radius)",
+        borderRadius: "var(--radius)",
         background: step.fill,
         border: `1px solid ${step.border}`,
         cursor: clickable ? "pointer" : "default",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: hover && clickable ? "0 0 0 2px var(--accent)" : "none",
-        transition: "box-shadow 120ms ease, transform 120ms ease",
-        transform: hover && clickable ? "translateY(-1px)" : "none",
+        outline: hover && clickable ? "2px solid var(--accent)" : "none",
+        outlineOffset: -2,
+        transition: "color 0.15s, background 0.15s, border-color 0.15s",
         zIndex: hover && clickable ? 2 : 1,
       }}>
       {step.on && (
@@ -132,12 +132,10 @@ function CoverageDrawer({ payload, onClose }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 50 }}>
       <div onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(10,10,9,0.28)", animation: "fadeIn 160ms ease" }} />
+        style={{ position: "absolute", inset: 0, background: "rgba(13,15,26,0.28)" }} />
       <aside style={{
         position: "absolute", top: 0, right: 0, height: "100%", width: "min(460px, 92vw)",
         background: "var(--bg)", borderLeft: "1px solid var(--border)",
-        boxShadow: "-18px 0 40px rgba(10,10,9,0.10)",
-        animation: "drawerIn 220ms cubic-bezier(0.22,1,0.36,1)",
         display: "flex", flexDirection: "column",
       }}>
         {/* header */}
@@ -145,13 +143,13 @@ function CoverageDrawer({ payload, onClose }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <Mono dim style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>Coverage detail</Mono>
-              <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 26, lineHeight: 1.05, marginTop: 4 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 26, lineHeight: 1.05, marginTop: 4 }}>
                 {reviewer}
               </div>
             </div>
             <button onClick={onClose} style={{
               all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 18,
-              color: "var(--text-dim)", padding: "2px 8px", borderRadius: "var(--border-radius)",
+              color: "var(--text-dim)", padding: "2px 8px", borderRadius: "var(--radius)",
               lineHeight: 1,
             }} title="Close (Esc)">✕</button>
           </div>
@@ -173,7 +171,7 @@ function CoverageDrawer({ payload, onClose }) {
                   borderBottom: i < relevantFocus.length - 1 ? "1px solid var(--border)" : "none",
                 }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-                    <Mono dim style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.07em" }}>{f.frequency}</Mono>
+                    <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{f.frequency}</Mono>
                   </div>
                   <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--text)" }}>{f.area}</div>
                 </div>
@@ -195,17 +193,17 @@ function CoverageDrawer({ payload, onClose }) {
               borderBottom: i < cell.items.length - 1 ? "1px solid var(--border)" : "none",
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, gap: 10 }}>
-                <Mono style={{ fontSize: 12.5, color: "var(--accent-blue)" }}>{it.pr}</Mono>
-                <Mono dim style={{ fontSize: 11.5 }}>{it.date}</Mono>
+                <Mono style={{ fontSize: 12.5, color: "var(--accent-teal)" }}>{it.pr}</Mono>
+                <Mono dim style={{ fontSize: 11 }}>{it.date}</Mono>
               </div>
               <div style={{
                 fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 14.5, lineHeight: 1.55,
                 color: "var(--text)", paddingLeft: 14, borderLeft: "2px solid var(--accent)",
               }}>"{it.quote}"</div>
               <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <Mono dim style={{ fontSize: 11.5 }}>on {it.author}'s PR</Mono>
+                <Mono dim style={{ fontSize: 11 }}>on {it.author}'s PR</Mono>
                 {it.citation && <><span style={{ color: "var(--border)" }}>·</span>
-                <Mono dim style={{ fontSize: 11.5 }}>{it.citation}</Mono></>}
+                <Mono dim style={{ fontSize: 11 }}>{it.citation}</Mono></>}
               </div>
             </div>
           )) : relevantFocus.length === 0 ? (
@@ -226,29 +224,29 @@ function CoverageTab() {
   const labelW = 132;
 
   return (
-    <div style={{ padding: "28px 32px 48px", animation: "fadeIn 200ms ease" }}>
+    <div style={{ padding: "28px 32px 48px" }}>
       <div style={{ maxWidth: 1040, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 8, flexWrap: "wrap", gap: 16 }}>
           <div>
-            <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0, letterSpacing: "0.01em" }}>Pattern Coverage</h2>
-            <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, fontWeight: 300, maxWidth: 560 }}>
-              Which review dimensions each reviewer actually covers. Deeper green = reviewed more often. Click a cell to read the evidence.
+            <h2 style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 28, margin: 0, letterSpacing: "0.01em" }}>Pattern Coverage</h2>
+            <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, fontWeight: 400, maxWidth: 560 }}>
+              Which review dimensions each reviewer actually covers. Deeper cobalt = reviewed more often. Click a cell to read the evidence.
             </p>
           </div>
           {/* legend */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Mono dim style={{ fontSize: 10 }}>none</Mono>
+            <Mono dim style={{ fontSize: 11 }}>none</Mono>
             <div style={{ display: "flex", gap: 2 }}>
               {[0, 1, 2, 3].map((n) => (
-                <div key={n} style={{ width: 22, height: 14, background: coverageStep(n).fill, border: `1px solid ${coverageStep(n).border}`, borderRadius: 2 }} />
+                <div key={n} style={{ width: 20, height: 3, background: coverageStep(n).on ? coverageStep(n).border : "var(--border)", borderRadius: 2 }} />
               ))}
             </div>
-            <Mono dim style={{ fontSize: 10 }}>reviewed</Mono>
+            <Mono dim style={{ fontSize: 11 }}>reviewed</Mono>
           </div>
         </div>
 
         <div style={{
-          background: "#fff", border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
+          background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius)",
           padding: "20px 22px 22px", marginTop: 20, overflowX: "auto",
         }}>
           <div style={{ minWidth: 640 }}>
@@ -262,7 +260,7 @@ function CoverageTab() {
               {cats.map(c => (
                 <div key={c} style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", height: "100%" }}>
                   <span style={{
-                    fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--text-dim)",
+                    fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-dim)",
                     transform: "rotate(-48deg)", transformOrigin: "left bottom",
                     whiteSpace: "nowrap", display: "inline-block",
                   }}>{c}</span>

@@ -2,7 +2,7 @@
 
 const SIGNAL = {
   high:   { color: "var(--accent)",       label: "high" },
-  medium: { color: "var(--accent-blue)",  label: "medium" },
+  medium: { color: "var(--accent-teal)",  label: "medium" },
   low:    { color: "var(--text-dim)",     label: "low" },
 };
 
@@ -10,11 +10,11 @@ function SignalBadge({ q }) {
   const s = SIGNAL[q] || SIGNAL.low;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-      <Mono dim style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>signal</Mono>
+      <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>signal</Mono>
       <span style={{
-        fontFamily: "var(--font-mono)", fontSize: 11.5, color: s.color, fontWeight: 500,
+        fontFamily: "var(--font-mono)", fontSize: 11, color: s.color, fontWeight: 500,
         textTransform: "uppercase", letterSpacing: "0.04em",
-        border: `1px solid ${s.color}`, borderRadius: "var(--border-radius)",
+        border: `1px solid ${s.color}`, borderRadius: "var(--radius)",
         padding: "1px 7px", opacity: q === "low" ? 0.85 : 1,
       }}>{s.label}</span>
     </span>
@@ -24,10 +24,10 @@ function SignalBadge({ q }) {
 function FreqBadge({ frequency }) {
   return (
     <span style={{
-      fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-dim)",
+      fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-dim)",
       textTransform: "uppercase", letterSpacing: "0.05em",
       background: "var(--bg2)", border: "1px solid var(--border)",
-      borderRadius: "var(--border-radius)", padding: "1px 7px",
+      borderRadius: "var(--radius)", padding: "1px 7px",
     }}>{frequency}</span>
   );
 }
@@ -44,13 +44,13 @@ function ReviewerCard({ r }) {
 
   return (
     <div style={{
-      background: "#fff", border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
+      background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius)",
       padding: "20px 22px 22px", display: "flex", flexDirection: "column",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 24, lineHeight: 1 }}>{r.login}</div>
-          <Mono dim style={{ fontSize: 11.5, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>{r.review_style} reviewer</Mono>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 24, lineHeight: 1 }}>{r.login}</div>
+          <Mono dim style={{ fontSize: 11, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>{r.review_style} reviewer</Mono>
         </div>
         <SignalBadge q={r.signal_quality} />
       </div>
@@ -58,12 +58,12 @@ function ReviewerCard({ r }) {
       <div style={{ height: 244, margin: "8px -6px 6px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData} outerRadius="72%" margin={{ top: 14, right: 18, bottom: 14, left: 18 }}>
-            <PolarGrid stroke="#e3e1dc" />
+            <PolarGrid stroke="#d8dbeb" />
             <PolarAngleAxis dataKey="category"
-              tick={{ fontFamily: "DM Mono, monospace", fontSize: 10, fill: "#5a5850" }} />
+              tick={{ fontFamily: "DM Mono, monospace", fontSize: 11, fill: "#5a5d78" }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-            <Radar dataKey="value" stroke="#16a34a" strokeWidth={2}
-              fill="#16a34a" fillOpacity={0.15} isAnimationActive={true} animationDuration={500} />
+            <Radar dataKey="value" stroke="#2b50e8" strokeWidth={2}
+              fill="#2b50e8" fillOpacity={0.15} isAnimationActive={true} animationDuration={1000} animationEasing="ease-out" />
           </RadarChart>
         </ResponsiveContainer>
       </div>
@@ -103,10 +103,12 @@ function ReviewerCard({ r }) {
 // All reviewers on one chart. High/medium signal = bold stroke + fill.
 // Low signal = faint outline. Immediately shows who covers what and the gaps.
 
+// Series colours: hex mirrors of the design system's --viz-* tokens (cobalt,
+// amber, red, teal, purple, sienna) followed by the three semantic accents.
+// Reviewers beyond nine cycle; the legend keeps them distinguishable by name.
 const COMPOSITE_PALETTE = [
-  "#16a34a", "#2970d6", "#7c5ce0", "#d94f2a", "#0ea5e9",
-  "#f59e0b", "#10b981", "#8b5cf6", "#ef4444", "#06b6d4",
-  "#84cc16", "#f97316", "#6366f1", "#14b8a6",
+  "#2b50e8", "#e8a030", "#d94040", "#0ea58a", "#9b42d8", "#c47830",
+  "#8b2adc", "#e05c2a", "#0ea5b0",
 ];
 
 function CompositeRadar() {
@@ -125,20 +127,20 @@ function CompositeRadar() {
 
   return (
     <div style={{
-      background: "#fff", border: "1px solid var(--border)",
-      borderRadius: "var(--border-radius)", padding: "20px 24px 16px",
+      background: "var(--bg)", border: "1px solid var(--border)",
+      borderRadius: "var(--radius)", padding: "20px 24px 16px",
       marginBottom: 28,
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
         <CardHeading>Team overview</CardHeading>
-        <Mono dim style={{ fontSize: 10.5 }}>bold = high / medium signal &nbsp; faint = low signal</Mono>
+        <Mono dim style={{ fontSize: 11 }}>bold = high / medium signal &nbsp; faint = low signal</Mono>
       </div>
       <div style={{ height: 380, margin: "0 -6px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData} outerRadius="68%" margin={{ top: 16, right: 32, bottom: 0, left: 32 }}>
-            <PolarGrid stroke="#e8e6e1" />
+            <PolarGrid stroke="#d8dbeb" />
             <PolarAngleAxis dataKey="category"
-              tick={{ fontFamily: "DM Mono, monospace", fontSize: 10, fill: "#5a5850" }} />
+              tick={{ fontFamily: "DM Mono, monospace", fontSize: 11, fill: "#5a5d78" }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
             {revs.map((r, i) => {
               const isHigh = r.signal_quality === "high";
@@ -146,7 +148,7 @@ function CompositeRadar() {
               const color  = COMPOSITE_PALETTE[i % COMPOSITE_PALETTE.length];
               return (
                 <Radar key={r.login} name={r.login} dataKey={r.login}
-                  stroke={color} strokeWidth={isHigh ? 2.5 : isMed ? 1.8 : 1}
+                  stroke={color} strokeWidth={isHigh ? 2.5 : 2}
                   strokeOpacity={isHigh ? 1 : isMed ? 0.75 : 0.28}
                   fill={color}
                   fillOpacity={isHigh ? 0.13 : isMed ? 0.07 : 0.02}
@@ -154,7 +156,7 @@ function CompositeRadar() {
               );
             })}
             <Legend iconType="line" iconSize={16}
-              wrapperStyle={{ fontFamily: "DM Mono, monospace", fontSize: 10.5, paddingTop: 10 }} />
+              wrapperStyle={{ fontFamily: "DM Mono, monospace", fontSize: 11, paddingTop: 10 }} />
           </RadarChart>
         </ResponsiveContainer>
       </div>
@@ -164,10 +166,10 @@ function CompositeRadar() {
 
 function FingerprintsTab() {
   return (
-    <div style={{ padding: "28px 32px 48px", animation: "fadeIn 200ms ease" }}>
+    <div style={{ padding: "28px 32px 48px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0 }}>Reviewer Fingerprints</h2>
+          <h2 style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 28, margin: 0 }}>Reviewer Fingerprints</h2>
           <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, maxWidth: 640 }}>
             The shape of each reviewer's attention across nine categories. Team overview first, then individual fingerprints.
           </p>

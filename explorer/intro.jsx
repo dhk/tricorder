@@ -14,9 +14,9 @@ const INTRO_PIPELINE = [
 
 const INTRO_READ_GUIDE = [
   { tab: "pipeline", label: "Maturity Pipeline", lead: "Start here for action.",
-    body: "Columns run left to right from judgment to deterministic. The two green-washed columns on the right hold patterns already consistent enough to become a lint rule or a CI gate." },
+    body: "Columns run left to right from judgment to deterministic. The two tinted columns on the right hold patterns already consistent enough to become a lint rule or a CI gate." },
   { tab: "coverage", label: "Pattern Coverage", lead: "Who reviews for what.",
-    body: "Rows are reviewers, columns are the review dimensions. Deeper green means that reviewer raises it more often. Click any cell to read the quoted comments behind it." },
+    body: "Rows are reviewers, columns are the review dimensions. Deeper cobalt means that reviewer raises it more often. Click any cell to read the quoted comments behind it." },
   { tab: "gaps", label: "Team Gaps", lead: "What nobody is catching.",
     body: "Three panels — coverage gaps, knowledge gaps, blind spots — most critical first. Each names the standard it maps to and a concrete fix." },
   { tab: "fingerprints", label: "Reviewer Fingerprints", lead: "The shape of each reviewer's attention.",
@@ -43,11 +43,11 @@ const INTRO_COLOR_LEGEND = [
 function IntroCard({ title, children, style }) {
   return (
     <section style={{
-      background: "#fff", border: "1px solid var(--border)",
-      borderRadius: "var(--border-radius)", padding: "22px 24px 20px",
+      background: "var(--bg)", border: "1px solid var(--border)",
+      borderRadius: "var(--radius)", padding: "22px 24px 20px",
       ...style,
     }}>
-      <h3 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 20, margin: "0 0 12px" }}>{title}</h3>
+      <h3 style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 20, margin: "0 0 12px" }}>{title}</h3>
       {children}
     </section>
   );
@@ -67,7 +67,7 @@ function IntroLink({ href, children }) {
   return (
     <a href={href} target="_blank" rel="noopener" style={{
       fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--accent)",
-      textDecoration: "none", borderBottom: "1px solid transparent", transition: "border-color 120ms",
+      textDecoration: "none", borderBottom: "1px solid transparent", transition: "color 0.15s, background 0.15s, border-color 0.15s",
     }}
       onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = "var(--accent)"}
       onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = "transparent"}
@@ -79,11 +79,11 @@ function IntroStat({ label, value, hint }) {
   if (value === undefined || value === null || value === "") return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-      <Mono dim style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</Mono>
+      <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</Mono>
       <Mono style={{ fontSize: 14, overflowWrap: "anywhere" }}>{value}</Mono>
       {hint && (
         <span style={{
-          fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: 12,
+          fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 12,
           lineHeight: 1.4, color: "var(--text-dim)", marginTop: 2,
         }}>{hint}</span>
       )}
@@ -113,13 +113,13 @@ function IntroTab({ onSelect }) {
   const startTour = () => window.dispatchEvent(new Event("tricorder:tour"));
 
   return (
-    <div style={{ padding: "28px 32px 56px", animation: "fadeIn 200ms ease" }}>
+    <div style={{ padding: "28px 32px 56px" }}>
       <div style={{ maxWidth: 980, margin: "0 auto" }}>
 
         {/* header */}
         <div style={{ marginBottom: 22 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0 }}>Start here</h2>
+            <h2 style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 28, margin: 0 }}>Start here</h2>
             <WipMark />
           </div>
           <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, maxWidth: 640 }}>
@@ -131,7 +131,7 @@ function IntroTab({ onSelect }) {
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px 28px",
           padding: "16px 20px", marginBottom: 22,
-          background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
+          background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius)",
         }}>
           <IntroStat label="repository" value={DATA.repo}
             hint="The GitHub repository whose merged PRs were read." />
@@ -175,8 +175,8 @@ function IntroTab({ onSelect }) {
                 <div key={s.n} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <Mono dim style={{ fontSize: 11, marginTop: 4, flexShrink: 0 }}>{s.n}</Mono>
                   <div>
-                    <div style={{ fontFamily: "var(--font-cond)", fontWeight: 600, fontSize: 16, lineHeight: 1.2 }}>{s.title}</div>
-                    <div style={{ color: "var(--text-dim)", fontSize: 13.5, fontWeight: 300, lineHeight: 1.5, marginTop: 2 }}>{s.body}</div>
+                    <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 16, lineHeight: 1.2 }}>{s.title}</div>
+                    <div style={{ color: "var(--text-dim)", fontSize: 13.5, fontWeight: 400, lineHeight: 1.5, marginTop: 2 }}>{s.body}</div>
                   </div>
                 </div>
               ))}
@@ -208,7 +208,7 @@ function IntroTab({ onSelect }) {
                 </div>
                 <div>
                   <span style={{ fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: 14 }}>{g.lead} </span>
-                  <span style={{ color: "var(--text-dim)", fontSize: 13.5, fontWeight: 300, lineHeight: 1.5 }}>{g.body}</span>
+                  <span style={{ color: "var(--text-dim)", fontSize: 13.5, fontWeight: 400, lineHeight: 1.5 }}>{g.body}</span>
                 </div>
               </div>
             ))}
@@ -222,7 +222,7 @@ function IntroTab({ onSelect }) {
                 {MATURITY_ORDER.map(m => (
                   <div key={m} style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
                     <Tag group={MATURITY[m].group} style={{ minWidth: 104, textAlign: "center" }}>{MATURITY[m].label}</Tag>
-                    <span style={{ color: "var(--text-dim)", fontSize: 13, fontWeight: 300 }}>{INTRO_MATURITY_DEFS[m]}</span>
+                    <span style={{ color: "var(--text-dim)", fontSize: 13, fontWeight: 400 }}>{INTRO_MATURITY_DEFS[m]}</span>
                   </div>
                 ))}
               </div>
@@ -242,7 +242,7 @@ function IntroTab({ onSelect }) {
                 ].map(x => (
                   <div key={x.t} style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
                     <Tag group={x.g} style={{ minWidth: 104, textAlign: "center" }}>{x.t}</Tag>
-                    <span style={{ color: "var(--text-dim)", fontSize: 13, fontWeight: 300 }}>{x.d}</span>
+                    <span style={{ color: "var(--text-dim)", fontSize: 13, fontWeight: 400 }}>{x.d}</span>
                   </div>
                 ))}
               </div>
@@ -257,7 +257,7 @@ function IntroTab({ onSelect }) {
         {/* read with care + back to source */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 18, marginTop: 18, alignItems: "start" }}>
           <IntroCard title="Read with care">
-            <ul style={{ margin: 0, padding: "0 0 0 18px", color: "var(--text-dim)", fontSize: 13.5, fontWeight: 300, lineHeight: 1.55 }}>
+            <ul style={{ margin: 0, padding: "0 0 0 18px", color: "var(--text-dim)", fontSize: 13.5, fontWeight: 400, lineHeight: 1.55 }}>
               <li style={{ marginBottom: 6 }}>Every finding is model-generated from review comments. The quotes are real; the interpretation is a model's. Treat standard citations as leads, not verdicts.</li>
               <li style={{ marginBottom: 6 }}>Signal scales with review volume. A reviewer with a handful of PRs gets a low signal-quality grade for a reason.</li>
               <li>{DATA.lens && DATA.lens.name
@@ -279,7 +279,7 @@ function IntroTab({ onSelect }) {
                 { label: "how-to", value: "HOWTO.md",   href: `${REPO_URL}/blob/main/HOWTO.md` },
               ].map(({ label, value, href }) => (
                 <div key={label} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                  <Mono dim style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.07em", minWidth: 62 }}>{label}</Mono>
+                  <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", minWidth: 62 }}>{label}</Mono>
                   <IntroLink href={href}>{value}</IntroLink>
                 </div>
               ))}

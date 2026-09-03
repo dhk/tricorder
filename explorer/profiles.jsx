@@ -14,17 +14,15 @@ function AuthorCard({ a }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: "#fff",
+        background: "var(--bg)",
         border: "1px solid var(--border)",
         borderLeft: `3px solid ${hover ? "var(--accent)" : "transparent"}`,
-        borderRadius: "var(--border-radius)",
+        borderRadius: "var(--radius)",
         padding: "20px 22px 22px",
-        transition: "border-left-color 140ms ease, box-shadow 140ms ease, transform 140ms ease",
-        boxShadow: hover ? "0 6px 18px rgba(10,10,9,0.06)" : "none",
-        transform: hover ? "translateY(-1px)" : "none",
+        transition: "color 0.15s, background 0.15s, border-color 0.15s",
       }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 16, borderBottom: "1px solid var(--border)" }}>
-        <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 24, lineHeight: 1 }}>{a.login}</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 24, lineHeight: 1 }}>{a.login}</div>
         <Mono style={{ fontSize: 12.5, color: traj.color, display: "flex", alignItems: "center", gap: 5 }}>
           <span style={{ fontSize: 15 }}>{traj.glyph}</span>{traj.label}
         </Mono>
@@ -58,8 +56,8 @@ function AuthorCard({ a }) {
                     <Mono dim style={{ fontSize: 11, marginLeft: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{g.persistence}</Mono>
                   </div>
                   <div style={{ marginTop: 5, display: "flex", gap: 6 }}>
-                    <Mono dim style={{ fontSize: 11.5, fontWeight: 500, flexShrink: 0 }}>→ Support:</Mono>
-                    <span style={{ color: "var(--text-dim)", fontSize: 13, lineHeight: 1.45, fontWeight: 300 }}>{g.support_recommendation}</span>
+                    <Mono dim style={{ fontSize: 11, fontWeight: 500, flexShrink: 0 }}>→ Support:</Mono>
+                    <span style={{ color: "var(--text-dim)", fontSize: 13, lineHeight: 1.45, fontWeight: 400 }}>{g.support_recommendation}</span>
                   </div>
                 </div>
               </li>
@@ -75,13 +73,13 @@ function VisibilityNotice() {
   return (
     <div style={{
       maxWidth: 560, margin: "40px auto 0", background: "var(--bg2)",
-      border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
+      border: "1px solid var(--border)", borderRadius: "var(--radius)",
       padding: "28px 30px", textAlign: "center",
     }}>
-      <div style={{ fontFamily: "var(--font-cond)", fontWeight: 600, fontSize: 19, marginBottom: 8 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 19, marginBottom: 8 }}>
         Author profiles withheld
       </div>
-      <p style={{ margin: 0, color: "var(--text-dim)", fontSize: 14, fontWeight: 300, lineHeight: 1.55 }}>
+      <p style={{ margin: 0, color: "var(--text-dim)", fontSize: 14, fontWeight: 400, lineHeight: 1.55 }}>
         Individual author profiles are omitted in team-visibility reports. Run with
         {" "}<Mono style={{ fontSize: 13, color: "var(--text)" }}>--visibility private</Mono>{" "}to include them.
       </p>
@@ -92,11 +90,11 @@ function VisibilityNotice() {
 function ProfilesTab() {
   const isPrivate = DATA.visibility === "private";
   return (
-    <div style={{ padding: "28px 32px 48px", animation: "fadeIn 200ms ease" }}>
+    <div style={{ padding: "28px 32px 48px" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0 }}>Author Profiles</h2>
-          <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, fontWeight: 300, maxWidth: 640 }}>
+          <h2 style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 28, margin: 0 }}>Author Profiles</h2>
+          <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, fontWeight: 400, maxWidth: 640 }}>
             What each contributor does well and where review feedback keeps recurring — with a concrete way to support each growth area.
           </p>
         </div>

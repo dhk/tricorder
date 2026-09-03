@@ -9,15 +9,15 @@ function PatternCard({ p }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        background: hover ? "var(--bg3)" : "var(--bg2)",
+        background: hover ? "var(--bg3)" : "var(--bg)",
         border: "1px solid var(--border)",
         borderLeft: `3px solid ${hover ? "var(--accent)" : "transparent"}`,
-        borderRadius: "var(--border-radius)",
+        borderRadius: "var(--radius)",
         padding: "12px 13px 13px",
-        transition: "background 120ms ease, border-left-color 120ms ease",
+        transition: "color 0.15s, background 0.15s, border-color 0.15s",
       }}>
       <div style={{
-        fontFamily: "var(--font-cond)", fontWeight: 600, fontSize: 17, lineHeight: 1.18,
+        fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 17, lineHeight: 1.18,
         letterSpacing: "0.005em", color: "var(--text)",
       }}>{p.signal}</div>
       <div style={{ marginTop: 9 }}>
@@ -35,8 +35,8 @@ function PipelineColumn({ stage, items, actionable }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", minWidth: 0, height: "100%",
-      background: actionable ? "rgba(22,163,74,0.04)" : "transparent",
-      borderRadius: "var(--border-radius)",
+      background: actionable ? "rgba(43,80,232,0.04)" : "transparent",
+      borderRadius: "var(--radius)",
       padding: actionable ? "0 8px" : "0",
       margin: actionable ? "0 -8px" : "0",
     }}>
@@ -45,10 +45,10 @@ function PipelineColumn({ stage, items, actionable }) {
         padding: "0 4px 10px", borderBottom: "2px solid var(--border)", marginBottom: 12,
         marginTop: actionable ? 0 : 0,
       }}>
-        <Mono dim style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 500 }}>{stage}</Mono>
+        <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 500 }}>{stage}</Mono>
         <span style={{
           fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-dim)",
-          background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
+          background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius)",
           padding: "1px 6px",
         }}>{items.length}</span>
       </div>
@@ -58,10 +58,10 @@ function PipelineColumn({ stage, items, actionable }) {
       }}>
         {items.length === 0 ? (
           <div style={{
-            border: "1px dashed var(--border)", borderRadius: "var(--border-radius)",
+            border: "1px dashed var(--border)", borderRadius: "var(--radius)",
             padding: "18px 12px", textAlign: "center",
           }}>
-            <Mono dim style={{ fontSize: 11.5, lineHeight: 1.5 }}>no patterns have<br/>reached this stage</Mono>
+            <Mono dim style={{ fontSize: 11, lineHeight: 1.5 }}>no patterns have<br/>reached this stage</Mono>
           </div>
         ) : items.map((p, i) => <PatternCard key={i} p={p} />)}
       </div>
@@ -77,10 +77,10 @@ function PipelineTab() {
   }, []);
 
   return (
-    <div style={{ padding: "28px 32px 36px", height: "100%", display: "flex", flexDirection: "column", animation: "fadeIn 200ms ease" }}>
+    <div style={{ padding: "28px 32px 36px", height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ maxWidth: 1320, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 28, margin: 0 }}>Maturity Pipeline</h2>
+          <h2 style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 28, margin: 0 }}>Maturity Pipeline</h2>
           <p style={{ margin: "4px 0 0", color: "var(--text-dim)", fontSize: 14.5, maxWidth: 640 }}>
             How far each review pattern has progressed from human judgment toward a deterministic, automatable check.
           </p>

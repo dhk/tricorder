@@ -11,8 +11,8 @@ pipeline is the action output, so it leads the data tabs):
 | Tab | Reads | Shows |
 |-----|-------|-------|
 | Start Here | run summary fields | orientation: what tricorder is about, the four-step pipeline, how to read each tab, the maturity ladder, gap types, colour legend, caveats, and links back to the repo. Default tab on first load |
-| Maturity Pipeline | `patterns[]` | read-only kanban, `judgment → guidance → convention → rule → deterministic`; the two actionable columns carry a green wash |
-| Pattern Coverage | `patterns[]` | reviewer × 9-dimension coverage grid (discrete green steps, not a heat map); click a cell for quoted evidence |
+| Maturity Pipeline | `patterns[]` | read-only kanban, `judgment → guidance → convention → rule → deterministic`; the two actionable columns carry a cobalt tint |
+| Pattern Coverage | `patterns[]` | reviewer × 9-dimension coverage grid (discrete cobalt steps, not a heat map); click a cell for quoted evidence |
 | Team Gaps | `gaps[]` | coverage / knowledge / blind-spot panels, most-critical first |
 | Reviewer Fingerprints | `reviewers[]` | Recharts radar over the 9 categories, focus areas, blind spots |
 | Author Profiles `PRIVATE` | `authors[]` | strengths / growth areas / support; gated on `visibility` |
@@ -49,7 +49,7 @@ window.TRICORDER_DATA = {
   ],
   RADAR_CATEGORIES: [ /* the 9 core categories */ ],
   CATEGORY_GROUP: { grain: "data", naming: "pattern", testing: "tool", /* … */ }, // tag color family per category
-                                                                                  // pattern=green tool=purple data=blue team=orange
+                                                                                  // pattern=cobalt tool=purple data=teal team=orange
 
   patterns: [{
     signal, category, maturity,             // maturity ∈ judgment|guidance|convention|rule|deterministic
@@ -77,8 +77,8 @@ window.TRICORDER_DATA = {
 };
 ```
 
-Tag colors follow the content-type convention: patterns → green, reviewers/tools →
-purple, data/analysis → blue, team/gaps → orange.
+Tag colors follow the content-type convention: patterns → cobalt, reviewers/tools →
+purple, data/analysis → teal, team/gaps → orange.
 
 The `data.js` currently checked in is a sample run against `cal-itp/data-infra` for
 demo and visual regression.

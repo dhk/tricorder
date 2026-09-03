@@ -8,9 +8,9 @@ const TOUR_KEY = "tricorder_tour_seen_v1";
 const TOUR_STEPS = [
   { kind: "intro" },
   { kind: "tab", tab: "pipeline",     title: "Maturity Pipeline",
-    body: "Every recurring review pattern, ranked by how close it is to becoming an automatable rule. The two greener columns on the right are the ones ready to act on." },
+    body: "Every recurring review pattern, ranked by how close it is to becoming an automatable rule. The two tinted columns on the right are the ones ready to act on." },
   { kind: "tab", tab: "coverage",     title: "Pattern Coverage",
-    body: "Which review dimensions each reviewer actually covers. Deeper green = reviewed more often. Click any cell to read the exact comments behind it." },
+    body: "Which review dimensions each reviewer actually covers. Deeper cobalt = reviewed more often. Click any cell to read the exact comments behind it." },
   { kind: "tab", tab: "gaps",         title: "Team Gaps",
     body: "Where the team is collectively blind — coverage holes, knowledge gaps, and risks no one is consistently catching, each with a concrete fix." },
   { kind: "tab", tab: "fingerprints", title: "Reviewer Fingerprints",
@@ -23,10 +23,10 @@ const TOUR_STEPS = [
 function WipMark({ style }) {
   return (
     <span style={{
-      fontFamily: "var(--font-mono)", fontSize: 9.5, fontWeight: 500,
+      fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
       textTransform: "uppercase", letterSpacing: "0.08em",
-      color: "var(--accent-orange)", background: "rgba(217,79,42,0.08)",
-      border: "1px solid rgba(217,79,42,0.25)", borderRadius: "var(--border-radius)",
+      color: "var(--accent-orange)", background: "rgba(224,92,42,0.08)",
+      border: "1px solid rgba(224,92,42,0.25)", borderRadius: "var(--radius)",
       padding: "2px 7px", lineHeight: 1.3, whiteSpace: "nowrap", ...style,
     }}>work in progress</span>
   );
@@ -34,17 +34,21 @@ function WipMark({ style }) {
 
 function TourButton({ children, onClick, variant = "primary", style }) {
   const base = {
-    all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12,
-    textTransform: "uppercase", letterSpacing: "0.06em", padding: "9px 16px",
-    borderRadius: "var(--border-radius)", textAlign: "center", lineHeight: 1,
-    transition: "background 120ms ease, border-color 120ms ease, color 120ms ease",
+    all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11,
+    textTransform: "uppercase", letterSpacing: "0.1em", padding: "12px 24px",
+    borderRadius: "var(--radius)", textAlign: "center", lineHeight: 1,
+    transition: "color 0.15s, background 0.15s, border-color 0.15s",
   };
   const variants = {
     primary: { background: "var(--accent)", color: "#fff", border: "1px solid var(--accent)" },
     ghost:   { background: "transparent", color: "var(--text-dim)", border: "1px solid var(--border)" },
   };
   return (
-    <a onClick={onClick} role="button" style={{ ...base, ...variants[variant], ...style }}>{children}</a>
+    <a onClick={onClick} role="button" tabIndex={0}
+       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick && onClick(e); } }}
+       onMouseEnter={(e) => { if (variant === "primary") e.currentTarget.style.opacity = "0.85"; else e.currentTarget.style.borderColor = "var(--accent)"; }}
+       onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.borderColor = variant === "primary" ? "var(--accent)" : "var(--border)"; }}
+       style={{ ...base, ...variants[variant], ...style }}>{children}</a>
   );
 }
 
@@ -61,26 +65,23 @@ function TabCoach({ step, idx, total, rect, onNext, onPrev, onSkip }) {
         position: "fixed",
         top: rect.top - pad, left: rect.left - pad,
         width: rect.width + pad * 2, height: rect.height + pad * 2,
-        borderRadius: "var(--border-radius)",
+        borderRadius: "var(--radius)",
         border: "1.5px solid var(--accent)",
-        boxShadow: "0 0 0 9999px rgba(10,10,9,0.55)",
         pointerEvents: "none",
-        transition: "all 220ms cubic-bezier(0.22,1,0.36,1)",
+        transition: "color 0.15s, background 0.15s, border-color 0.15s",
       }} />
       {/* tooltip */}
       <div style={{
         position: "fixed", top: tipTop, left: tipLeft, width: 332,
         background: "var(--bg)", border: "1px solid var(--border)",
-        borderRadius: "var(--border-radius)", padding: "16px 18px 14px",
-        boxShadow: "0 14px 34px rgba(10,10,9,0.18)",
-        animation: "fadeIn 160ms ease",
+        borderRadius: "var(--radius)", padding: "16px 18px 14px",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <Mono dim style={{ fontSize: 10.5, letterSpacing: "0.07em" }}>{String(idx).padStart(2, "0")} / {String(total).padStart(2, "0")}</Mono>
-          <a onClick={onSkip} style={{ all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Skip tour</a>
+          <Mono dim style={{ fontSize: 11, letterSpacing: "0.07em" }}>{String(idx).padStart(2, "0")} / {String(total).padStart(2, "0")}</Mono>
+          <a onClick={onSkip} style={{ all: "unset", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Skip tour</a>
         </div>
-        <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 21, lineHeight: 1.1, marginBottom: 7 }}>{step.title}</div>
-        <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: 14, lineHeight: 1.5, color: "var(--text-dim)" }}>{step.body}</p>
+        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 21, lineHeight: 1.1, marginBottom: 7 }}>{step.title}</div>
+        <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 14, lineHeight: 1.5, color: "var(--text-dim)" }}>{step.body}</p>
         <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "flex-end" }}>
           {idx > 1 && <TourButton variant="ghost" onClick={onPrev}>Back</TourButton>}
           <TourButton onClick={onNext}>{idx === total ? "Finish" : "Next"}</TourButton>
@@ -93,12 +94,11 @@ function TabCoach({ step, idx, total, rect, onNext, onPrev, onSkip }) {
 function CenterCard({ children }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 95, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ position: "absolute", inset: 0, background: "rgba(10,10,9,0.55)", animation: "fadeIn 180ms ease" }} />
+      <div style={{ position: "absolute", inset: 0, background: "rgba(13,15,26,0.55)" }} />
       <div style={{
         position: "relative", width: "min(520px, 100%)", background: "var(--bg)",
-        border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
-        padding: "34px 36px 30px", boxShadow: "0 24px 60px rgba(10,10,9,0.22)",
-        animation: "cellPop 220ms cubic-bezier(0.22,1,0.36,1)",
+        border: "1px solid var(--border)", borderRadius: "var(--radius)",
+        padding: "34px 36px 30px",
       }}>{children}</div>
     </div>
   );
@@ -151,11 +151,10 @@ function Onboarding({ active, setActive }) {
   const launcher = (
     <button onClick={() => setStep(0)} title="Take the tour" style={{
       all: "unset", cursor: "pointer", position: "fixed", right: 20, bottom: 20, zIndex: 60,
-      width: 40, height: 40, borderRadius: "var(--border-radius)",
+      width: 40, height: 40, borderRadius: "var(--radius)",
       background: "var(--bg)", border: "1px solid var(--border)",
-      boxShadow: "0 6px 18px rgba(10,10,9,0.12)",
       display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 19, color: "var(--accent)",
+      fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 19, color: "var(--accent)",
     }}>?</button>
   );
 
@@ -166,14 +165,14 @@ function Onboarding({ active, setActive }) {
       {cur && cur.kind === "intro" && (
         <CenterCard>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 30, lineHeight: 1 }}>tricorder</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 30, lineHeight: 1 }}>tricorder</div>
             <WipMark />
           </div>
           <p style={{ margin: "0 0 10px", fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 16, lineHeight: 1.55 }}>
             Code review is your team's most honest knowledge base — and most of it is buried in threads.
             tricorder reads those threads and returns a structured map of what your team knows, and what it doesn't.
           </p>
-          <p style={{ margin: "0 0 22px", fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: 14, lineHeight: 1.55, color: "var(--text-dim)" }}>
+          <p style={{ margin: "0 0 22px", fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 14, lineHeight: 1.55, color: "var(--text-dim)" }}>
             This is a live, early prototype running on an analysis of <Mono style={{ fontSize: 13 }}>{DATA.repo}</Mono>. Take the 60-second tour, or start with the <Mono style={{ fontSize: 13 }}>Start Here</Mono> tab.
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -193,12 +192,12 @@ function Onboarding({ active, setActive }) {
       {cur && cur.kind === "cta" && (
         <CenterCard>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 26, lineHeight: 1 }}>Run it on your own repo</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 26, lineHeight: 1 }}>Run it on your own repo</div>
           </div>
           <p style={{ margin: "0 0 10px", fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 15, lineHeight: 1.55 }}>
             tricorder is open and self-hostable. Point it at any GitHub repo, run the cost probe, harvest merged PRs, and synthesize — this explorer is what you get back.
           </p>
-          <p style={{ margin: "0 0 22px", fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-dim)" }}>
+          <p style={{ margin: "0 0 22px", fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: 13.5, lineHeight: 1.55, color: "var(--text-dim)" }}>
             Still early and experimental — the README and <Mono style={{ fontSize: 12.5 }}>SKILL.md</Mono> spec are the place to start.
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
