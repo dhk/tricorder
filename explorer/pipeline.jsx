@@ -17,8 +17,8 @@ function PatternCard({ p }) {
         transition: "color 0.15s, background 0.15s, border-color 0.15s",
       }}>
       <div style={{
-        fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 17, lineHeight: 1.18,
-        letterSpacing: "0.005em", color: "var(--text)",
+        fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 14, lineHeight: 1.35,
+        color: "var(--text)",
       }}>{p.signal}</div>
       <div style={{ marginTop: 9 }}>
         <Tag group={grp} size="xs">{p.category}</Tag>
@@ -85,6 +85,9 @@ function PipelineTab() {
             How far each review pattern has progressed from human judgment toward a deterministic, automatable check.
           </p>
         </div>
+        <TabExplainer
+          read="Each card is a review pattern that recurred in the window. Its column is the maturity: judgment means a reviewer noticed it once, deterministic means a tool already enforces it. The tag is the category; § is the standard it maps to."
+          act="Start with the two tinted columns on the right. A pattern at rule or deterministic is consistent enough to become a lint rule, a CI gate, or a line in the PR template. Anything at convention is a candidate for the team's written norms. The left columns are watch items, not actions." />
         <div style={{
           display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 18,
           flex: 1, minHeight: 0, alignItems: "stretch",

@@ -34,7 +34,7 @@ function GapItem({ g, tagGroup }) {
 function GapPanel({ panel, items }) {
   return (
     <div style={{
-      background: panel.tinted ? "rgba(224,92,42,0.05)" : "#fff",
+      background: panel.tinted ? "rgba(224,92,42,0.05)" : "var(--bg)",
       border: `1px solid ${panel.tinted ? "rgba(224,92,42,0.22)" : "var(--border)"}`,
       borderRadius: "var(--radius)",
       padding: "20px 20px 6px",
@@ -82,6 +82,9 @@ function GapsTab() {
             Where the team's collective review coverage falls short — sorted most critical first within each category.
           </p>
         </div>
+        <TabExplainer
+          read="Three kinds of gap. Coverage gap: a standard exists but nobody enforces it in review. Knowledge gap: reviewers raise it, but shallowly or inconsistently. Blind spot: a named best practice from the lens that never appears in any review. Each panel is ordered most critical first, and each item names the standard it maps to and a fix."
+          act="Take the blind spots to the team as candidates for a checklist line or a CI gate. Treat knowledge gaps as training or pairing topics. A coverage gap usually means naming an owner. If a gap concerns something the repo's own tooling already enforces, it is a false positive: say so and move on." />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18, alignItems: "start" }}>
           {GAP_PANELS.map(p => <GapPanel key={p.key} panel={p} items={grouped[p.key]} />)}
         </div>

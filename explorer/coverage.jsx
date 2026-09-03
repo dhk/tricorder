@@ -143,7 +143,7 @@ function CoverageDrawer({ payload, onClose }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <Mono dim style={{ fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase" }}>Coverage detail</Mono>
-              <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 26, lineHeight: 1.05, marginTop: 4 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 20, lineHeight: 1.2, marginTop: 4 }}>
                 {reviewer}
               </div>
             </div>
@@ -245,9 +245,14 @@ function CoverageTab() {
           </div>
         </div>
 
+        <div style={{ marginTop: 16 }}>
+          <TabExplainer
+            read="Rows are reviewers, columns are the lens's review categories. A cell's depth is how often that reviewer raises that category, a 0 to 100 focus score drawn from their review history. Blank means never."
+            act="Read down a column: an empty column is a category nobody reviews for, and belongs in Team Gaps. Read across a row to see what one reviewer carries alone. Click any cell for the quoted comments behind the score." />
+        </div>
         <div style={{
           background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "var(--radius)",
-          padding: "20px 22px 22px", marginTop: 20, overflowX: "auto",
+          padding: "20px 22px 22px", overflowX: "auto",
         }}>
           <div style={{ minWidth: 640 }}>
             {/* header row of category labels */}

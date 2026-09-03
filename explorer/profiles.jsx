@@ -22,7 +22,7 @@ function AuthorCard({ a }) {
         transition: "color 0.15s, background 0.15s, border-color 0.15s",
       }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingBottom: 16, borderBottom: "1px solid var(--border)" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 24, lineHeight: 1 }}>{a.login}</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 18, lineHeight: 1.2 }}>{a.login}</div>
         <Mono style={{ fontSize: 12.5, color: traj.color, display: "flex", alignItems: "center", gap: 5 }}>
           <span style={{ fontSize: 15 }}>{traj.glyph}</span>{traj.label}
         </Mono>
@@ -76,7 +76,7 @@ function VisibilityNotice() {
       border: "1px solid var(--border)", borderRadius: "var(--radius)",
       padding: "28px 30px", textAlign: "center",
     }}>
-      <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 19, marginBottom: 8 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 16, marginBottom: 8 }}>
         Author profiles withheld
       </div>
       <p style={{ margin: 0, color: "var(--text-dim)", fontSize: 14, fontWeight: 400, lineHeight: 1.55 }}>
@@ -98,6 +98,9 @@ function ProfilesTab() {
             What each contributor does well and where review feedback keeps recurring — with a concrete way to support each growth area.
           </p>
         </div>
+        <TabExplainer
+          read="One card per author: strengths that recur across their PRs, growth areas that persisted rather than appeared once, and a trajectory read from the chronological record. This describes the review feedback a person received in the window. It is not a performance rating and should not be used as one."
+          act="Use the support line as the opener for a one-to-one, not as a verdict. A growth area marked consistent that also appears as a team blind spot is a team problem, not a personal one: fix the checklist, not the person. Keep this tab out of anything shared beyond the people in it." />
         {!isPrivate ? <VisibilityNotice /> : (
           <div style={{
             display: "grid", gap: 18,

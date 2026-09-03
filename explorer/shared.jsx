@@ -85,8 +85,29 @@ function CardHeading({ children, style }) {
   );
 }
 
+// Two-part explainer at the top of every data tab: how to read it, what to do with it.
+// Note strip on --bg2 with mono labels (design-system "prompt block" idiom).
+function TabExplainer({ read, act }) {
+  const cell = (label, text) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <Mono dim style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</Mono>
+      <p style={{ margin: 0, fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6, color: "var(--text-muted)" }}>{text}</p>
+    </div>
+  );
+  return (
+    <section aria-label="How to read this tab" style={{
+      display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px 32px",
+      background: "var(--bg2)", border: "1px solid var(--border)", borderLeft: "2px solid var(--accent)",
+      borderRadius: "var(--radius)", padding: "14px 20px 16px", marginBottom: 20,
+    }}>
+      {cell("How to read it", read)}
+      {cell("What to do with it", act)}
+    </section>
+  );
+}
+
 Object.assign(window, {
-  DATA, GROUP_COLORS, groupForCategory, Tag, Mono, CardHeading,
+  DATA, GROUP_COLORS, groupForCategory, Tag, Mono, CardHeading, TabExplainer,
   MATURITY, MATURITY_ORDER, FREQ_NUM, freqToNum,
   useState, useEffect, useRef, useMemo,
 });

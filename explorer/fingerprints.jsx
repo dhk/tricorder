@@ -49,7 +49,7 @@ function ReviewerCard({ r }) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 24, lineHeight: 1 }}>{r.login}</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 18, lineHeight: 1.2 }}>{r.login}</div>
           <Mono dim style={{ fontSize: 11, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>{r.review_style} reviewer</Mono>
         </div>
         <SignalBadge q={r.signal_quality} />
@@ -174,6 +174,9 @@ function FingerprintsTab() {
             The shape of each reviewer's attention across nine categories. Team overview first, then individual fingerprints.
           </p>
         </div>
+        <TabExplainer
+          read="Each radar is one reviewer's attention across the core categories; the team chart overlays everyone. Signal quality says how much review history is behind the shape: low means a handful of PRs, so read that shape loosely. Blind spots are what a reviewer touches but never comments on."
+          act="Look for categories that are thin for every reviewer, then confirm them in Team Gaps. A blind spot here is personal, and the cheapest fix is pairing: a reviewer whose fingerprint covers what another's misses. Do not read a small radar as a weak reviewer; read it as a narrow one." />
         <CompositeRadar />
         <div style={{
           display: "grid", gap: 18,
