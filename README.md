@@ -67,6 +67,19 @@ selected review content and identities to the configured LLM provider; local cac
 retain source and generated data; and explorer output may be publishable. Read
 [Privacy and data flow](docs/PRIVACY.md) before using credentials or sharing output.
 
+## Lenses
+
+Every LLM phase reads the repository through a discipline lens: a YAML file in
+`tricorder/lenses/data/` (override per repo in `.tricorder/lenses/`) that carries the
+detection signals, file tags, categories, cited authorities, review axes, prompt
+context, and prohibitions for one kind of repository. `discover` picks the lens from
+the file tree and can answer `unknown` or `mixed` rather than guess; `learn --dry-run`
+shows the lens, the fit checks, and the exact prompts before any LLM call. Shipped:
+`analytics-engineering`, `product-engineering`, `product-engineering-desktop`,
+`platform-engineering`, `security`, `agent-engineering`. All are experimental until a
+production-repository validation passes. Design: [DESIGN.md](DESIGN.md#discipline-lenses);
+evidence: [docs/research/repo-lens](docs/research/repo-lens/README.md).
+
 ## Credentials
 
 `analyze` checks `GITHUB_TOKEN`, then `gh auth token`, then supported macOS

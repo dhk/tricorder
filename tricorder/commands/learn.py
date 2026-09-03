@@ -31,143 +31,15 @@ MAX_TOKENS = 4096
 
 
 # ---------------------------------------------------------------------------
-# System prompts — Phase 1–4
+# System prompts — assembled per phase from the neutral base + the selected lens
+# (tricorder/lenses/prompting.py). Nothing domain-specific lives in this file.
 # ---------------------------------------------------------------------------
 
-SYSTEM_P1 = """\
-You are a senior code reviewer analyzing a GitHub pull request.
-Extract review signals — patterns, feedback themes, and learning moments — from the PR description and review comments.
-
-When a comment maps to a named standard or best practice, cite it explicitly.
-Maturity levels: judgment | guidance | convention | rule | deterministic
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "pr_number": int,
-  "patterns": [
-    {
-      "signal": "one-line description",
-      "category": "naming | testing | documentation | style | performance | modeling | schema | business-logic | structure | security | other",
-      "maturity": "judgment | guidance | convention | rule | deterministic",
-      "standard_citation": "citation or null",
-      "comment_evidence": ["quoted snippet"],
-      "author": "login",
-      "reviewer": "login"
-    }
-  ],
-  "author_strengths": ["..."],
-  "author_gaps": ["..."],
-  "reviewer_focus_signals": {
-    "<login>": ["signal"]
-  }
-}"""
-
-SYSTEM_P2 = """\
-You are analyzing a code reviewer's review history across multiple PRs.
-Build a focus fingerprint — what does this reviewer consistently care about, and what do they appear to overlook?
-
-Be specific. "Code quality" is not useful. "Missing grain declaration on fact models" is.
-Cite named standards when a focus area maps to one.
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "reviewer": "login",
-  "pr_count": int,
-  "primary_focus_areas": [
-    {
-      "area": "description",
-      "frequency": "always | often | sometimes",
-      "standard_citation": "citation or null",
-      "example_comments": ["snippet"]
-    }
-  ],
-  "apparent_blind_spots": [
-    {
-      "area": "description",
-      "basis": "why you infer this is a blind spot"
-    }
-  ],
-  "review_style": "blocking | advisory | conversational | terse | thorough",
-  "signal_quality": "high | medium | low",
-  "signal_quality_rationale": "one sentence"
-}"""
-
-SYSTEM_P3 = """\
-You are analyzing a code author's pull request history.
-Build a growth profile — where do they consistently do well, and where do they consistently need support?
-
-Look for persistence: if the same gap appears in 3+ PRs, it is a growth area, not a one-off.
-Recommend specific, actionable support actions.
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "author": "login",
-  "pr_count": int,
-  "strengths": [
-    {
-      "area": "description",
-      "persistence": "consistent | emerging",
-      "standard_citation": "citation or null"
-    }
-  ],
-  "growth_areas": [
-    {
-      "area": "description",
-      "persistence": "consistent | occasional",
-      "standard_citation": "citation or null",
-      "support_recommendation": "specific, actionable recommendation"
-    }
-  ],
-  "trajectory": "improving | stable | regressing | insufficient-data",
-  "trajectory_rationale": "one sentence based on chronological review signal"
-}"""
-
-SYSTEM_P4 = """\
-You are analyzing the complete PR review history of a software team.
-Identify where the team is collectively strong and where it has review gaps.
-
-Gap taxonomy:
-  coverage_gap  — nobody ever reviews for this dimension
-  knowledge_gap — reviewers raise it but comments are shallow or inconsistent
-  blind_spot    — a named best practice that never appears in any review
-
-If a known best practice is absent from the review record, name it.
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "team_strengths": [
-    {
-      "area": "description",
-      "evidence": "brief basis",
-      "standard_citation": "citation or null"
-    }
-  ],
-  "gaps": [
-    {
-      "area": "description",
-      "gap_type": "coverage_gap | knowledge_gap | blind_spot",
-      "standard_citation": "named standard being missed, or null",
-      "recommendation": "training | tooling | checklist | ci-gate — be specific"
-    }
-  ],
-  "institutionalization_candidates": [
-    {
-      "pattern": "description",
-      "current_maturity": "judgment | guidance | convention | rule | deterministic",
-      "next_step": "what to do to advance maturity",
-      "maturity_path_target": "convention | rule | deterministic"
-    }
-  ],
-  "review_culture_observations": "2-3 sentences on overall review culture health"
-}"""
+from tricorder.lenses import Lens, LensError, load_all
+from tricorder.lenses.detect import (
+    composition_check, detect, fetch_github, github_token, review_path_check,
+)
+from tricorder.lenses.prompting import authorities_markdown, secondary_block, smoke_check, system_prompt
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +79,8 @@ def _call_llm(client: Any, system: str, user: str, retries: int = 2, max_tokens:
 # Payload builders
 # ---------------------------------------------------------------------------
 
-def _build_pr_payload(pr: dict, repo_ctx: dict) -> str:
+def _build_pr_payload(pr: dict, repo_ctx: dict, lens: Lens | None = None,
+                      gates: list[dict] | None = None) -> str:
     lines = []
     body = pr.get("body") or ""
     dq = pr.get("description_quality", {})
@@ -222,11 +95,11 @@ def _build_pr_payload(pr: dict, repo_ctx: dict) -> str:
     lines.append((body[:2000] if body else "(none)"))
     lines.append("")
 
-    enforced = repo_ctx.get("sqlfluff_rules_lines", [])
     pr_sections = repo_ctx.get("pr_template_sections", [])
     lines.append("Repo context:")
-    lines.append(f"- SQLFluff rules enforced: {', '.join(enforced) if enforced else 'none detected'}")
     lines.append(f"- PR template sections: {', '.join(pr_sections) if pr_sections else 'no template'}")
+    gate_names = [f"{g['tool']} ({g['config_file']})" for g in (gates or [])]
+    lines.append(f"- Tooling gates present: {', '.join(gate_names) if gate_names else 'none detected'}")
     lines.append("")
 
     reviews = pr.get("reviews", [])
@@ -245,11 +118,99 @@ def _build_pr_payload(pr: dict, repo_ctx: dict) -> str:
         for c in comments:
             reviewer = c.get("reviewer", "unknown")
             path = c.get("path", "")
+            tag = f" [{lens.file_tag(path)}]" if lens else ""
             body_c = (c.get("body") or "")[:300]
             has_reply = " [replied]" if c.get("has_reply") else ""
-            lines.append(f"  {reviewer} on {path}{has_reply}: {body_c}")
+            lines.append(f"  {reviewer} on {path}{tag}{has_reply}: {body_c}")
 
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Lens resolution
+# ---------------------------------------------------------------------------
+
+def _read_profile(path: Path) -> dict:
+    try:
+        import yaml
+        return yaml.safe_load(path.read_text()) or {}
+    except Exception:
+        return {}
+
+
+def _resolve_lens(explicit: str | None, tri_dir: Path, tri_base: Path, repo: str | None,
+                  pr_records: list[dict]):
+    """Pick the lens and run the verification checks.
+
+    Order: --lens, then repository-profile.yml written by discover (tri_dir, then
+    tri_base), then live detection over the GitHub tree when a token exists.
+    Returns (lens, tooling_gates_present, checks, source, secondary) where
+    ``secondary`` is the runner-up Lens for a mixed detection, else None.
+    """
+    lenses = load_all(extra_dirs=[tri_dir / "lenses", tri_base / "lenses"])
+    comment_paths = [c.get("path", "") for pr in pr_records for c in pr.get("inline_comments", [])]
+
+    gates: list[dict] = []
+    lang_bytes: dict[str, int] | None = None
+    name: str | None = None
+    source = ""
+    secondary_name: str | None = None
+
+    profile: dict = {}
+    for d in (tri_dir, tri_base):
+        prof = _read_profile(d / "repository-profile.yml")
+        if prof.get("lens"):
+            profile = prof
+            fp = d / "repository-fingerprint.json"
+            if fp.exists():
+                try:
+                    lang_bytes = json.loads(fp.read_text()).get("language_bytes") or None
+                except Exception:
+                    lang_bytes = None
+            break
+    block = profile.get("lens") or {}
+    gates = list(block.get("tooling_gates_present") or [])
+    if block.get("state") == "mixed":
+        secondary_name = block.get("runner_up")
+
+    if explicit:
+        if explicit not in lenses:
+            raise LensError(f"Unknown lens {explicit!r}. Available: {', '.join(sorted(lenses))}")
+        name, source = explicit, "--lens"
+    elif block.get("selected") and block.get("selected") != "unknown":
+        name, source = block["selected"], "repository-profile.yml"
+    elif repo and "/" in repo:
+        token = github_token()
+        if token:
+            owner, rname = repo.split("/", 1)
+            print(f"  No repository-profile.yml; detecting lens from the GitHub tree of {repo} …")
+            paths, lang_bytes = fetch_github(owner, rname, token)
+            result = detect(paths, lenses)
+            gates = result.tooling_gates_present
+            if result.state == "unknown":
+                best = max(result.scores, key=result.scores.get) if result.scores else "?"
+                raise LensError(
+                    f"detection returned unknown (best candidate {best} scored "
+                    f"{result.scores.get(best, 0)}, below min_score {result.min_score}); pass --lens NAME")
+            name, source = result.selected, f"auto-detected ({result.state}, score {result.scores[result.selected]}, margin {result.margin})"
+            if result.state == "mixed":
+                secondary_name = result.runner_up
+                print(f"  ⚠ mixed detection: {result.runner_up} trails by only {result.margin}; using {name}")
+
+    if not name or name not in lenses:
+        return None, gates, [], source, None
+    lens = lenses[name]
+    if not gates:
+        # derive gates from the paths we know about
+        for g in lens.tooling_gates:
+            if any(p for p in comment_paths if p and g["config_file"] and p == g["config_file"]):
+                gates.append({"tool": g["tool"], "config_file": g["config_file"], "enforces": g.get("enforces", [])})
+    checks = []
+    if lang_bytes:
+        checks.append(composition_check(lens, lang_bytes))
+    checks.append(review_path_check(lens, comment_paths))
+    secondary = lenses.get(secondary_name) if secondary_name and secondary_name != name else None
+    return lens, gates, checks, source, secondary
 
 
 # ---------------------------------------------------------------------------
@@ -843,6 +804,14 @@ def run(args: list[str]) -> int:
                              "Writes .tricorder/ai-diff.json surfacing gaps in AI code review coverage.")
     parser.add_argument("--focus-on", dest="focus_on", default=None, metavar="AREA",
                         help=f"Narrow synthesis to a focus area. Available: skills, security")
+    parser.add_argument("--lens", default=None, metavar="NAME",
+                        help="Discipline lens to apply. Default: repository-profile.yml (from discover), "
+                             "else auto-detected from the GitHub tree when a token is available.")
+    parser.add_argument("--force", action="store_true",
+                        help="Proceed even if the lens verification checks fail.")
+    parser.add_argument("--dry-run", dest="dry_run", action="store_true",
+                        help="Resolve the lens, run the verification checks, print the Phase 1 prompt, and exit "
+                             "without calling the LLM.")
 
     parsed = parser.parse_args(args)
 
@@ -892,6 +861,38 @@ def run(args: list[str]) -> int:
 
     repo_ctx_path = tri_dir / ".raw" / "repo-context.json"
     repo_ctx: dict = json.loads(repo_ctx_path.read_text()) if repo_ctx_path.exists() else {}
+
+    # ── Lens: resolve, verify, and (on --dry-run) stop ────────────────────────
+    try:
+        lens, gates, checks, lens_source, secondary = _resolve_lens(
+            parsed.lens, tri_dir, tri_base, repo, pr_records)
+    except LensError as e:
+        print(f"Lens error: {e}", file=sys.stderr)
+        return 1
+    if lens is None:
+        print("No lens selected. Run `tricorder discover` in the repository, or pass --lens NAME.", file=sys.stderr)
+        print(f"Available lenses: {', '.join(sorted(load_all()))}", file=sys.stderr)
+        return 1
+    failed = [c for c in checks if not c.passed]
+    print(f"  Lens:       {lens.name} (v{lens.version}, {lens.status}; {lens_source})")
+    if secondary:
+        print(f"  Secondary:  {secondary.name} (mixed repository; its axes are reported only with evidence)")
+    for c in checks:
+        mark = "✓" if c.passed else "✗"
+        print(f"    {mark} {c.name}: {c.detail}")
+    if failed and not parsed.force:
+        print("\nLens verification failed; the selected lens does not fit this repository.", file=sys.stderr)
+        print("Pass --lens NAME to choose another lens, or --force to proceed anyway.", file=sys.stderr)
+        return 2
+    if parsed.dry_run:
+        gate_str = ", ".join(g["tool"] for g in gates) or "none"
+        print(f"  Gates:      {gate_str}")
+        print("\n--- Phase 1 system prompt ---")
+        print(system_prompt("p1", lens, gates))
+        print("\n--- Phase 4 system prompt ---")
+        print(system_prompt("p4", lens, gates, secondary_block(secondary) or None))
+        print("\nDry run: no LLM calls made.")
+        return 0
 
     # Intermediate synthesis cache
     synth_dir = tri_dir / ".raw" / "synthesis"
@@ -948,11 +949,13 @@ def run(args: list[str]) -> int:
     if purged:
         print(f"  Purged {purged} errored cache entries — will retry.\n")
 
-    # Build phase system prompts (optionally augmented with focus area context)
-    sys_p1 = SYSTEM_P1 + ("\n\n" + focus_area.system_context if focus_area else "")
-    sys_p2 = SYSTEM_P2 + ("\n\n" + focus_area.system_context if focus_area else "")
-    sys_p3 = SYSTEM_P3 + ("\n\n" + focus_area.system_context if focus_area else "")
-    sys_p4 = SYSTEM_P4 + ("\n\n" + focus_area.system_context if focus_area else "")
+    # Build phase system prompts: neutral base + lens block (+ focus area context)
+    extra = focus_area.system_context if focus_area else None
+    sys_p1 = system_prompt("p1", lens, gates, extra)
+    sys_p2 = system_prompt("p2", lens, gates, extra)
+    sys_p3 = system_prompt("p3", lens, gates, extra)
+    sys_p4 = system_prompt("p4", lens, gates,
+                           "\n\n".join(x for x in (extra, secondary_block(secondary)) if x) or None)
 
     # ── Phase 1: per-PR extraction ────────────────────────────────────────────
     prs_with_reviews = [
@@ -970,7 +973,7 @@ def run(args: list[str]) -> int:
             print(f"  [{i:03d}/{len(prs_with_reviews)}] #{num:5d}  (cached)")
             continue
 
-        payload = _build_pr_payload(pr, repo_ctx)
+        payload = _build_pr_payload(pr, repo_ctx, lens, gates)
         result = _call_llm(client, sys_p1, payload)
         result["_pr_number"] = num
         result["_author"] = pr.get("author", "unknown")
@@ -1122,6 +1125,19 @@ def run(args: list[str]) -> int:
             n = len(team_gaps.get("gaps", []))
             print(f"  ✓ {n} gaps identified\n")
 
+    # ── Lens smoke checks ─────────────────────────────────────────────────────
+    smoke_hits: dict[str, list[str]] = {}
+    for label, obj in (("phase1", pr_results), ("phase2", reviewer_profiles),
+                       ("phase3", author_profiles), ("phase4", team_gaps)):
+        hits = smoke_check(lens, obj)
+        if hits:
+            smoke_hits[label] = hits
+    if smoke_hits:
+        print("  ⚠ Lens smoke check failed — off-domain terms in output:")
+        for label, hits in smoke_hits.items():
+            print(f"      {label}: {', '.join(hits)}")
+        print("    The cached phase outputs are kept; fix the lens and re-run to regenerate.\n")
+
     # ── Minority Report ───────────────────────────────────────────────────────
     if parsed.minority_report:
         from tricorder.llm import detect_all_available_providers
@@ -1134,6 +1150,13 @@ def run(args: list[str]) -> int:
 
     # ── Write artifacts ───────────────────────────────────────────────────────
     learnings = _build_learnings(pr_results, reviewer_profiles, author_profiles, team_gaps)
+    learnings["lens"] = lens.summary()
+    learnings["lens_source"] = lens_source
+    learnings["secondary_lens"] = secondary.summary() if secondary else None
+    learnings["tooling_gates_present"] = gates
+    learnings["lens_checks"] = [{"name": c.name, "passed": c.passed, "detail": c.detail} for c in checks]
+    if smoke_hits:
+        learnings["smoke_check_hits"] = smoke_hits
     standards = _build_standards_candidates(pr_results, team_gaps)
     (tri_dir / "learnings.json").write_text(json.dumps(learnings, indent=2))
     (tri_dir / "standards-candidates.json").write_text(json.dumps(standards, indent=2))
@@ -1152,6 +1175,8 @@ def run(args: list[str]) -> int:
             pr_results, reviewer_profiles, author_profiles, team_gaps,
             parsed.visibility, len(pr_records),
         )
+        md = md.replace("*Generated ", f"*Lens: {lens.name} (v{lens.version}, {lens.status})*  \n*Generated ", 1)
+        md += "\n## Appendix: Reference Standards\n\n" + "\n".join(authorities_markdown(lens)) + "\n"
         report_path.write_text(md)
         print(f"  Report written → {report_path}\n")
 
@@ -1160,4 +1185,4 @@ def run(args: list[str]) -> int:
         len(pr_results), len(reviewer_profiles),
         len(author_profiles), len(team_gaps.get("gaps", [])),
     )
-    return 0
+    return 1 if smoke_hits else 0

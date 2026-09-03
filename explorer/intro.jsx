@@ -75,14 +75,34 @@ function IntroLink({ href, children }) {
   );
 }
 
-function IntroStat({ label, value }) {
+function IntroStat({ label, value, hint }) {
   if (value === undefined || value === null || value === "") return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
       <Mono dim style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</Mono>
-      <Mono style={{ fontSize: 14 }}>{value}</Mono>
+      <Mono style={{ fontSize: 14, overflowWrap: "anywhere" }}>{value}</Mono>
+      {hint && (
+        <span style={{
+          fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: 12,
+          lineHeight: 1.4, color: "var(--text-dim)", marginTop: 2,
+        }}>{hint}</span>
+      )}
     </div>
   );
+}
+
+const VISIBILITY_HINT = {
+  private: "What the run includes, not who can see it: per-person author profiles are kept.",
+  team:    "What the run includes, not who can see it: per-person author profiles are left out.",
+  public:  "What the run includes, not who can see it: author profiles left out. Not an anonymization guarantee.",
+  demo:    "A demo render: names replaced by aliases from a name map.",
+};
+
+function lensHint(lens) {
+  if (!lens || !lens.name) return undefined;
+  return lens.status === "validated"
+    ? "The rubric this run was read through. Validated: it has passed a production-repo evaluation."
+    : "The rubric this run was read through: which standards can be cited and which review dimensions count. Experimental: not yet validated on a production repo.";
 }
 
 function IntroTab({ onSelect }) {
@@ -109,18 +129,28 @@ function IntroTab({ onSelect }) {
 
         {/* run summary */}
         <div style={{
-          display: "flex", flexWrap: "wrap", gap: "14px 36px",
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px 28px",
           padding: "16px 20px", marginBottom: 22,
           background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--border-radius)",
         }}>
-          <IntroStat label="repository" value={DATA.repo} />
-          <IntroStat label="window" value={DATA.window} />
-          <IntroStat label="merged PRs" value={DATA.pr_count} />
-          <IntroStat label="with reviews" value={DATA.prs_with_reviews} />
-          <IntroStat label="contributors" value={contributors} />
-          <IntroStat label="dimensions" value={dims} />
-          <IntroStat label="visibility" value={DATA.visibility} />
-          <IntroStat label="version" value={DATA.version ? `v${DATA.version}` : undefined} />
+          <IntroStat label="repository" value={DATA.repo}
+            hint="The GitHub repository whose merged PRs were read." />
+          <IntroStat label="window" value={DATA.window}
+            hint="Merge dates of the PRs in this run. Nothing outside it was read." />
+          <IntroStat label="merged PRs" value={DATA.pr_count}
+            hint="PRs merged in the window and pulled into the local cache." />
+          <IntroStat label="with reviews" value={DATA.prs_with_reviews}
+            hint="Of those, PRs with at least one review or inline comment. Only these carry signal." />
+          <IntroStat label="contributors" value={contributors}
+            hint="Distinct people who authored or reviewed in the window." />
+          <IntroStat label="dimensions" value={dims}
+            hint="Review categories used in the coverage grid and radar. Set by the lens." />
+          <IntroStat label="visibility" value={DATA.visibility}
+            hint={VISIBILITY_HINT[DATA.visibility] || "What the run includes, not who can see it."} />
+          <IntroStat label="lens" value={DATA.lens && DATA.lens.name ? `${DATA.lens.name} v${DATA.lens.version || 1} · ${DATA.lens.status || "experimental"}` : undefined}
+            hint={lensHint(DATA.lens)} />
+          <IntroStat label="tricorder version" value={DATA.version ? `v${DATA.version}` : undefined}
+            hint="The build of tricorder that produced this data. Prompts and lenses change between builds, so two runs compare only at the same version." />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 18, alignItems: "start" }}>
@@ -230,7 +260,9 @@ function IntroTab({ onSelect }) {
             <ul style={{ margin: 0, padding: "0 0 0 18px", color: "var(--text-dim)", fontSize: 13.5, fontWeight: 300, lineHeight: 1.55 }}>
               <li style={{ marginBottom: 6 }}>Every finding is model-generated from review comments. The quotes are real; the interpretation is a model's. Treat standard citations as leads, not verdicts.</li>
               <li style={{ marginBottom: 6 }}>Signal scales with review volume. A reviewer with a handful of PRs gets a low signal-quality grade for a reason.</li>
-              <li>Findings are read through a discipline lens. The analytics-engineering lens (dbt, SQL) is the only one validated so far; on other kinds of repository, citations can drift off-domain.</li>
+              <li>{DATA.lens && DATA.lens.name
+                ? `Findings are read through the ${DATA.lens.name} lens (${DATA.lens.status || "experimental"}). ${DATA.lens.status === "validated" ? "It has passed a production-repository evaluation." : "It has not yet passed a production-repository evaluation, so treat domain citations as leads."}`
+                : "Findings are read through a discipline lens. This run predates lens tracking; on repositories that are not dbt/SQL projects, citations can drift off-domain."}</li>
             </ul>
           </IntroCard>
 

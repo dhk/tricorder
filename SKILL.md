@@ -5,8 +5,9 @@ description: >
   Analyzes GitHub pull request review history for a repository over a time window to extract
   learning signals: patterns ready for institutionalization, reviewer focus fingerprints,
   per-author strength/gap profiles, and team-level coverage gaps. Outputs a Markdown report
-  committed to the analysis repo and an interactive React artifact for exploration. Scoped to
-  dbt/SQL analytics repos. Two-phase: harvest (GitHub API → local cache) then synthesize
+  committed to the analysis repo and an interactive React artifact for exploration. Reads each
+  repo through a detected discipline lens (dbt/SQL, desktop app, platform, security, agent
+  systems; YAML under tricorder/lenses/data/). Two-phase: harvest (GitHub API → local cache) then synthesize
   (cache → provider-selected LLM analysis → outputs). Cache is persistent across sessions at
   ~/.learn-from-work/cache/. Trigger on: "tricorder", "scan PRs", "analyze PRs", "learn from PRs", "review signal",
   "what are we learning from code review", "PR patterns", or any request to extract learning
@@ -40,8 +41,11 @@ runbooks. This skill reads that record and asks four questions:
 3. **Where does each author excel, and where do they struggle?** (Growth profiles)
 4. **Where is the team collectively blind?** (Coverage gaps)
 
-Answers are grounded in dbt Labs style guides, SQLFluff rule sets, Kimball principles, and the
-dbt-project-evaluator check catalog. Where a pattern maps to a named standard, it is cited by name.
+Answers are grounded in the primary sources of the repository's discipline lens: for a dbt repo
+the dbt Labs style guide, SQLFluff rules, Kimball, and dbt-project-evaluator; for a Tauri desktop app
+the Tauri security model, the Rust API Guidelines and Clippy, the Rules of React, and Playwright's
+best practices. The lens is detected from the file tree (`tricorder/lenses/`), never assumed. Where a
+pattern maps to a named standard from the lens, it is cited by name; nothing outside the lens may be cited.
 
 **The maturation path** (inherited from learn-from-work):
 `judgment → guidance → convention → rule → deterministic enforcement`
@@ -50,7 +54,7 @@ Every identified pattern is tagged with a maturity level. That tag is the signal
 - `judgment` — too context-dependent to codify yet; document the heuristic
 - `guidance` — ready for a team norm doc entry
 - `convention` — ready for a PR checklist or template
-- `rule` — ready for SQLFluff or dbt-project-evaluator enforcement
+- `rule` — ready for linter or policy-tool enforcement (SQLFluff, dbt-project-evaluator, Biome, Clippy, per the lens's tooling gates)
 - `deterministic` — ready for CI gate
 
 ---
@@ -354,19 +358,15 @@ For each PR, build a normalized record:
 }
 ```
 
-### Model/file type detection
+### File type detection
 
-Inspect `path` field to tag each inline comment with context:
-
-| Pattern | Tag |
-|---------|-----|
-| `models/` + `.sql` | `dbt-model` |
-| `macros/` + `.sql` | `dbt-macro` |
-| `tests/` | `dbt-test` |
-| `*.yml` in `models/` | `dbt-schema` |
-| `*.py` | `python` |
-| `dbt_project.yml` | `dbt-config` |
-| `*.md` | `documentation` |
+Each inline comment's `path` is tagged with the selected lens's `file_tags` (first matching glob
+wins, `other` otherwise) and the tag is shown to the model in square brackets. The analytics lens
+tags `**/models/**/*.sql` as `dbt-model`, `**/macros/**/*.sql` as `dbt-macro`, `**/models/**/*.yml`
+as `dbt-schema`, and so on; the desktop lens tags `src-tauri/**/*.rs` as `desktop-core-rust`,
+`src/**/*.tsx` as `ui-react`, `src-tauri/capabilities/*.json` as `desktop-capabilities`. The share
+of comments that receive a non-`other` tag is the `review_path_check`: below the lens's threshold
+(usually 70%) the lens is judged not to fit and synthesis refuses to run without `--force`.
 
 ---
 

@@ -1,0 +1,383 @@
+# Tricorder lens: platform engineering (infrastructure, SRE, IaC, CI/CD).
+# Port of interpret.py LENS_CONTEXT plus the CI/CD and supply-chain authorities
+# from docs/research/repo-lens/findings/perplexity-findings.md (Q3). IaC change-semantics
+# axes are deliberately omitted until a primary source exists (open gap 7).
+lens:
+  name: platform-engineering
+  version: 1
+  status: experimental
+  domain: >-
+    Infrastructure and platform repositories: Terraform and other IaC,
+    Kubernetes manifests and Helm charts, container builds, CI/CD pipelines,
+    and SRE tooling. Reviewers in this domain care about declarative
+    reproducibility, blast radius, least-privilege IAM and workflow tokens,
+    secrets handling, pinned and verified dependencies, provenance, rollback
+    paths, and runbooks.
+
+  detection:
+    signals:
+      - pattern: "**/*.tf"
+        weight: 8
+        rationale: "Terraform configuration."
+        source: "https://developer.hashicorp.com/terraform/language"
+      - pattern: "**/*.tfvars"
+        weight: 4
+        rationale: "Terraform variable files."
+        source: "https://developer.hashicorp.com/terraform/language/values/variables"
+      - pattern: "**/Chart.yaml"
+        weight: 5
+        rationale: "Helm chart."
+        source: "https://helm.sh/docs/topics/charts/"
+      - pattern: "helm/**/*.yaml"
+        weight: 3
+        rationale: "Helm chart tree."
+        source: "https://helm.sh/docs/topics/charts/"
+      - pattern: "**/kustomization.yaml"
+        weight: 5
+        rationale: "Kustomize overlay."
+        source: "https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/"
+      - pattern: "**/Dockerfile"
+        weight: 3
+        rationale: "Container build; weak on its own since apps also ship one."
+        source: "https://docs.docker.com/reference/dockerfile/"
+      - pattern: "docker-compose.yml"
+        weight: 3
+        rationale: "Compose stack."
+        source: "https://docs.docker.com/compose/"
+      - pattern: "docker-compose.yaml"
+        weight: 3
+        rationale: "Compose stack."
+        source: "https://docs.docker.com/compose/"
+      - pattern: "**/Pulumi.yaml"
+        weight: 8
+        rationale: "Pulumi project."
+        source: "https://www.pulumi.com/docs/iac/concepts/projects/"
+      - pattern: "**/ansible.cfg"
+        weight: 5
+        rationale: "Ansible configuration."
+        source: "https://docs.ansible.com/ansible/latest/reference_appendices/config.html"
+      - pattern: ".github/workflows/*.yml"
+        weight: 2
+        rationale: "CI workflows; weak signal present in most repos."
+        source: "https://docs.github.com/en/actions"
+    counter_signals:
+      - pattern: "dbt_project.yml"
+        weight: -6
+        rationale: "dbt project; analytics-engineering evidence."
+      - pattern: "src-tauri/tauri.conf.json"
+        weight: -8
+        rationale: "Tauri desktop app."
+      - pattern: "**/pubspec.yaml"
+        weight: -6
+        rationale: "Flutter/Dart application; a product repo that happens to ship charts for its backend."
+    ignore_for_detection:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".cursor/**"
+      - ".windsurf/**"
+      - ".github/copilot-instructions.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "CHANGELOG.md"
+      - "CODEOWNERS"
+      - "LICENSE"
+    min_score: 10
+    min_margin: 5
+    composition_check:
+      languages_expected: [HCL, Shell, Python, Go]
+      languages_unexpected: [SQL]
+    review_path_check:
+      min_share_of_comments_on_tagged_paths: 0.6
+
+  file_tags:
+    - glob: "**/*.tf"
+      tag: "terraform"
+    - glob: "**/*.tfvars"
+      tag: "terraform"
+    - glob: "**/Chart.yaml"
+      tag: "helm"
+    - glob: "helm/**"
+      tag: "helm"
+    - glob: "**/charts/**"
+      tag: "helm"
+    - glob: "**/kustomization.yaml"
+      tag: "kubernetes"
+    - glob: "**/k8s/**"
+      tag: "kubernetes"
+    - glob: "**/kubernetes/**"
+      tag: "kubernetes"
+    - glob: "**/Dockerfile"
+      tag: "container"
+    - glob: "docker-compose.y*ml"
+      tag: "container"
+    - glob: ".github/workflows/*.yml"
+      tag: "ci"
+    - glob: ".github/workflows/*.yaml"
+      tag: "ci"
+    - glob: "**/*.sh"
+      tag: "scripts"
+    - glob: "**/*.py"
+      tag: "scripts"
+    - glob: "**/*.go"
+      tag: "source"
+    - glob: "**/runbooks/**"
+      tag: "runbook"
+    - glob: "**/*.md"
+      tag: "docs"
+    - glob: "**/*.yml"
+      tag: "config"
+    - glob: "**/*.yaml"
+      tag: "config"
+
+  categories:
+    - id: correctness
+      core: true
+      description: "Wrong infrastructure behavior: misconfigured resources, bad selectors, broken pipelines."
+      example_comment: "This selector matches the old label set; the service will route to nothing after rollout."
+      axes: [change-management]
+    - id: security
+      core: true
+      description: "IAM scope, network exposure, workflow token permissions, secrets in code."
+      example_comment: "This workflow runs with write-all permissions; scope GITHUB_TOKEN to contents: read."
+      axes: [least-privilege, actions-hardening]
+    - id: testing
+      core: true
+      description: "Plan review, policy tests, chart linting, pipeline dry runs."
+      example_comment: "Attach the terraform plan output so we can see the replace on the database."
+      axes: [change-management]
+    - id: documentation
+      core: true
+      description: "Runbooks, architecture notes, module READMEs."
+      example_comment: "New alert, no runbook link; add one before this pages someone at 3am."
+      axes: [runbooks]
+    - id: style
+      core: true
+      description: "Formatting and lint hygiene for HCL, YAML, and shell."
+      example_comment: "terraform fmt would reorder these; run it before pushing."
+      axes: []
+    - id: performance
+      core: true
+      description: "Cost and capacity: instance sizing, autoscaling bounds, build cache use."
+      example_comment: "This bumps the node pool to 20 minimum; is that from a load test or a guess?"
+      axes: []
+    - id: error-handling
+      core: true
+      description: "Failure modes: retries, timeouts, rollback on failed deploy."
+      example_comment: "If the migration job fails the deploy still proceeds; gate on the job status."
+      axes: [change-management]
+    - id: maintainability
+      core: true
+      description: "Module structure, duplication across environments, dead resources."
+      example_comment: "Three environments copy the same security group; make it a module."
+      axes: []
+    - id: dependencies
+      core: true
+      description: "Provider, module, action, and image pins."
+      example_comment: "Pin this action to a commit SHA, not a floating tag."
+      axes: [pinned-dependencies]
+    - id: other
+      core: true
+      description: "Anything that does not fit another category."
+      example_comment: "Flagging for awareness: this changes the on-call rotation config."
+      axes: []
+    - id: blast-radius
+      description: "Scope of a change's failure domain: shared resources, multi-region, prod and non-prod together."
+      example_comment: "This changes the shared VPC and the prod cluster in one PR; split them."
+      axes: [change-management]
+    - id: observability
+      description: "SLOs, alerts, dashboards, and logging for infrastructure."
+      example_comment: "The new queue has no depth alert; add one tied to the SLO."
+      axes: [observability]
+    - id: supply-chain
+      description: "Build provenance, signed artifacts, verified base images."
+      example_comment: "The release job publishes without provenance; add the SLSA generator step."
+      axes: [supply-chain-provenance]
+
+  authorities:
+    - id: google-sre
+      name: "Google SRE book"
+      publisher: "Google"
+      url: "https://sre.google/sre-book/table-of-contents/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [observability, documentation, error-handling]
+    - id: dora
+      name: "DORA research"
+      publisher: "DORA / Google Cloud"
+      url: "https://dora.dev/research/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [testing, error-handling]
+    - id: aws-well-architected
+      name: "AWS Well-Architected Framework"
+      publisher: "Amazon Web Services"
+      url: "https://aws.amazon.com/architecture/well-architected/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [blast-radius, performance, security]
+    - id: terraform-style
+      name: "Terraform style guide"
+      publisher: "HashiCorp"
+      url: "https://developer.hashicorp.com/terraform/language/style"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [style, maintainability]
+    - id: github-actions-hardening
+      name: "Security hardening for GitHub Actions"
+      publisher: "GitHub"
+      url: "https://docs.github.com/en/actions/how-tos/secure-your-work"
+      kind: primary
+      retrieved: 2026-09-02
+      covers: [security, dependencies]
+    - id: openssf-scorecard
+      name: "OpenSSF Scorecard checks"
+      publisher: "OpenSSF"
+      url: "https://github.com/ossf/scorecard/blob/main/docs/checks.md"
+      kind: primary
+      retrieved: 2026-09-02
+      covers: [security, dependencies, supply-chain]
+    - id: slsa
+      name: "SLSA (Supply-chain Levels for Software Artifacts)"
+      publisher: "OpenSSF"
+      url: "https://slsa.dev/"
+      kind: primary
+      retrieved: 2026-09-02
+      covers: [supply-chain]
+    - id: cis-benchmarks
+      name: "CIS Benchmarks"
+      publisher: "Center for Internet Security"
+      url: "https://www.cisecurity.org/cis-benchmarks"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [security]
+
+  axes:
+    - id: change-management
+      question: "Does each change carry a reviewed plan, a rollback path, and a blast radius small enough to fail safely?"
+      categories: [blast-radius, testing, correctness, error-handling]
+      authorities: [google-sre, dora, aws-well-architected]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: least-privilege
+      question: "Are IAM roles, network policies, and service accounts scoped to the minimum required?"
+      categories: [security]
+      authorities: [aws-well-architected, cis-benchmarks]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: actions-hardening
+      question: "Do CI workflows use minimal token permissions, OIDC over long-lived secrets, and safe triggers?"
+      categories: [security]
+      authorities: [github-actions-hardening, openssf-scorecard]
+      enforceable_by:
+        - tool: "openssf-scorecard"
+          config: ".github/workflows/scorecard.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: pinned-dependencies
+      question: "Are actions, providers, modules, and base images pinned to immutable references?"
+      categories: [dependencies]
+      authorities: [openssf-scorecard, github-actions-hardening]
+      enforceable_by:
+        - tool: "openssf-scorecard"
+          config: ".github/workflows/scorecard.yml"
+          coverage: full
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: supply-chain-provenance
+      question: "Are release artifacts built with provenance and signed, per SLSA?"
+      categories: [supply-chain]
+      authorities: [slsa, openssf-scorecard]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: observability
+      question: "Are SLOs, alerts, and dashboards defined for new infrastructure, with runbooks linked from alerts?"
+      categories: [observability]
+      authorities: [google-sre]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: true
+    - id: runbooks
+      question: "Do operational changes ship with runbooks and incident playbooks?"
+      categories: [documentation]
+      authorities: [google-sre]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: style-lint
+      question: "Is HCL and YAML formatting delegated to formatters and linters rather than review comments?"
+      categories: [style]
+      authorities: [terraform-style]
+      enforceable_by:
+        - tool: "terraform fmt"
+          config: "**/*.tf"
+          coverage: full
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+
+  tooling_gates:
+    - tool: openssf-scorecard
+      config_file: ".github/workflows/scorecard.yml"
+      enforces: [security, dependencies]
+      source: "https://github.com/ossf/scorecard/blob/main/docs/checks.md"
+    - tool: pre-commit
+      config_file: ".pre-commit-config.yaml"
+      enforces: [style]
+      source: "https://pre-commit.com/"
+    - tool: tflint
+      config_file: "**/.tflint.hcl"
+      enforces: [style, correctness]
+      source: "https://github.com/terraform-linters/tflint"
+    - tool: renovate
+      config_file: "renovate.json"
+      enforces: [dependencies]
+      source: "https://docs.renovatebot.com/"
+
+  prompt_context:
+    phase1_pr_extraction: |
+      This is an infrastructure or platform repository: IaC, Kubernetes,
+      containers, CI/CD. Comments on .tf and manifests usually concern blast
+      radius, least privilege, or pinning; comments on workflows concern token
+      permissions and triggers. Use the file tag shown with each comment. Cite
+      a standard only when the comment clearly invokes it.
+    phase2_reviewer_fingerprint: |
+      Meaningful focus areas for this domain: plan review and rollback, blast
+      radius, least-privilege IAM, workflow token permissions, pinned actions
+      and images, provenance, SLOs and alerts, runbooks. Note blind spots as
+      areas the reviewer touches but never reviews.
+    phase3_author_growth: |
+      Judge author growth against this domain: small reviewable changes with
+      plans attached, scoped permissions, pinned dependencies, alerts and
+      runbooks accompanying new infrastructure. Ground support
+      recommendations in the lens authorities.
+    phase4_team_gaps: |
+      Report gaps only against this lens's axes. If Scorecard, tflint, or
+      pre-commit already enforce a dimension, report it as institutionalized,
+      not as a gap. Do not import application-level concerns such as UI state
+      or data-model grain.
+    interpret: |
+      Summarize for a platform team: which review habits are enforced by
+      tooling and which still depend on human attention. Change management,
+      least privilege, and provenance are the judgment-heavy areas where gaps
+      cost the most. Map quick wins to concrete maturity-ladder promotions.
+
+  must_not:
+    - "Cite dbt, SQLFluff, Kimball, or dbt-project-evaluator."
+    - "Report gaps about grain, fact models, staging models, source freshness, or exposure contracts."
+    - "Treat CLAUDE.md, AGENTS.md, or .agents/ content as evidence about the code archetype."
+
+  validation:
+    test_repo: null
+    smoke_checks:
+      - "grain"
+      - "fact model"
+      - "dbt"
+      - "SQLFluff"
+      - "Kimball"
+      - "source freshness"

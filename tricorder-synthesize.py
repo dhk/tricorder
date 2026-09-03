@@ -36,29 +36,20 @@ OUTPUT_BASE      = _DEFAULT_OUT if _DEFAULT_OUT.exists() else Path("output")
 MAX_TOKENS       = 8192
 
 
-# ── file type detection ───────────────────────────────────────────────────────
-def tag_file(path: str) -> str:
-    if not path:
-        return "other"
-    if "models/" in path and path.endswith(".sql"):
-        return "dbt-model"
-    if "macros/" in path and path.endswith(".sql"):
-        return "dbt-macro"
-    if "tests/" in path:
-        return "dbt-test"
-    if path.endswith(".yml") and "models/" in path:
-        return "dbt-schema"
-    if path.endswith(".py"):
-        return "python"
-    if path == "dbt_project.yml":
-        return "dbt-config"
-    if path.endswith(".md"):
-        return "documentation"
-    return "other"
+# ── lens ──────────────────────────────────────────────────────────────────────
+# Domain knowledge (categories, file tags, authorities, prompt context) comes
+# from a YAML lens: tricorder/lenses/data/*.yaml, overridable via
+# ~/.tricorder/lenses/. Detection runs over the GitHub tree when --lens is absent.
+from tricorder.lenses import Lens, LensError, load_all
+from tricorder.lenses.detect import (
+    composition_check, detect, fetch_github, github_token, review_path_check,
+)
+from tricorder.lenses.prompting import authorities_markdown, secondary_block, smoke_check, system_prompt
 
 
 # ── payload assembly ──────────────────────────────────────────────────────────
-def build_pr_payload(pr: dict, reviews: list, comments: list, repo_ctx: dict) -> str:
+def build_pr_payload(pr: dict, reviews: list, comments: list, repo_ctx: dict,
+                     lens: Lens | None = None, gates: list | None = None) -> str:
     lines = []
     body = pr.get("body") or ""
     dq   = pr.get("description_quality", {})
@@ -73,9 +64,9 @@ def build_pr_payload(pr: dict, reviews: list, comments: list, repo_ctx: dict) ->
     lines.append((body[:2000] if body else "(none)"))
     lines.append("")
 
-    enforced = repo_ctx.get("sqlfluff_rules_lines", [])
     lines.append(f"Repo context:")
-    lines.append(f"- SQLFluff rules enforced: {', '.join(enforced) if enforced else 'none detected'}")
+    gate_names = [f"{g['tool']} ({g['config_file']})" for g in (gates or [])]
+    lines.append(f"- Tooling gates present: {', '.join(gate_names) if gate_names else 'none detected'}")
     pr_sections = repo_ctx.get("pr_template_sections", [])
     lines.append(f"- PR template sections: {', '.join(pr_sections) if pr_sections else 'no template'}")
     lines.append("")
@@ -92,7 +83,7 @@ def build_pr_payload(pr: dict, reviews: list, comments: list, repo_ctx: dict) ->
     for c in comments[:50]:
         user  = c.get("user", {}).get("login", "unknown")
         path  = c.get("path", "")
-        ftype = tag_file(path)
+        ftype = lens.file_tag(path) if lens else "other"
         cbody = (c.get("body") or "").strip()
         replied = " [has_reply]" if c.get("has_reply") else ""
         lines.append(f"  {user} on {path} [{ftype}]{replied}: {cbody[:300]}")
@@ -101,147 +92,6 @@ def build_pr_payload(pr: dict, reviews: list, comments: list, repo_ctx: dict) ->
 
 
 # ── llm calls ─────────────────────────────────────────────────────────────────
-SYSTEM_P1 = """You are a senior analytics engineering reviewer analyzing a GitHub pull request.
-Your job is to extract review signals — patterns, feedback themes, and learning moments — from the PR description and review comments.
-
-Context: This is a dbt/SQL analytics repository. Relevant standards include:
-- dbt Labs style guide (https://docs.getdbt.com/best-practices/how-we-style/0-how-we-style-our-dbt-projects)
-- SQLFluff rule catalog
-- Kimball dimensional modeling principles
-- dbt-project-evaluator checks
-- The Checklist Manifesto (Gawande) — when a pattern is checklist-worthy, say so
-
-When a comment maps to a named standard, cite it explicitly.
-
-Maturity levels: judgment | guidance | convention | rule | deterministic
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "pr_number": int,
-  "patterns": [
-    {
-      "signal": "one-line description of the pattern",
-      "category": "grain | naming | testing | documentation | style | performance | modeling | schema | business-logic | incremental | exposure-contract | source-freshness | macro-complexity | test-pyramid | other",
-      "maturity": "judgment | guidance | convention | rule | deterministic",
-      "standard_citation": "citation or null",
-      "comment_evidence": ["quoted snippet 1"],
-      "author": "login",
-      "reviewer": "login"
-    }
-  ],
-  "author_strengths": ["..."],
-  "author_gaps": ["..."],
-  "reviewer_focus_signals": {
-    "<reviewer_login>": ["signal 1"]
-  }
-}"""
-
-SYSTEM_P2 = """You are analyzing a code reviewer's review history across multiple PRs in a dbt/SQL analytics repository.
-Your job is to build a focus fingerprint — what does this reviewer consistently care about, and what do they appear to overlook or underweight?
-
-Be specific. "Code quality" is not useful. "Grain declaration on fact models" is.
-When a focus area maps to a named dbt or SQL standard, cite it.
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "reviewer": "login",
-  "pr_count": int,
-  "primary_focus_areas": [
-    {
-      "area": "description",
-      "frequency": "always | often | sometimes",
-      "standard_citation": "citation or null",
-      "example_comments": ["snippet 1"]
-    }
-  ],
-  "apparent_blind_spots": [
-    {
-      "area": "description",
-      "basis": "why you infer this is a blind spot"
-    }
-  ],
-  "review_style": "blocking | advisory | conversational | terse | thorough",
-  "signal_quality": "high | medium | low",
-  "signal_quality_rationale": "one sentence"
-}"""
-
-SYSTEM_P3 = """You are analyzing a code author's pull request history in a dbt/SQL analytics repository.
-Your job is to build a growth profile — where do they consistently do well, and where do they consistently need support?
-
-Look for persistence: if the same gap appears in 3+ PRs, it is a growth area, not a one-off.
-Cite dbt/SQL standards when relevant. Recommend specific support actions.
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "author": "login",
-  "pr_count": int,
-  "strengths": [
-    {
-      "area": "description",
-      "persistence": "consistent | emerging",
-      "standard_citation": "citation or null"
-    }
-  ],
-  "growth_areas": [
-    {
-      "area": "description",
-      "persistence": "consistent | occasional",
-      "standard_citation": "citation or null",
-      "support_recommendation": "specific, actionable recommendation"
-    }
-  ],
-  "trajectory": "improving | stable | regressing | insufficient-data",
-  "trajectory_rationale": "one sentence based on chronological review signal"
-}"""
-
-SYSTEM_P4 = """You are analyzing the complete PR review history of an analytics engineering team working in a dbt/SQL repository.
-Your job is to identify where the team is strong collectively and where it has review gaps.
-
-Gap taxonomy:
-- coverage_gap: nobody ever reviews for this dimension
-- knowledge_gap: reviewers raise this topic but comments are shallow or inconsistent
-- blind_spot: this is a named best practice that never appears in any review
-
-Reference the dbt Labs style guide, dbt-project-evaluator check catalog, SQLFluff rules, and Kimball principles explicitly.
-If a known best practice is absent from the review record, name it.
-
-Respond ONLY with valid JSON. No preamble. No markdown fences.
-
-OUTPUT SCHEMA:
-{
-  "team_strengths": [
-    {
-      "area": "description",
-      "evidence": "brief basis",
-      "standard_citation": "citation or null"
-    }
-  ],
-  "gaps": [
-    {
-      "area": "description",
-      "gap_type": "coverage_gap | knowledge_gap | blind_spot",
-      "standard_citation": "named standard being missed, or null",
-      "recommendation": "specific action — training, tooling, checklist, or CI gate"
-    }
-  ],
-  "institutionalization_candidates": [
-    {
-      "pattern": "description",
-      "current_maturity": "judgment | guidance | convention | rule | deterministic",
-      "next_step": "what to do to advance maturity",
-      "maturity_path_target": "convention | rule | deterministic"
-    }
-  ],
-  "review_culture_observations": "2-3 sentences on overall review culture health"
-}"""
-
-
 def strip_fences(text: str) -> str:
     text = text.strip()
     if text.startswith("```"):
@@ -271,7 +121,8 @@ def call_llm(client, system: str, user: str, retries: int = 2, max_tokens: int =
 
 
 # ── markdown report ───────────────────────────────────────────────────────────
-def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, visibility, repo_slug):
+def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, visibility, repo_slug,
+                    lens: Lens | None = None, gates: list | None = None):
     today    = datetime.now(timezone.utc).date().isoformat()
     dr       = manifest["date_range"]
     n        = manifest["pr_count"]
@@ -286,6 +137,7 @@ def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, te
         f"contributors: {contribs}",
         f"visibility: {visibility}",
         f"generated_by: tricorder v1.1.0",
+        f"lens: {lens.name if lens else 'unknown'}",
         f"---",
         f"",
         f"# PR Review Analysis — {repo_slug} — {today}",
@@ -380,21 +232,76 @@ def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, te
         "## Methodology & Caveats",
         "",
         f"- **Window:** {dr['from']} → {dr['to']} | **PRs analyzed:** {n} | **PRs skipped (no reviews):** {manifest.get('no_review_prs', 0)}",
-        f"- **Repo context:** SQLFluff config found | PR template found | dbt_project.yml found",
+        f"- **Lens:** {lens.name} (v{lens.version}, {lens.status})" if lens else "- **Lens:** none",
+        f"- **Tooling gates present:** {', '.join(g['tool'] for g in (gates or [])) or 'none detected'}",
         f"- **What this analysis cannot see:** verbal review culture (Slack), reviewer availability constraints, domain ownership, or PRs merged without review.",
         "",
         "---",
         "",
         "## Appendix: Reference Standards",
         "",
-        "- **dbt Labs style guide**: https://docs.getdbt.com/best-practices/how-we-style/0-how-we-style-our-dbt-projects",
-        "- **dbt-project-evaluator**: https://github.com/dbt-labs/dbt-project-evaluator",
-        "- **SQLFluff rule catalog**: https://docs.sqlfluff.com/en/stable/rules.html",
-        "- **Kimball dimensional modeling**: https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/",
-        "- **Google Engineering Practices — code review**: https://google.github.io/eng-practices/review/",
-        "- **Smart Bear — peer review best practices**: https://smartbear.com/learn/code-review/best-practices-for-peer-code-review/",
+        *(authorities_markdown(lens) if lens else ["- (no lens selected)"]),
     ]
     return "\n".join(lines)
+
+
+# ── lens resolution ───────────────────────────────────────────────────────────
+def resolve_lens(explicit: str | None, cache_dir: Path, owner: str, repo_name: str):
+    """--lens, else the lens recorded in the cache, else GitHub-tree detection.
+
+    Returns (lens, tooling_gates_present, checks, source, secondary). Writes
+    <cache>/lens-detection.json so later runs and the explorer renderer agree.
+    """
+    lenses = load_all(extra_dirs=[cache_dir / "lenses"])
+    detection_path = cache_dir / "lens-detection.json"
+    recorded = json.loads(detection_path.read_text()) if detection_path.exists() else {}
+
+    comment_paths = []
+    for com_path in cache_dir.glob("comments/*.json"):
+        try:
+            comment_paths += [c.get("path", "") for c in json.load(open(com_path))]
+        except Exception:
+            pass
+
+    name = None; source = ""; gates = list(recorded.get("tooling_gates_present") or [])
+    secondary_name = recorded.get("runner_up") if recorded.get("state") == "mixed" else None
+    lang_bytes = recorded.get("language_bytes") or None
+    if explicit:
+        if explicit not in lenses:
+            raise LensError(f"unknown lens {explicit!r}; available: {', '.join(sorted(lenses))}")
+        name, source = explicit, "--lens"
+    elif recorded.get("selected") and recorded["selected"] in lenses:
+        name, source = recorded["selected"], "cache (lens-detection.json)"
+    else:
+        token = github_token()
+        if not token:
+            raise LensError("no --lens given, none recorded in the cache, and no GitHub token for detection")
+        print(f"    Detecting lens from the GitHub tree of {owner}/{repo_name} …")
+        paths, lang_bytes = fetch_github(owner, repo_name, token)
+        result = detect(paths, lenses)
+        gates = result.tooling_gates_present
+        recorded = {"selected": result.selected, "state": result.state, "runner_up": result.runner_up,
+                    "margin": result.margin, "scores": result.scores, "min_score": result.min_score,
+                    "min_margin": result.min_margin, "ignored_paths": result.ignored_paths,
+                    "tooling_gates_present": gates, "language_bytes": lang_bytes,
+                    "detected_at": datetime.now(timezone.utc).isoformat()}
+        detection_path.write_text(json.dumps(recorded, indent=2))
+        if result.state == "unknown":
+            best = max(result.scores, key=result.scores.get) if result.scores else "?"
+            raise LensError(f"detection returned unknown (best candidate {best} scored "
+                            f"{result.scores.get(best, 0)}, below min_score {result.min_score}); pass --lens NAME")
+        if result.state == "mixed":
+            print(f"    ⚠ mixed detection: {result.runner_up} trails by only {result.margin}; using {result.selected}")
+        name = result.selected
+        source = f"auto-detected ({result.state}, score {result.scores[name]}, margin {result.margin})"
+
+    lens = lenses[name]
+    checks = []
+    if lang_bytes:
+        checks.append(composition_check(lens, lang_bytes))
+    checks.append(review_path_check(lens, comment_paths))
+    secondary = lenses.get(secondary_name) if secondary_name and secondary_name != name else None
+    return lens, gates, checks, source, secondary
 
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -414,6 +321,13 @@ def main():
     parser.add_argument("--out", default=None,
                         help="Directory for the Markdown report "
                              f"(default: {OUTPUT_BASE})")
+    parser.add_argument("--lens", default=None, metavar="NAME",
+                        help="Discipline lens. Default: the lens recorded in the cache from a previous run, "
+                             "else auto-detected from the GitHub tree (needs GITHUB_TOKEN or keychain PAT).")
+    parser.add_argument("--force", action="store_true",
+                        help="Proceed even if the lens verification checks fail.")
+    parser.add_argument("--dry-run", dest="dry_run", action="store_true",
+                        help="Resolve the lens, run verification, print the Phase 1 and 4 prompts, and exit.")
     args = parser.parse_args()
 
     owner, repo_name = args.repo.split("/", 1)
@@ -434,6 +348,29 @@ def main():
     print(f"    PRs:        {len(pr_files)}")
     print(f"    Window:     {manifest['date_range']['from']} → {manifest['date_range']['to']}")
     print(f"    Visibility: {args.visibility}")
+
+    try:
+        lens, gates, checks, lens_source, secondary = resolve_lens(args.lens, cache_dir, owner, repo_name)
+    except LensError as e:
+        sys.exit(f"❌  Lens error: {e}")
+    print(f"    Lens:       {lens.name} (v{lens.version}, {lens.status}; {lens_source})")
+    if secondary:
+        print(f"    Secondary:  {secondary.name} (mixed repository; axes reported only with evidence)")
+    for c in checks:
+        print(f"      {'✓' if c.passed else '✗'} {c.name}: {c.detail}")
+    if any(not c.passed for c in checks) and not args.force:
+        sys.exit("❌  Lens verification failed: the selected lens does not fit this repository.\n"
+                 "    Pass --lens NAME to choose another lens, or --force to proceed anyway.")
+    if args.dry_run:
+        print(f"    Gates:      {', '.join(g['tool'] for g in gates) or 'none'}")
+        print("\n--- Phase 1 system prompt ---\n" + system_prompt("p1", lens, gates))
+        print("\n--- Phase 4 system prompt ---\n" + system_prompt("p4", lens, gates, secondary_block(secondary) or None))
+        print("\nDry run: no LLM calls made.")
+        return
+    sys_p1 = system_prompt("p1", lens, gates)
+    sys_p2 = system_prompt("p2", lens, gates)
+    sys_p3 = system_prompt("p3", lens, gates)
+    sys_p4 = system_prompt("p4", lens, gates, secondary_block(secondary) or None)
     client = build_llm_provider(
         provider=args.provider,
         model=args.model,
@@ -475,8 +412,8 @@ def main():
             print(f"  [{i:03d}/{len(pr_files)}] #{pr['number']} — skipped (no reviews)")
             continue
 
-        payload = build_pr_payload(pr, reviews, comments, repo_ctx)
-        result  = call_llm(client, SYSTEM_P1, payload)
+        payload = build_pr_payload(pr, reviews, comments, repo_ctx, lens, gates)
+        result  = call_llm(client, sys_p1, payload)
         result["_pr_number"] = pr["number"]
         result["_author"]    = pr["author"]["login"]
 
@@ -531,7 +468,7 @@ def main():
             continue
 
         review_lines.insert(1, f"PRs reviewed: {pr_count}")
-        result = call_llm(client, SYSTEM_P2, "\n".join(review_lines))
+        result = call_llm(client, sys_p2, "\n".join(review_lines))
         result["_reviewer"] = reviewer
 
         with open(out_path, "w") as f:
@@ -584,7 +521,7 @@ def main():
             continue
 
         pr_lines.insert(1, f"PRs in window: {pr_count}")
-        result = call_llm(client, SYSTEM_P3, "\n".join(pr_lines))
+        result = call_llm(client, sys_p3, "\n".join(pr_lines))
         result["_author"] = author
 
         with open(out_path, "w") as f:
@@ -620,11 +557,30 @@ def main():
             json.dumps([{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles], indent=2)[:4000],
         ]
 
-        team_gaps = call_llm(client, SYSTEM_P4, "\n".join(team_prompt_lines), max_tokens=8192)
+        team_gaps = call_llm(client, sys_p4, "\n".join(team_prompt_lines), max_tokens=8192)
         with open(team_gaps_path, "w") as f:
             json.dump(team_gaps, f, indent=2)
         status = "⚠ error" if team_gaps.get("_error") else f"{len(team_gaps.get('gaps',[]))} gaps identified"
         print(f"  ✓ {status}\n")
+
+    # ── lens smoke checks ─────────────────────────────────────────────────────
+    smoke_hits = {}
+    for label, obj in (("phase1", pr_results), ("phase2", reviewer_profiles),
+                       ("phase3", author_profiles), ("phase4", team_gaps)):
+        hits = smoke_check(lens, obj)
+        if hits:
+            smoke_hits[label] = hits
+    if smoke_hits:
+        print("  ⚠ Lens smoke check failed — off-domain terms in output:")
+        for label, hits in smoke_hits.items():
+            print(f"      {label}: {', '.join(hits)}")
+        print("    Cached phase outputs are kept; fix the lens and delete the affected files to regenerate.\n")
+    with open(synth_dir / "lens.json", "w") as f:
+        json.dump({**lens.summary(), "source": lens_source,
+                   "secondary_lens": secondary.summary() if secondary else None,
+                   "tooling_gates_present": gates,
+                   "checks": [{"name": c.name, "passed": c.passed, "detail": c.detail} for c in checks],
+                   "smoke_check_hits": smoke_hits}, f, indent=2)
 
     # ── render report ─────────────────────────────────────────────────────────
     print("Rendering Markdown report...")
@@ -633,11 +589,13 @@ def main():
     today     = datetime.now(timezone.utc).date().isoformat()
     out_file  = out_dir / f"{today}-{repo_slug}.md"
 
-    md = render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, args.visibility, args.repo)
+    md = render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, team_gaps, args.visibility, args.repo, lens, gates)
     with open(out_file, "w") as f:
         f.write(md)
 
     print(f"\n✓ Report written to: {out_file}")
+    if smoke_hits:
+        sys.exit("\n❌  Done, but the lens smoke check found off-domain terms (see above).")
     print(f"\nDone.")
 
 

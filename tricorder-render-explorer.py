@@ -119,19 +119,45 @@ def apply_map(obj, name_map: dict):
 
 # ── Category frequency inference ──────────────────────────────────────────────
 
-def infer_category_freq(primary_focus_areas: list) -> dict:
+def load_taxonomy(cache_dir: Path) -> dict:
+    """Categories, groups, radar axes, and keywords for this run.
+
+    Lens-driven when synthesize recorded a lens in synthesis/lens.json;
+    the legacy dbt set otherwise (runs that predate lens tracking).
+    """
+    lens_file = cache_dir / "synthesis" / "lens.json"
+    info = json.loads(lens_file.read_text()) if lens_file.exists() else {}
+    if info.get("name"):
+        try:
+            from tricorder.lenses import load_lens
+            from tricorder.commands.build import taxonomy_from_lens
+            tax = taxonomy_from_lens(load_lens(info["name"]))
+            tax["lens"] = {**tax["lens"], "source": info.get("source"),
+                           "smoke_check_hits": info.get("smoke_check_hits") or {}}
+            return tax
+        except Exception as e:
+            print(f"  ⚠  lens {info['name']!r} not loadable ({e}); using the legacy category set")
+    return {"categories": CATEGORIES, "groups": CATEGORY_GROUP,
+            "radar": CATEGORIES, "keywords": CATEGORY_KEYWORDS, "lens": info or None}
+
+
+def infer_category_freq(primary_focus_areas: list, taxonomy: dict | None = None) -> dict:
     """
     Convert a reviewer's primary_focus_areas (area text + frequency word)
     into a {category: 0-100} dict for the radar chart.
     """
-    scores = {cat: BASELINE for cat in CATEGORIES}
+    cats = (taxonomy or {}).get("categories") or CATEGORIES
+    keyword_map = (taxonomy or {}).get("keywords") or CATEGORY_KEYWORDS
+    scores = {cat: BASELINE for cat in cats}
 
     for entry in primary_focus_areas:
-        area_lower = entry.get("area", "").lower()
+        area_lower = (entry.get("area", "") + " " + (entry.get("category") or "")).lower()
         freq_val   = FREQ_MAP.get(entry.get("frequency", ""), BASELINE)
 
-        for cat, keywords in CATEGORY_KEYWORDS.items():
-            if any(kw in area_lower for kw in keywords):
+        if entry.get("category") in scores:
+            scores[entry["category"]] = max(scores[entry["category"]], freq_val)
+        for cat, keywords in keyword_map.items():
+            if cat in scores and any(kw in area_lower for kw in keywords):
                 scores[cat] = max(scores[cat], freq_val)
 
     return scores
@@ -269,7 +295,7 @@ def aggregate_patterns(pr_dir: Path, name_map: dict, top_n: int = 20) -> list:
 
 # ── Reviewer profiles ─────────────────────────────────────────────────────────
 
-def load_reviewers(reviewer_dir: Path, name_map: dict) -> list:
+def load_reviewers(reviewer_dir: Path, name_map: dict, taxonomy: dict | None = None) -> list:
     reviewers = []
     for f in sorted(reviewer_dir.glob("*.json")):
         try:
@@ -297,7 +323,7 @@ def load_reviewers(reviewer_dir: Path, name_map: dict) -> list:
                  for b in blind],
                 name_map,
             ),
-            "category_freq": infer_category_freq(focus),
+            "category_freq": infer_category_freq(focus, taxonomy),
         })
 
     # Sort: high signal first, then alpha
@@ -386,8 +412,9 @@ JS_TEMPLATE = """\
 window.TRICORDER_DATA = (function () {{
 
   const CATEGORIES = {categories};
-  const RADAR_CATEGORIES = CATEGORIES;
+  const RADAR_CATEGORIES = {radar_categories};
   const CATEGORY_GROUP = {category_group};
+  const lens = {lens_js};
 
   const patterns = {patterns};
 
@@ -405,6 +432,7 @@ window.TRICORDER_DATA = (function () {{
     contributors:    {contributors},
     visibility:      {visibility_js},
     version:         {version_js},
+    lens,
     CATEGORIES,
     RADAR_CATEGORIES,
     CATEGORY_GROUP,
@@ -438,12 +466,16 @@ def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymize
             print("     Run tricorder-synthesize.py first.", file=sys.stderr)
             sys.exit(1)
 
+    taxonomy = load_taxonomy(cache_dir)
+    if taxonomy.get("lens"):
+        print(f"  Lens: {taxonomy['lens'].get('name')} ({len(taxonomy['categories'])} categories)")
+
     print("  Loading Phase 1 PR patterns...")
     patterns = aggregate_patterns(pr_dir, name_map)
     print(f"    → {len(patterns)} patterns selected")
 
     print("  Loading Phase 2 reviewer profiles...")
-    reviewers = load_reviewers(reviewer_dir, name_map)
+    reviewers = load_reviewers(reviewer_dir, name_map, taxonomy)
     print(f"    → {len(reviewers)} reviewers")
 
     print("  Loading Phase 3 author profiles...")
@@ -476,8 +508,10 @@ def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymize
         repo             = repo,
         window           = window_str,
         anonymized       = "yes" if anonymized else "no",
-        categories       = json.dumps(CATEGORIES),
-        category_group   = json.dumps(CATEGORY_GROUP),
+        categories       = json.dumps(taxonomy["categories"]),
+        radar_categories = json.dumps(taxonomy["radar"]),
+        category_group   = json.dumps(taxonomy["groups"]),
+        lens_js          = json.dumps(taxonomy.get("lens")),
         patterns         = json.dumps(patterns, indent=2),
         reviewers        = json.dumps(reviewers, indent=2),
         authors          = json.dumps(authors, indent=2),

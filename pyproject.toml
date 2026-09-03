@@ -22,3 +22,6 @@ version = {file = "VERSION"}
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["tricorder*"]
+
+[tool.setuptools.package-data]
+tricorder = ["lenses/data/*.yaml"]

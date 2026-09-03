@@ -220,18 +220,32 @@ Scripted walkthrough using pre-baked cal-itp/data-infra data and Trek aliases. N
 
 ## Discipline lenses
 
-A lens provides the interpretive framework for Level 4.
+A lens provides the interpretive framework for every LLM phase (Levels 3 and 4), not only interpretation. It is data: one YAML file per lens under `tricorder/lenses/data/`, overridable per repository from `.tricorder/lenses/` and per user from `~/.tricorder/lenses/`. The schema and the research behind it live in `docs/research/repo-lens/`.
 
-Tricorder detects the likely archetype from the repository fingerprint and proposes it. Users can select an alternative at any time with `--lens <name>`.
+A lens file carries:
 
-| Lens | Domain | Authorities |
-|------|--------|-------------|
-| `analytics-engineering` | dbt, SQL, BigQuery/Snowflake | dbt Labs, Kimball, SQLFluff, dbt-project-evaluator |
-| `product-engineering` | Product software | Marty Cagan, Teresa Torres, Shape Up |
-| `platform-engineering` | Infrastructure, SRE | Google SRE, DORA, AWS Well-Architected |
-| `security` | Security engineering | OWASP, NIST, CIS |
+- **detection**: positive signals and counter-signals (globs with weights), a global ignore list, `min_score`, `min_margin`, and two post-selection checks (`composition_check` against language bytes, `review_path_check` against where reviewers actually comment).
+- **file_tags**: first-match globs that label every inline comment for the model.
+- **categories**: a ten-item domain-neutral core shared by every lens (`correctness, security, testing, documentation, style, performance, error-handling, maintainability, dependencies, other`) plus domain extensions, each with an example comment.
+- **authorities**: primary sources with URLs; the only standards the model may cite.
+- **axes**: the review dimensions of the domain, each with an enforceability ceiling on the maturity ladder and a flag saying whether its absence from the review record is itself a blind spot.
+- **tooling_gates**: config files whose presence makes a dimension deterministic; Phase 4 reports those as institutionalized, never as gaps.
+- **prompt_context** per phase, **must_not** prohibitions, and **validation** smoke checks that fail a run if off-domain terms appear in output.
 
-The `analytics-engineering` lens is currently `Experimental` with strong evidence from cal-itp/data-infra. It moves to `Validated` after a second successful production-repo evaluation. Other lenses remain `Experimental` until validated.
+Detection scores every lens from the repository's file paths after dropping the global ignore list (`CLAUDE.md`, `AGENTS.md`, `.agents/`, community-health files: they appear in repositories of every kind). The winner must clear its own `min_score`, otherwise the result is `unknown` and no lens runs; it must lead the runner-up by `min_margin`, otherwise the result is `mixed` and the runner-up's axes are offered to Phase 4 as a secondary section, reported only with evidence. Lenses are never blended. Users can override at any time with `--lens <name>`, and `--force` proceeds past a failed check.
+
+| Lens | Domain | Status | Evidence |
+|------|--------|--------|----------|
+| `analytics-engineering` | dbt, SQL, warehouse modeling | experimental | cal-itp/data-infra (v1 runs; detection selects it with platform-engineering as a mixed runner-up) |
+| `product-engineering` | product software, parent of the sub-profiles | experimental | fallback when no sub-profile matches |
+| `product-engineering-desktop` | Tauri/Electron-class desktop apps: webview UI + native core | experimental | block/berd: score 32, margin 28, both checks pass |
+| `platform-engineering` | IaC, Kubernetes, CI/CD, supply chain | experimental | none yet |
+| `security` | security engineering | experimental | rarely auto-selected; use `--lens security` or `learn --focus-on security` |
+| `agent-engineering` | agent systems, MCP servers, evals | experimental | none yet |
+
+A lens moves from `experimental` to `validated` after one successful production-repository evaluation: detection selects it with margin, both checks pass, the Phase 1 `other` share stays under 15%, and the smoke checks find nothing. Mobile, backend-service, library, and CLI sub-profiles of `product-engineering` are planned (beads epic `tricorder-8t5`).
+
+The maturity ladder maps onto published practice: rustc's `allow / warn / deny / forbid` lint levels and Google's enforce-in-build versus advise-in-review split both operationalize the same idea. `warn`-level tooling sits at the `convention`/`rule` boundary; `deny` or `forbid` in CI is `deterministic`; documented but unenforced is `rule`; an unwritten team habit is `convention`; a one-off reviewer catch is `judgment`.
 
 ---
 

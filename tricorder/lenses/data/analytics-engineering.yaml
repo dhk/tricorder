@@ -1,0 +1,442 @@
+# Tricorder lens: analytics engineering (dbt / SQL / warehouse modeling)
+# Ported from the v1 prompts and interpret.py LENS_CONTEXT. Evidence: cal-itp/data-infra.
+lens:
+  name: analytics-engineering
+  version: 2
+  status: experimental
+  domain: >-
+    dbt projects and SQL analytics pipelines on BigQuery, Snowflake, Redshift or
+    similar warehouses: staging/intermediate/mart model layers, schema.yml tests
+    and documentation, macros, sources with freshness thresholds, incremental
+    models, and exposures. Reviewers in this domain care about grain, test
+    coverage on keys, naming conventions, source freshness, incremental safety,
+    exposure contracts, documentation, macro complexity, and what SQLFluff and
+    dbt-project-evaluator enforce versus what is left to judgment.
+
+  detection:
+    signals:
+      - pattern: "dbt_project.yml"
+        weight: 10
+        rationale: "Required dbt project manifest."
+        source: "https://docs.getdbt.com/reference/dbt_project.yml"
+      - pattern: "**/dbt_project.yml"
+        weight: 6
+        rationale: "dbt project nested inside a monorepo (e.g. warehouse/)."
+        source: "https://docs.getdbt.com/reference/dbt_project.yml"
+      - pattern: ".sqlfluff"
+        weight: 6
+        rationale: "SQLFluff config; SQL linting gate."
+        source: "https://docs.sqlfluff.com/en/stable/configuration/index.html"
+      - pattern: "**/.sqlfluff"
+        weight: 3
+        rationale: "SQLFluff config nested in a monorepo."
+        source: "https://docs.sqlfluff.com/en/stable/configuration/index.html"
+      - pattern: "profiles.yml"
+        weight: 4
+        rationale: "dbt connection profiles checked in."
+        source: "https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml"
+      - pattern: "**/models/**/*.sql"
+        weight: 3
+        rationale: "dbt model tree."
+        source: "https://docs.getdbt.com/docs/build/models"
+      - pattern: "**/macros/**/*.sql"
+        weight: 3
+        rationale: "dbt macro tree."
+        source: "https://docs.getdbt.com/docs/build/jinja-macros"
+      - pattern: "**/models/**/*.yml"
+        weight: 2
+        rationale: "schema.yml documentation and tests."
+        source: "https://docs.getdbt.com/reference/configs-and-properties"
+      - pattern: "**/tests/**/*.sql"
+        weight: 2
+        rationale: "singular dbt tests."
+        source: "https://docs.getdbt.com/docs/build/data-tests"
+      - pattern: "*.sql"
+        weight: 1
+        rationale: "SQL source anywhere."
+        source: "https://github.com/github-linguist/linguist"
+    counter_signals:
+      - pattern: "src-tauri/tauri.conf.json"
+        weight: -10
+        rationale: "Tauri desktop app; product-engineering-desktop evidence."
+      - pattern: "Cargo.toml"
+        weight: -4
+        rationale: "Rust crate root at repo root."
+      - pattern: "go.mod"
+        weight: -4
+        rationale: "Go module root."
+      - pattern: "pubspec.yaml"
+        weight: -6
+        rationale: "Flutter/Dart app."
+    ignore_for_detection:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - ".agents/**"
+      - ".claude/**"
+      - ".cursor/**"
+      - ".windsurf/**"
+      - ".github/copilot-instructions.md"
+      - "SECURITY.md"
+      - "CODE_OF_CONDUCT.md"
+      - "CONTRIBUTING.md"
+      - "CHANGELOG.md"
+      - "CODEOWNERS"
+      - "LICENSE"
+    min_score: 10
+    min_margin: 5
+    composition_check:
+      languages_expected: [SQL, Python]
+      languages_unexpected: [Rust, TypeScript, Dart, Swift, Kotlin]
+    review_path_check:
+      min_share_of_comments_on_tagged_paths: 0.7
+
+  file_tags:
+    - glob: "**/models/**/*.sql"
+      tag: "dbt-model"
+    - glob: "**/macros/**/*.sql"
+      tag: "dbt-macro"
+    - glob: "**/models/**/*.yml"
+      tag: "dbt-schema"
+    - glob: "**/models/**/*.yaml"
+      tag: "dbt-schema"
+    - glob: "**/tests/**/*.sql"
+      tag: "dbt-test"
+    - glob: "**/seeds/**"
+      tag: "dbt-seed"
+    - glob: "**/snapshots/**"
+      tag: "dbt-snapshot"
+    - glob: "**/analyses/**"
+      tag: "dbt-analysis"
+    - glob: "**/dbt_project.yml"
+      tag: "dbt-config"
+    - glob: "**/packages.yml"
+      tag: "dbt-config"
+    - glob: "**/.sqlfluff"
+      tag: "tool-config"
+    - glob: "**/*.sql"
+      tag: "sql"
+    - glob: "**/*.py"
+      tag: "python"
+    - glob: "**/dags/**"
+      tag: "orchestration"
+    - glob: ".github/workflows/*.yml"
+      tag: "ci"
+    - glob: "**/*.md"
+      tag: "docs"
+    - glob: "**/*.yml"
+      tag: "config"
+    - glob: "**/*.yaml"
+      tag: "config"
+    - glob: "**/*.toml"
+      tag: "config"
+
+  categories:
+    - id: correctness
+      core: true
+      description: "Wrong results: join fan-out, bad filters, off-by-one date logic, type mismatches."
+      example_comment: "This left join to the events table will fan out rows where a session has multiple devices."
+      axes: [grain-clarity]
+    - id: security
+      core: true
+      description: "Access to sensitive columns, credentials in code, PII exposure."
+      example_comment: "This mart exposes raw email addresses; hash them or drop the column."
+      axes: []
+    - id: testing
+      core: true
+      description: "Presence and quality of schema tests: unique, not_null, relationships, accepted_values."
+      example_comment: "Please add unique and not_null tests on the surrogate key in schema.yml."
+      axes: [test-coverage]
+    - id: documentation
+      core: true
+      description: "Model and column descriptions, README accuracy, docs blocks."
+      example_comment: "Every new column needs a description in schema.yml before this merges."
+      axes: [documentation]
+    - id: style
+      core: true
+      description: "SQL formatting, CTE structure, aliasing, lint hygiene."
+      example_comment: "SQLFluff L034 fires here: wildcard ordering; run sqlfluff fix before pushing."
+      axes: [ci-gate-coverage]
+    - id: performance
+      core: true
+      description: "Warehouse cost and runtime: partitioning, clustering, scan size, unnecessary full refreshes."
+      example_comment: "This scans the full events table daily; partition-filter on event_date."
+      axes: [incremental-safety]
+    - id: error-handling
+      core: true
+      description: "Null handling, failing loudly on unexpected values, safe casts."
+      example_comment: "safe_cast silently nulls bad rows; we want this to fail so we notice."
+      axes: []
+    - id: maintainability
+      core: true
+      description: "Model decomposition, duplication across models, dead models, readability."
+      example_comment: "Three marts recompute this rollup; move it into an intermediate model."
+      axes: []
+    - id: dependencies
+      core: true
+      description: "dbt package versions, adapter pins, upstream source ownership."
+      example_comment: "Pin dbt_utils to a minor version; the range here will float to a breaking release."
+      axes: []
+    - id: other
+      core: true
+      description: "Anything that does not fit another category."
+      example_comment: "Flagging for awareness: this changes the semantic layer definition."
+      axes: []
+    - id: grain
+      description: "Row grain of a model: declared, unique, and consistent with its keys."
+      example_comment: "What is the grain of this fact table? One row per order or per order line?"
+      axes: [grain-clarity]
+    - id: naming
+      description: "Model, column, and CTE naming: stg_/int_/fct_/dim_ prefixes, snake_case, reserved words."
+      example_comment: "Rename to stg_stripe__payments so the source system is in the name."
+      axes: [naming-conventions]
+    - id: modeling
+      description: "Layering and dimensional design: staging vs intermediate vs mart, SCD handling, Kimball conformance."
+      example_comment: "Business logic belongs in the intermediate layer, not in staging."
+      axes: [grain-clarity]
+    - id: schema
+      description: "Schema evolution: breaking column changes, contracts, downstream consumers."
+      example_comment: "Dropping this column breaks two dashboards; version the model or keep an alias."
+      axes: [exposure-contracts]
+    - id: incremental
+      description: "Incremental model logic: is_incremental blocks, unique_key, full-refresh safety."
+      example_comment: "The is_incremental filter uses updated_at but the unique_key is id; late-arriving rows will duplicate."
+      axes: [incremental-safety]
+    - id: source-freshness
+      description: "Source freshness thresholds and loaded_at fields."
+      example_comment: "This new source has no freshness config; add warn_after and error_after."
+      axes: [source-freshness]
+    - id: exposure-contract
+      description: "Exposures and model contracts on final marts."
+      example_comment: "Add an exposure for the finance dashboard so we know who depends on this mart."
+      axes: [exposure-contracts]
+    - id: macro-complexity
+      description: "Macro design: testability, documentation, Jinja complexity."
+      example_comment: "This macro has four nested loops and no docstring; split it and document the inputs."
+      axes: [macro-complexity]
+    - id: business-logic
+      description: "Domain rules encoded in SQL: derived fields, conditional logic, spec conformance."
+      example_comment: "Revenue recognition here ignores refunds; the finance spec says net of refunds."
+      axes: [documentation]
+
+  authorities:
+    - id: dbt-style-guide
+      name: "dbt Labs style guide"
+      publisher: "dbt Labs"
+      url: "https://docs.getdbt.com/best-practices/how-we-style/0-how-we-style-our-dbt-projects"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [naming, style, modeling, documentation]
+    - id: dbt-project-evaluator
+      name: "dbt-project-evaluator check catalog"
+      publisher: "dbt Labs"
+      url: "https://github.com/dbt-labs/dbt-project-evaluator"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [testing, documentation, modeling, naming, grain]
+    - id: sqlfluff-rules
+      name: "SQLFluff rule catalog"
+      publisher: "SQLFluff project"
+      url: "https://docs.sqlfluff.com/en/stable/rules.html"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [style]
+    - id: kimball
+      name: "Kimball dimensional modeling techniques"
+      publisher: "Kimball Group"
+      url: "https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [grain, modeling, schema]
+    - id: dbt-testing
+      name: "dbt best practices: writing custom generic tests"
+      publisher: "dbt Labs"
+      url: "https://docs.getdbt.com/best-practices/writing-custom-generic-tests"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [testing]
+    - id: dbt-incremental
+      name: "dbt incremental models"
+      publisher: "dbt Labs"
+      url: "https://docs.getdbt.com/docs/build/incremental-models"
+      kind: primary
+      retrieved: 2026-09-02
+      covers: [incremental, performance]
+    - id: dbt-sources
+      name: "dbt sources and source freshness"
+      publisher: "dbt Labs"
+      url: "https://docs.getdbt.com/docs/build/sources"
+      kind: primary
+      retrieved: 2026-09-02
+      covers: [source-freshness]
+    - id: dbt-contracts
+      name: "dbt model contracts and exposures"
+      publisher: "dbt Labs"
+      url: "https://docs.getdbt.com/docs/collaborate/govern/model-contracts"
+      kind: primary
+      retrieved: 2026-09-02
+      covers: [exposure-contract, schema]
+    - id: google-code-review
+      name: "Google Engineering Practices: code review"
+      publisher: "Google"
+      url: "https://google.github.io/eng-practices/review/"
+      kind: primary
+      retrieved: 2026-06-01
+      covers: [maintainability, documentation]
+
+  axes:
+    - id: grain-clarity
+      question: "Is the grain of each model explicitly declared or unambiguously inferable, and do keys and joins respect it?"
+      categories: [grain, modeling, correctness]
+      authorities: [kimball, dbt-project-evaluator]
+      enforceable_by:
+        - tool: "dbt-project-evaluator"
+          config: "packages.yml"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: test-coverage
+      question: "Are unique, not_null, and relationship tests present on primary and foreign keys of every model?"
+      categories: [testing]
+      authorities: [dbt-testing, dbt-project-evaluator]
+      enforceable_by:
+        - tool: "dbt-project-evaluator"
+          config: "packages.yml"
+          coverage: full
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: naming-conventions
+      question: "Do models follow layer prefixes (stg_, int_, fct_, dim_), snake_case, and source-system naming?"
+      categories: [naming]
+      authorities: [dbt-style-guide, dbt-project-evaluator]
+      enforceable_by:
+        - tool: "dbt-project-evaluator"
+          config: "packages.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: source-freshness
+      question: "Do sources declare freshness thresholds and a loaded_at field, and is freshness checked in CI or orchestration?"
+      categories: [source-freshness]
+      authorities: [dbt-sources]
+      enforceable_by:
+        - tool: "dbt source freshness"
+          config: "**/models/**/*.yml"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: incremental-safety
+      question: "Are incremental models safe: correct unique_key, is_incremental filters that tolerate late data, full-refresh paths tested?"
+      categories: [incremental, performance]
+      authorities: [dbt-incremental]
+      enforceable_by: []
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: exposure-contracts
+      question: "Are final marts exposed and contracted so downstream consumers are known and breaking changes are caught?"
+      categories: [exposure-contract, schema]
+      authorities: [dbt-contracts]
+      enforceable_by:
+        - tool: "dbt model contracts"
+          config: "**/models/**/*.yml"
+          coverage: partial
+      max_maturity: rule
+      phase4_absence_is_finding: true
+    - id: documentation
+      question: "Do models and columns carry descriptions in schema.yml, and are business rules documented where they are encoded?"
+      categories: [documentation, business-logic]
+      authorities: [dbt-style-guide, dbt-project-evaluator]
+      enforceable_by:
+        - tool: "dbt-project-evaluator"
+          config: "packages.yml"
+          coverage: partial
+      max_maturity: deterministic
+      phase4_absence_is_finding: true
+    - id: macro-complexity
+      question: "Are macros small, documented, and testable rather than large Jinja programs?"
+      categories: [macro-complexity]
+      authorities: [dbt-style-guide]
+      enforceable_by: []
+      max_maturity: convention
+      phase4_absence_is_finding: false
+    - id: ci-gate-coverage
+      question: "What is enforced by SQLFluff and dbt-project-evaluator in CI versus litigated in review comments?"
+      categories: [style]
+      authorities: [sqlfluff-rules, dbt-project-evaluator]
+      enforceable_by:
+        - tool: "sqlfluff"
+          config: ".sqlfluff"
+          coverage: full
+      max_maturity: deterministic
+      phase4_absence_is_finding: false
+
+  tooling_gates:
+    - tool: sqlfluff
+      config_file: "**/.sqlfluff"
+      enforces: [style]
+      source: "https://docs.sqlfluff.com/en/stable/rules.html"
+    - tool: dbt-project-evaluator
+      config_file: "**/packages.yml"
+      enforces: [testing, naming, documentation]
+      source: "https://github.com/dbt-labs/dbt-project-evaluator"
+    - tool: pre-commit
+      config_file: ".pre-commit-config.yaml"
+      enforces: [style]
+      source: "https://pre-commit.com/"
+
+  prompt_context:
+    phase1_pr_extraction: |
+      This is a dbt/SQL analytics repository. Comments on model SQL usually
+      concern grain, joins, incremental logic, or naming; comments on
+      schema.yml concern tests and documentation; comments on macros concern
+      Jinja complexity. Use the file tag shown with each comment. When a
+      comment maps to a dbt style-guide rule, a dbt-project-evaluator check,
+      a SQLFluff rule, or a Kimball principle, cite it. When a pattern is
+      checklist-worthy, say so in the signal text.
+    phase2_reviewer_fingerprint: |
+      Meaningful focus areas for this domain: grain declaration on fact
+      models, key test coverage, layer naming, source freshness, incremental
+      safety, exposure contracts, documentation completeness, macro
+      complexity, warehouse cost. A reviewer who only comments on formatting
+      in a repo with SQLFluff in CI adds little signal. Note blind spots as
+      areas the reviewer touches but never reviews.
+    phase3_author_growth: |
+      Judge author growth against this domain: declared grain, tests on keys,
+      layer-correct modeling, safe incremental logic, documented columns,
+      small macros. Support recommendations should point at the dbt style
+      guide, dbt-project-evaluator checks, or Kimball, not generic advice.
+    phase4_team_gaps: |
+      Report gaps only against this lens's axes. Named practices whose absence
+      from the review record is itself a finding: grain declaration, key
+      tests, layer naming, source freshness thresholds, incremental safety,
+      exposure contracts, schema documentation. If SQLFluff or
+      dbt-project-evaluator already enforce a dimension, report it as
+      institutionalized, not as a gap. Cite the dbt style guide,
+      dbt-project-evaluator check names, SQLFluff rules, and Kimball
+      explicitly.
+    interpret: |
+      Summarize for an analytics-engineering team: which review habits are
+      enforced by SQLFluff, dbt-project-evaluator, and CI, and which still
+      depend on human attention. Grain, incremental safety, exposure
+      contracts, and business-logic correctness are the judgment-heavy areas
+      where gaps cost the most. Map quick wins to concrete promotions on the
+      maturity ladder, such as a repeated key-test comment becoming a
+      dbt-project-evaluator gate.
+
+  must_not:
+    - "Recommend React, Tauri, Rust, or mobile-application practices."
+    - "Cite OWASP, the Rust API Guidelines, or Playwright."
+    - "Treat CLAUDE.md, AGENTS.md, or .agents/ content as evidence about the code archetype."
+
+  validation:
+    test_repo: "cal-itp/data-infra"
+    expected_selection: true
+    expected_score_min: 15
+    expected_runner_up: "platform-engineering"
+    evidence:
+      - axis: grain-clarity
+        evidence: "v1 synthesis of cal-itp/data-infra produced grain and modeling patterns as the largest categories."
+    smoke_checks:
+      - "Tauri"
+      - "webview"
+      - "Playwright"
+      - "Rules of Hooks"
