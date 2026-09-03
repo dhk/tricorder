@@ -339,6 +339,36 @@ def authorities_markdown(lens: Lens) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Output validation
+# ---------------------------------------------------------------------------
+
+def coerce_categories(result: dict, lens: Lens) -> int:
+    """Force every Phase 1 pattern category into the lens enum.
+
+    The model occasionally answers with a file tag or a free-text label instead
+    of a category id. Unknown values become ``other`` and the original is kept
+    in ``_category_raw`` so the share of coerced patterns stays visible.
+    Returns the number of patterns coerced.
+    """
+    valid = set(lens.category_ids)
+    n = 0
+    for pt in result.get("patterns", []) or []:
+        cat = pt.get("category")
+        if cat in valid:
+            continue
+        norm = str(cat or "").strip().lower().replace("_", "-").replace(" ", "-")
+        if norm in valid:
+            pt["category"] = norm
+            continue
+        pt["_category_raw"] = cat
+        pt["category"] = "other"
+        n += 1
+    if n:
+        result["_coerced_categories"] = n
+    return n
+
+
+# ---------------------------------------------------------------------------
 # Smoke checks
 # ---------------------------------------------------------------------------
 
