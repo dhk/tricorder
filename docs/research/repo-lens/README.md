@@ -32,3 +32,7 @@ Work is tracked in beads under epic `tricorder-8t5` (label `repo-lens`). Run `bd
 ## Implementation
 
 The lens contract from the handoff prompt is implemented in `tricorder/lenses/` (loader, validator, detection, verification, prompt assembly) with the six lens files under `tricorder/lenses/data/`. Detection results on 2026-09-02: `block/berd` selects `product-engineering-desktop` (score 32, margin 28, both checks pass); `cal-itp/data-infra` is `mixed` with `analytics-engineering` 26 ahead of `platform-engineering` 23; `block/buzz` selects the parent `product-engineering` (11 vs 7) pending a mobile sub-profile.
+
+## Validation
+
+`product-engineering-desktop` passed its production-repository evaluation on block/berd on 2026-09-03: [findings/perplexity-lenses/VALIDATION.md](findings/perplexity-lenses/VALIDATION.md).
