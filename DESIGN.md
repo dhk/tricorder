@@ -238,7 +238,7 @@ Detection scores every lens from the repository's file paths after dropping the 
 |------|--------|--------|----------|
 | `analytics-engineering` | dbt, SQL, warehouse modeling | experimental | cal-itp/data-infra (v1 runs; detection selects it with platform-engineering as a mixed runner-up) |
 | `product-engineering` | product software, parent of the sub-profiles | experimental | fallback when no sub-profile matches |
-| `product-engineering-desktop` | Tauri/Electron-class desktop apps: webview UI + native core | experimental | block/berd: score 32, margin 28, both checks pass |
+| `product-engineering-desktop` | Tauri/Electron-class desktop apps: webview UI + native core | **validated** | block/berd, 2026-09-03: score 32, margin 28, both checks pass, Phase 1 `other` 4%, zero smoke hits, ten on-axis gaps ([record](docs/research/repo-lens/findings/perplexity-lenses/VALIDATION.md)) |
 | `platform-engineering` | IaC, Kubernetes, CI/CD, supply chain | experimental | none yet |
 | `security` | security engineering | experimental | rarely auto-selected; use `--lens security` or `learn --focus-on security` |
 | `agent-engineering` | agent systems, MCP servers, evals | experimental | none yet |

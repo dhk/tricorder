@@ -3,7 +3,7 @@
 lens:
   name: product-engineering-desktop
   version: 1
-  status: experimental
+  status: validated
   extends: product-engineering
   domain: >-
     Cross-platform desktop applications with a web UI shell and a native core —

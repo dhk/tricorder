@@ -76,8 +76,9 @@ context, and prohibitions for one kind of repository. `discover` picks the lens 
 the file tree and can answer `unknown` or `mixed` rather than guess; `learn --dry-run`
 shows the lens, the fit checks, and the exact prompts before any LLM call. Shipped:
 `analytics-engineering`, `product-engineering`, `product-engineering-desktop`,
-`platform-engineering`, `security`, `agent-engineering`. All are experimental until a
-production-repository validation passes. Design: [DESIGN.md](DESIGN.md#discipline-lenses);
+`platform-engineering`, `security`, `agent-engineering`. `product-engineering-desktop` is
+validated on block/berd ([record](docs/research/repo-lens/findings/perplexity-lenses/VALIDATION.md));
+the others are experimental until a production-repository validation passes. Design: [DESIGN.md](DESIGN.md#discipline-lenses);
 evidence: [docs/research/repo-lens](docs/research/repo-lens/README.md).
 
 ## Primary research supporting the methodology
