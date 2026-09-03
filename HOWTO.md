@@ -178,6 +178,13 @@ Phase 1 and Phase 4 system prompts, and makes no LLM calls. Outcomes:
 | `composition_check ✗` | the language mix contradicts the lens | pick another lens, or `--force` |
 | `review_path_check ✗` | reviewers comment on paths the lens cannot tag | pick another lens, or `--force` |
 
+Phase outputs are cached per lens, under `.raw/synthesis/<lens>-v<version>/` (legacy
+caches: `synthesis/<lens>-v<version>/`), and every cached file is stamped with the lens
+that produced it. Switching lenses therefore starts a fresh set of LLM calls rather than
+reusing outputs made under another lens's prompts; a pre-existing flat cache is moved
+into a sub-directory on first use, named from its recorded lens or `pre-lens`.
+`synthesis/current.json` names the directory of the most recent run.
+
 After a run, `learnings.json` records the lens, the checks, the tooling gates, and any
 smoke-check hits (off-domain terms the lens forbids). A run with smoke-check hits exits
 non-zero; its cached phase outputs are kept so you can fix the lens and re-run.
