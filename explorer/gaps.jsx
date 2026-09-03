@@ -11,14 +11,13 @@ const GAP_PANELS = [
 
 function GapItem({ g, tagGroup }) {
   return (
-    <div style={{ padding: "14px 0", borderBottom: "1px solid var(--border)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-        <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 16, lineHeight: 1.3, color: "var(--text)" }}>{g.area}</div>
-        <Tag group={tagGroup} style={{ flexShrink: 0 }}>{g.gap_type.replace("_", " ")}</Tag>
-      </div>
-      <div style={{ marginTop: 8, display: "flex", gap: 7, alignItems: "flex-start" }}>
-        <span style={{ color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: 11, marginTop: 1 }}>§</span>
-        <Mono dim style={{ fontSize: 11, lineHeight: 1.45 }}>{g.standard_citation}</Mono>
+    <div style={{ padding: "12px 0", borderBottom: "1px solid var(--border-light)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 14, lineHeight: 1.35, color: "var(--text)" }}>{g.area}</div>
+      <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <Tag group={tagGroup} size="xs" style={{ flexShrink: 0, marginTop: 1 }}>{g.gap_type.replace("_", " ")}</Tag>
+        {g.standard_citation && (
+          <Mono dim style={{ fontSize: 11, lineHeight: 1.45, flex: 1, minWidth: 160 }}>§ {g.standard_citation}</Mono>
+        )}
       </div>
       <div style={{ marginTop: 9, display: "flex", gap: 6, alignItems: "baseline" }}>
         <span style={{
@@ -43,7 +42,7 @@ function GapPanel({ panel, items }) {
       <div style={{ marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <h3 style={{
-            fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 20, margin: 0,
+            fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 16, margin: 0,
             color: panel.tinted ? "var(--accent-orange)" : "var(--text)",
           }}>{panel.title}</h3>
           <span style={{
@@ -85,7 +84,7 @@ function GapsTab() {
         <TabExplainer
           read="Three kinds of gap. Coverage gap: a standard exists but nobody enforces it in review. Knowledge gap: reviewers raise it, but shallowly or inconsistently. Blind spot: a named best practice from the lens that never appears in any review. Each panel is ordered most critical first, and each item names the standard it maps to and a fix."
           act="Take the blind spots to the team as candidates for a checklist line or a CI gate. Treat knowledge gaps as training or pairing topics. A coverage gap usually means naming an owner. If a gap concerns something the repo's own tooling already enforces, it is a false positive: say so and move on." />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 18, alignItems: "start" }}>
           {GAP_PANELS.map(p => <GapPanel key={p.key} panel={p} items={grouped[p.key]} />)}
         </div>
       </div>
