@@ -80,6 +80,56 @@ shows the lens, the fit checks, and the exact prompts before any LLM call. Shipp
 production-repository validation passes. Design: [DESIGN.md](DESIGN.md#discipline-lenses);
 evidence: [docs/research/repo-lens](docs/research/repo-lens/README.md).
 
+## Primary research supporting the methodology
+
+The lens design is not an opinion about how repositories should be read. It follows a
+commissioned research pass, answered from primary sources, that is checked into this
+repository so the reasoning can be audited and challenged:
+
+- [Tricorder lens research: findings](docs/research/repo-lens/findings/perplexity-findings.md)
+  (2026-09-02). Seven questions, each answered with a verdict table and citations
+  carrying title, publisher, URL, and retrieval date.
+- [The brief](docs/research/repo-lens/brief.md) that traces every question to the code it
+  was meant to fix, and [the handoff prompt](docs/research/repo-lens/handoff-prompt.md)
+  that was sent, including the `block/berd` fingerprint used as the test case.
+- [The lens file the research produced](docs/research/repo-lens/findings/perplexity-lenses/product-engineering-desktop.yaml),
+  now shipped as `tricorder/lenses/data/product-engineering-desktop.yaml`.
+
+What the research established, in brief:
+
+- **Detection** copies the shape of GitHub Linguist: content-only, exclusion-first,
+  maintainer-overridable. Ecosystem manifests (`Cargo.toml`, `package.json`,
+  `tauri.conf.json`) are strong evidence; community-health and AI-assistant files
+  (`SECURITY.md`, `CLAUDE.md`, `AGENTS.md`) appear in repositories of every kind and are
+  excluded from inference. Without that exclusion the previous detector classified a
+  desktop app as an agent-engineering repository.
+- **Taxonomy** follows Backstage's small-core, open-extension model: five top-level
+  archetypes, with `product-engineering` as a parent for desktop, mobile,
+  backend-service, library, and CLI sub-profiles. Archetype describes the artifact being
+  engineered, not its subject matter.
+- **Review standards** per domain come from the maintainers of the tools the repository
+  uses: for a Tauri desktop app, the Tauri security model, the Rust API Guidelines and
+  Clippy, the Rules of React, Playwright's best practices, WCAG 2.2.
+- **The maturity ladder** (`judgment → guidance → convention → rule → deterministic`)
+  maps onto rustc's `allow / warn / deny / forbid` lint levels and Google's
+  enforce-in-build versus advise-in-review split (Sadowski et al., ICSE 2015 and CACM
+  2018).
+- **Review-comment categories** rest on the modern-code-review literature (Mäntylä and
+  Lassenius 2009; Beller et al. 2014; Bacchelli and Bird 2013; Sadowski et al. 2018):
+  roughly three quarters of review findings are maintainability rather than functional
+  across languages and organisations, which justifies a domain-neutral core with
+  per-lens extensions.
+- **Thresholds are a design choice.** No published classifier exposes an abstention
+  threshold for this problem, so `min_score` and `min_margin` are engineering values to
+  be calibrated on a labelled corpus, and the tool reports `unknown` or `mixed` rather
+  than guess.
+
+The research also records what it could not settle, in its
+[open gaps](docs/research/repo-lens/findings/perplexity-findings.md#open-gaps): no
+authoritative `unsafe`-Rust checklist, partial Biome coverage of the React hook rules,
+no primary standard for desktop telemetry review or for infrastructure-as-code change
+semantics. Those limits are carried into the lenses as maturity ceilings, not papered over.
+
 ## Credentials
 
 `analyze` checks `GITHUB_TOKEN`, then `gh auth token`, then supported macOS
