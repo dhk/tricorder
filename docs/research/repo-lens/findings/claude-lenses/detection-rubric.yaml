@@ -1,0 +1,214 @@
+# Shared detection rubric for Tricorder lenses
+# Source: Claude (independent pass, Claude Code subagent), 2026-09-03
+#
+# This file holds the rules that are not expressible inside a single lens file:
+# scoring semantics, the global ignore list, the abstention policy, the mixed-
+# repository policy, and the post-selection checks. Lens files carry their own
+# signals, counter_signals, min_score and min_margin; this rubric says how those
+# numbers are combined across lenses.
+
+rubric:
+  version: 1
+
+  # ---------------------------------------------------------------------------
+  # 1. Inputs. Everything is derivable from a tree listing plus the GitHub
+  #    languages API. No execution, no API key beyond read access.
+  # ---------------------------------------------------------------------------
+  inputs:
+    tree: "recursive listing of the default branch (paths only)"
+    language_bytes: "GitHub 'List repository languages' response; values are bytes of code per language after Linguist's vendored/generated/documentation exclusions"
+    review_comment_paths: "optional; file paths of inline review comments from the harvested PRs (used only by post-selection checks)"
+
+  # ---------------------------------------------------------------------------
+  # 2. Preprocessing. Mirrors Linguist: strip vendored, generated and
+  #    documentation paths, then strip files that appear in repositories of
+  #    every kind and therefore carry no archetype information.
+  # ---------------------------------------------------------------------------
+  preprocessing:
+    honor_gitattributes_overrides: true   # linguist-vendored, linguist-generated, linguist-documentation, linguist-detectable
+    drop_vendored_paths:
+      source: "https://github.com/github-linguist/linguist/blob/main/lib/linguist/vendor.yml"
+      patterns:
+        - "**/node_modules/**"
+        - "**/dist/**"
+        - "**/vendor/**"
+        - "**/bower_components/**"
+        - "**/third_party/**"
+        - "**/3rdparty/**"
+        - "**/*.min.js"
+        - "**/*.min.css"
+        - "**/.yarn/releases/**"
+        - "**/target/**"           # Cargo build output when accidentally committed
+    drop_documentation_paths:
+      source: "https://github.com/github-linguist/linguist/blob/main/lib/linguist/documentation.yml"
+      patterns:
+        - "docs/**"
+        - "doc/**"
+        - "**/documentation/**"
+        - "**/examples/**"
+        - "**/samples/**"
+        - "README*"
+        - "CHANGELOG*"
+        - "CONTRIBUTING*"
+        - "LICENSE*"
+        - "LICENCE*"
+        - "COPYING*"
+        - "CITATION*"
+    # Files that must not influence ANY lens. Union of every lens's
+    # ignore_for_detection; listed here so the rule is global and auditable.
+    ignore_for_detection:
+      ai_assistant_config:
+        rationale: "Read by coding agents in repositories of every kind. AGENTS.md is used by over 60k open-source projects and is described as a README for agents, not a statement of what the repository is; CLAUDE.md is Claude Code's per-project instruction file for any project; .cursor/rules is Cursor's per-project rule directory."
+        sources:
+          - "https://agents.md/"
+          - "https://code.claude.com/docs/en/memory"
+          - "https://cursor.com/docs/context/rules"
+        patterns:
+          - "CLAUDE.md"
+          - "CLAUDE.local.md"
+          - "**/CLAUDE.md"
+          - ".claude/**"
+          - "AGENTS.md"
+          - "**/AGENTS.md"
+          - ".agents/**"
+          - ".cursor/**"
+          - ".cursorrules"
+          - ".github/copilot-instructions.md"
+          - ".windsurf/**"
+          - ".windsurfrules"
+          - ".clinerules"
+          - ".devin/**"
+          - "GEMINI.md"
+          - ".gemini/**"
+      community_and_policy_files:
+        rationale: "SECURITY.md is an OpenSSF Scorecard check (Security-Policy) applicable to any project; CODEOWNERS, CODE_OF_CONDUCT.md, CONTRIBUTING.md, GOVERNANCE.md and LICENSE are GitHub community files with no archetype signal."
+        sources:
+          - "https://github.com/ossf/scorecard/blob/main/docs/checks.md"
+          - "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"
+        patterns:
+          - "SECURITY.md"
+          - "CODE_OF_CONDUCT.md"
+          - "CONTRIBUTING.md"
+          - "GOVERNANCE.md"
+          - "CODEOWNERS"
+          - ".github/CODEOWNERS"
+          - "docs/CODEOWNERS"
+          - "LICENSE"
+          - "LICENCE"
+      ci_and_pr_scaffolding:
+        rationale: "CI workflows and PR templates exist in every archetype; Linguist itself treats .github/ as vendored. A platform-engineering repository is identified by the infrastructure it owns, not by having CI."
+        sources:
+          - "https://github.com/github-linguist/linguist/blob/main/lib/linguist/vendor.yml"
+        patterns:
+          - ".github/workflows/**"
+          - ".github/PULL_REQUEST_TEMPLATE.md"
+          - ".github/ISSUE_TEMPLATE/**"
+          - ".gitlab-ci.yml"
+          - ".circleci/**"
+
+  # ---------------------------------------------------------------------------
+  # 3. Scoring semantics.
+  # ---------------------------------------------------------------------------
+  scoring:
+    per_pattern_contribution: "at most once"   # a signal contributes its weight if >=1 path matches; matching 200 files does not add more
+    counter_signals: "summed the same way, with negative weights"
+    sub_profiles:
+      rule: "A sub-profile (lens with `extends`) competes as its own candidate. If a sub-profile wins, its parent is implied and is not reported as the runner-up; the runner-up is the best-scoring lens from a different family."
+    tie_break: "none; ties fall into the mixed/abstain branch below"
+
+  # ---------------------------------------------------------------------------
+  # 4. Abstention policy (Chow's reject option, applied to a score margin).
+  #    Rationale: a classifier should decline to label when its best score is
+  #    below a threshold or when the lead over the runner-up is small. See
+  #    findings Q6.
+  # ---------------------------------------------------------------------------
+  abstention:
+    min_score: 10        # per-lens value overrides this default
+    min_margin: 5        # per-lens value overrides this default
+    outcomes:
+      - name: selected
+        when: "best.score >= best.min_score AND (best.score - runner_up.score) >= best.min_margin"
+      - name: mixed
+        when: "best.score >= best.min_score AND margin < best.min_margin"
+        action: "Do not run synthesis. Report both candidates with scores and the matched signals. Offer primary-plus-secondary (below) if the two lenses tag disjoint path sets."
+      - name: unknown
+        when: "best.score < best.min_score"
+        action: "Do not run synthesis. Report the top three candidates and the matched signals; ask the user to pick a lens or add signals."
+
+  # ---------------------------------------------------------------------------
+  # 5. Mixed repositories: primary-plus-secondary with per-path tagging.
+  #    A monorepo whose packages are declared by the package manager (Cargo
+  #    [workspace] members, pnpm-workspace.yaml packages, package.json
+  #    workspaces) may be partitioned per package and each package scored on
+  #    its own.
+  # ---------------------------------------------------------------------------
+  mixed_repositories:
+    strategy: "primary-plus-secondary"
+    primary: "the selected lens supplies categories, axes, authorities, prompt_context and Phase 4 blind-spot detection"
+    secondary:
+      when: "a second lens scores >= its min_score and its file_tags cover >= 15% of review-comment paths that the primary's file_tags do not"
+      contributes: "file_tags for the paths it covers, its categories as additional Phase 1 options for comments on those paths, and its must_not list"
+      does_not_contribute: "Phase 4 blind-spot axes (absence findings come only from the primary lens)"
+    partition_units:
+      - manifest: "Cargo.toml with [workspace]"
+        members_key: "workspace.members (globs)"
+        source: "https://doc.rust-lang.org/cargo/reference/workspaces.html"
+      - manifest: "pnpm-workspace.yaml"
+        members_key: "packages (globs); root package always included"
+        source: "https://pnpm.io/pnpm-workspace_yaml"
+      - manifest: "package.json"
+        members_key: "workspaces (paths)"
+        source: "https://docs.npmjs.com/cli/v10/using-npm/workspaces"
+      - manifest: "go.mod"
+        members_key: "one module root per go.mod"
+        source: "https://go.dev/ref/mod#go-mod-file"
+    per_path_precedence: "last matching file_tags entry wins within a lens (CODEOWNERS semantics); the secondary lens's tags apply only on paths the primary does not tag"
+
+  # ---------------------------------------------------------------------------
+  # 6. Post-selection checks. Run before any synthesis is paid for.
+  # ---------------------------------------------------------------------------
+  post_selection_checks:
+    - id: composition_check
+      input: language_bytes
+      rule: "Every language in the lens's languages_unexpected that holds > 5% of code bytes flags the selection. Every language in languages_expected is informational. If the top language by bytes is in no lens's languages_expected, flag."
+      on_flag: "downgrade outcome to mixed"
+    - id: review_path_check
+      input: review_comment_paths
+      rule: "Share of inline review comments whose path matches at least one lens file_tags glob must be >= min_share_of_comments_on_tagged_paths (default 0.7). Comments on untagged paths are listed by top-level directory."
+      on_flag: "downgrade outcome to mixed and list the untagged directories"
+    - id: counter_signal_check
+      input: tree
+      rule: "If any counter_signal of the selected lens matched, report it alongside the selection so a human can see what argued against the choice."
+      on_flag: "informational"
+    - id: smoke_check
+      input: "phase outputs"
+      rule: "After synthesis, no string in the selected lens's validation.smoke_checks may appear in any phase output (case-insensitive)."
+      on_flag: "mark the run invalid; do not publish the report"
+
+  # ---------------------------------------------------------------------------
+  # 7. Worked example: block/berd (fingerprint from handoff-prompt.md Part 3).
+  # ---------------------------------------------------------------------------
+  worked_example:
+    repo: "block/berd"
+    observed_after_preprocessing:
+      - "src-tauri/**  (confirmed from review-comment paths)"
+      - "src/**  (confirmed from review-comment paths)"
+      - "bb-cli/**, crates/**, distro/**, docker/**, scripts/**, LAWS/**"
+      - "package.json, pnpm-workspace.yaml, pnpm-lock.yaml, biome.json, index.html, playwright.config.ts, playwright.table-overflow.config.ts, lefthook.yml, justfile, postcss.config.js, TELEMETRY.md, PRODUCT.md, DESIGN.md, app-icon.png, *.lock.json"
+      - "*.swift and *.m files (7 and 4 review comments respectively; 28,306 and 76,479 bytes)"
+      - "Dockerfile under docker/ (2,561 bytes)"
+    ignored: "CLAUDE.md, AGENTS.md, .agents/**, SECURITY.md, CODEOWNERS, CODE_OF_CONDUCT.md, CONTRIBUTING.md, GOVERNANCE.md, LICENSE, README.md, CHANGELOG.md, .github/workflows/**, docs/**"
+    scores:
+      product-engineering-desktop:
+        confirmed_only: "src-tauri/** 8 + **/*.swift 2 + **/*.m 2 + distro/** 2 + playwright.config.ts 2 + index.html 2 + biome.json 1 = 19"
+        if_standard_tauri_layout: "+ src-tauri/tauri.conf.json 10 + src-tauri/Cargo.toml 3 + src-tauri/capabilities/** 3 = 35"
+        counter_signals_matched: "none confirmed (no .tf, helm, k8s, xcodeproj in the listing; docker-compose not listed)"
+      platform-engineering:
+        confirmed_only: "**/Dockerfile 4; counter src-tauri/** -6 => -2 (floored at 0 for reporting)"
+      agent-engineering: "0 after ignore list (CLAUDE.md and .agents/** removed)"
+      security: "0 after ignore list (SECURITY.md removed)"
+      analytics-engineering: "0 (no dbt_project.yml, no .sqlfluff, no SQL)"
+    outcome: "selected: product-engineering-desktop, score 19 (confirmed) to 35 (expected), margin >= 15 over platform-engineering"
+    composition_check: "TypeScript 76.8% and Rust 19.0% of bytes are both in languages_expected; no languages_unexpected above 5% (HCL 60 bytes, no SQL). Pass."
+    review_path_check: "src/ 267 + src-tauri/ 168 + bb-cli/ 26 + scripts/ 4 + LAWS/ 4 + .github/ 2 = 471 of 471 comment paths match a file_tags glob (1.00 >= 0.7). Pass."
+    current_tricorder_detector: "agent-engineering 11 (CLAUDE.md 6 + .agents/ 5) > security 8 > platform-engineering 7 (Dockerfile 5 + workflows 2) > product-engineering 5 (package.json). Selects agent-engineering: wrong."

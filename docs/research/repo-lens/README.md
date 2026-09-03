@@ -8,7 +8,7 @@ Opened 2026-09-02. Motivated by the known limitation recorded in [SKILL.md](../.
 1. [brief.md](brief.md) — the research questions, each traced to the code or design decision it is meant to fix.
 2. [findings/](findings/) — one file per independent source, named `<source-slug>-findings.md`, all following [findings/TEMPLATE.md](findings/TEMPLATE.md). Lens YAML files from a source go in `findings/<source-slug>-lenses/`.
 3. [handoff-prompt.md](handoff-prompt.md) — the brief, the Tricorder contract, the `block/berd` fingerprint, and the output format bundled into one self-contained prompt for a tool or person with no repository access. Copy it into Perplexity as-is.
-4. `synthesis.md` — written only after two or more findings files exist. Per question: where sources agree, where they conflict and which is more credible, what only one source caught, and what remains unanswered.
+4. [synthesis.md](synthesis.md) — the two passes compared per question: where they agree, where they conflict and which is more credible, what only one caught, what remains open, and the changes the comparison triggers.
 
 ## Why findings stay independent until synthesis
 
@@ -22,8 +22,8 @@ Each source answers the same brief without seeing the others' work. If a second 
 | Scaffold | written |
 | Handoff prompt | sent to Perplexity 2026-09-02 |
 | Findings: Perplexity | received 2026-09-02, promoted to [`tricorder-lens-methodology-research.md`](tricorder-lens-methodology-research.md) ("How tricorder reads and recognizes a repository"); lens file at `findings/perplexity-lenses/product-engineering-desktop.yaml`. Referenced `platform-engineering.yaml` and `detection-rubric.yaml` were not delivered (tracked as tricorder-8t5.10) |
-| Findings: Claude | not started (tricorder-8t5.11) |
-| Synthesis | blocked on the Claude findings pass (tricorder-8t5.11) |
+| Findings: Claude | received 2026-09-03: `findings/claude-findings.md` (101 citations) + `findings/claude-lenses/` (desktop, platform, detection rubric); independent, barred from the Perplexity documents and the shipped lenses |
+| Synthesis | written 2026-09-03: [synthesis.md](synthesis.md); five follow-up beads filed (tricorder-8t5.19 to .23) |
 
 ## Tracking
 
