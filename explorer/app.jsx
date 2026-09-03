@@ -1,6 +1,7 @@
 // app.jsx — shell: top bar + tab nav + mount
 
 const TABS = [
+  { id: "intro",        label: "Start Here",            Comp: ({ onSelect }) => <IntroTab onSelect={onSelect} /> },
   { id: "pipeline",     label: "Maturity Pipeline",     Comp: () => <PipelineTab /> },
   { id: "coverage",     label: "Pattern Coverage",      Comp: () => <CoverageTab /> },
   { id: "gaps",         label: "Team Gaps",             Comp: () => <GapsTab /> },
@@ -161,7 +162,7 @@ function TabBar({ active, onSelect }) {
       {TABS.map(t => {
         const on = t.id === active;
         return (
-          <button key={t.id} onClick={() => onSelect(t.id)}
+          <button key={t.id} data-tab={t.id} onClick={() => onSelect(t.id)}
             style={{
               all: "unset", cursor: "pointer", whiteSpace: "nowrap",
               display: "inline-flex", alignItems: "center",
@@ -183,7 +184,7 @@ function TabBar({ active, onSelect }) {
 
 function App() {
   const initial = (window.location.hash || "").replace("#", "");
-  const [active, setActive] = useState(TABS.some(t => t.id === initial) ? initial : "pipeline");
+  const [active, setActive] = useState(TABS.some(t => t.id === initial) ? initial : "intro");
   const [showAbout, setShowAbout] = useState(false);
 
   useEffect(() => { window.location.hash = active; }, [active]);
@@ -196,7 +197,7 @@ function App() {
       <TopBar onAbout={() => setShowAbout(true)} />
       <TabBar active={active} onSelect={setActive} />
       <main style={{ flex: 1, minHeight: 0, overflowY: needsFullHeight ? "hidden" : "auto", display: "flex", flexDirection: "column" }}>
-        <tab.Comp />
+        <tab.Comp onSelect={setActive} />
       </main>
       <Onboarding active={active} setActive={setActive} />
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}

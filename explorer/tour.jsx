@@ -119,6 +119,13 @@ function Onboarding({ active, setActive }) {
     if (!seen) setStep(0);
   }, []);
 
+  // the Start Here tab can relaunch the tour
+  useEffect(() => {
+    const handler = () => setStep(0);
+    window.addEventListener("tricorder:tour", handler);
+    return () => window.removeEventListener("tricorder:tour", handler);
+  }, []);
+
   const finish = () => {
     try { localStorage.setItem(TOUR_KEY, "1"); } catch (e) {}
     setStep(-1);
@@ -132,9 +139,8 @@ function Onboarding({ active, setActive }) {
     if (!cur || cur.kind !== "tab") { setRect(null); return; }
     if (active !== cur.tab) setActive(cur.tab);
     const measure = () => {
-      const btns = document.querySelectorAll("nav button");
-      // tab order index = step-1 (step 0 is intro)
-      const el = btns[step - 1];
+      // anchor by tab id, so adding or reordering tabs cannot desync the spotlight
+      const el = document.querySelector(`nav button[data-tab="${cur.tab}"]`);
       if (el) setRect(el.getBoundingClientRect());
     };
     const raf = requestAnimationFrame(() => requestAnimationFrame(measure));
@@ -168,7 +174,7 @@ function Onboarding({ active, setActive }) {
             tricorder reads those threads and returns a structured map of what your team knows, and what it doesn't.
           </p>
           <p style={{ margin: "0 0 22px", fontFamily: "var(--font-sans)", fontWeight: 300, fontSize: 14, lineHeight: 1.55, color: "var(--text-dim)" }}>
-            This is a live, early prototype running on a sample analysis of <Mono style={{ fontSize: 13 }}>cal-itp/data-infra</Mono>. Take the 60-second tour, or dig in yourself.
+            This is a live, early prototype running on an analysis of <Mono style={{ fontSize: 13 }}>{DATA.repo}</Mono>. Take the 60-second tour, or start with the <Mono style={{ fontSize: 13 }}>Start Here</Mono> tab.
           </p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <TourButton onClick={() => setStep(1)}>Take the tour</TourButton>

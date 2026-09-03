@@ -33,7 +33,7 @@ from tricorder.llm import build_llm_provider
 CACHE_BASE       = Path.home() / ".learn-from-work" / "cache"
 _DEFAULT_OUT     = Path.home() / "Documents" / "dev" / "adventures-in-ai" / "tricorder"
 OUTPUT_BASE      = _DEFAULT_OUT if _DEFAULT_OUT.exists() else Path("output")
-MAX_TOKENS       = 2048
+MAX_TOKENS       = 8192
 
 
 # ── file type detection ───────────────────────────────────────────────────────
