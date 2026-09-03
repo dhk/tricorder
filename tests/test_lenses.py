@@ -57,6 +57,13 @@ DBT_LANG_BYTES = {"SQL": 900000, "Python": 120000, "Shell": 4000}
 BARE_PATHS = ["README.md", "LICENSE", "CLAUDE.md", "AGENTS.md", ".agents/skills/x/SKILL.md",
               "SECURITY.md", "notes.txt"]
 
+# A single-package Flutter app as `flutter create` lays it out.
+FLUTTER_PATHS = [
+    "pubspec.yaml", "lib/main.dart", "lib/src/x.dart", "android/app/build.gradle",
+    "ios/Runner/Info.plist", "test/widget_test.dart", "analysis_options.yaml",
+    "README.md", "CLAUDE.md",
+]
+
 
 class GlobTests(unittest.TestCase):
     def test_root_only_exact(self):
@@ -91,7 +98,8 @@ class LoaderTests(unittest.TestCase):
     def test_all_shipped_lenses_load(self):
         lenses = load_all()
         for name in ("analytics-engineering", "product-engineering", "product-engineering-desktop",
-                     "platform-engineering", "security", "agent-engineering"):
+                     "product-engineering-mobile", "platform-engineering", "security",
+                     "agent-engineering"):
             self.assertIn(name, lenses)
         desk = lenses["product-engineering-desktop"]
         self.assertEqual(desk.archetype, "product-engineering")
@@ -157,6 +165,21 @@ class DetectionTests(unittest.TestCase):
         self.assertIn("biome", gates)
         self.assertIn("lefthook", gates)
         self.assertNotIn("cargo-deny", gates)
+
+    def test_flutter_repo_selects_mobile_and_berd_still_desktop(self):
+        r = detect(FLUTTER_PATHS)
+        self.assertEqual(r.state, "selected", r.scores)
+        self.assertEqual(r.selected, "product-engineering-mobile")
+        self.assertGreaterEqual(r.margin, 5)
+        # the desktop lens is pushed negative by its pubspec counter-signal
+        self.assertLess(r.scores.get("product-engineering-desktop", 0), 0)
+        gates = {g["tool"] for g in r.tooling_gates_present}
+        self.assertIn("dart-analyzer", gates)
+        # adding the mobile lens must not disturb the validated desktop selection
+        b = detect(BERD_PATHS)
+        self.assertEqual(b.state, "selected", b.scores)
+        self.assertEqual(b.selected, "product-engineering-desktop")
+        self.assertLess(b.scores.get("product-engineering-mobile", 0), 0)
 
     def test_agent_files_alone_do_not_select_agent_lens(self):
         r = detect(BARE_PATHS)
