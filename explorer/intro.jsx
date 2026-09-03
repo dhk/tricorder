@@ -57,7 +57,7 @@ function IntroProse({ children, dim, style }) {
   return (
     <p style={{
       margin: "0 0 10px", fontFamily: "var(--font-sans)",
-      fontWeight: dim ? 300 : 400, fontSize: dim ? 14 : 15, lineHeight: 1.6,
+      fontWeight: 400, fontSize: dim ? 14 : 15, lineHeight: 1.6,
       color: dim ? "var(--text-dim)" : "var(--text)", ...style,
     }}>{children}</p>
   );
