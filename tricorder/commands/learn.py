@@ -39,7 +39,9 @@ from tricorder.lenses import Lens, LensError, load_all
 from tricorder.lenses.detect import (
     composition_check, detect, fetch_github, github_token, review_path_check,
 )
-from tricorder.lenses.prompting import authorities_markdown, secondary_block, smoke_check, system_prompt
+from tricorder.lenses.prompting import (
+    authorities_markdown, coerce_categories, secondary_block, smoke_check, system_prompt,
+)
 from tricorder.lenses.cache import load_cached, save_cached, synthesis_dir, write_current
 
 
@@ -979,6 +981,7 @@ def run(args: list[str]) -> int:
         result = _call_llm(client, sys_p1, payload)
         result["_pr_number"] = num
         result["_author"] = pr.get("author", "unknown")
+        coerce_categories(result, lens)
         save_cached(cache_path, result, lens)
         pr_results.append(result)
 
