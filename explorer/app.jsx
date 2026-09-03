@@ -12,10 +12,10 @@ const TABS = [
 function PrivateBadge() {
   return (
     <span style={{
-      fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 500,
+      fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
       textTransform: "uppercase", letterSpacing: "0.07em",
-      color: "#15803d", background: "rgba(22,163,74,0.10)",
-      border: "1px solid rgba(22,163,74,0.20)", borderRadius: "var(--border-radius)",
+      color: "var(--accent)", background: "rgba(43,80,232,0.10)",
+      border: "1px solid rgba(43,80,232,0.20)", borderRadius: "var(--radius)",
       padding: "1px 5px", lineHeight: 1.3, marginLeft: 7,
     }}>private</span>
   );
@@ -33,10 +33,9 @@ function AboutModal({ onClose }) {
       onClick={onClose}
       style={{
         position: "fixed", inset: 0, zIndex: 200,
-        background: "rgba(10,10,9,0.35)",
+        background: "rgba(13,15,26,0.35)",
         display: "flex", alignItems: "flex-start", justifyContent: "flex-end",
         padding: "60px 32px 0",
-        animation: "fadeIn 120ms ease",
       }}
     >
       <div
@@ -45,19 +44,18 @@ function AboutModal({ onClose }) {
           position: "relative",
           background: "var(--bg)", border: "1px solid var(--border)",
           borderRadius: 6, padding: "28px 32px 24px",
-          width: 340, boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-          animation: "fadeIn 150ms ease",
+          width: 340,
         }}
       >
         {/* wordmark + version */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
           <div style={{
-            fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 20,
+            fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 20,
             letterSpacing: "0.005em",
           }}>tricorder</div>
           {DATA.version && (
             <span style={{
-              fontFamily: "var(--font-mono)", fontSize: 10.5,
+              fontFamily: "var(--font-mono)", fontSize: 11,
               color: "var(--text-dim)", letterSpacing: "0.04em",
             }}>v{DATA.version}</span>
           )}
@@ -82,7 +80,7 @@ function AboutModal({ onClose }) {
           ].map(({ label, value, href }) => (
             <div key={label} style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <span style={{
-                fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-dim)",
+                fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-dim)",
                 textTransform: "uppercase", letterSpacing: "0.07em", minWidth: 62,
               }}>{label}</span>
               <a href={href} target={href.startsWith("http") ? "_blank" : undefined}
@@ -90,7 +88,7 @@ function AboutModal({ onClose }) {
                 style={{
                   fontFamily: "var(--font-mono)", fontSize: 12.5,
                   color: "var(--accent)", textDecoration: "none",
-                  borderBottom: "1px solid transparent", transition: "border-color 120ms",
+                  borderBottom: "1px solid transparent", transition: "color 0.15s, background 0.15s, border-color 0.15s",
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = "var(--accent)"}
                 onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = "transparent"}
@@ -119,8 +117,11 @@ function TopBar({ onAbout }) {
       background: "var(--bg)", flexWrap: "wrap",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-        <div style={{ fontFamily: "var(--font-cond)", fontWeight: 700, fontSize: 26, letterSpacing: "0.005em", lineHeight: 1 }}>
-          tricorder
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+          <div style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 22, letterSpacing: "-0.02em", lineHeight: 1 }}>
+            tricorder
+          </div>
         </div>
         <WipMark />
       </div>
@@ -143,7 +144,7 @@ function TopBar({ onAbout }) {
           all: "unset", cursor: "pointer",
           fontFamily: "var(--font-mono)", fontSize: 12.5,
           color: "var(--text-dim)", whiteSpace: "nowrap",
-          borderBottom: "1px solid transparent", transition: "color 120ms, border-color 120ms",
+          borderBottom: "1px solid transparent", transition: "color 0.15s, background 0.15s, border-color 0.15s",
         }}
           onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderBottomColor = "var(--border)"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-dim)"; e.currentTarget.style.borderBottomColor = "transparent"; }}
@@ -166,12 +167,12 @@ function TabBar({ active, onSelect }) {
             style={{
               all: "unset", cursor: "pointer", whiteSpace: "nowrap",
               display: "inline-flex", alignItems: "center",
-              fontFamily: "var(--font-mono)", fontSize: 12, textTransform: "uppercase",
-              letterSpacing: "0.07em",
-              color: on ? "var(--text)" : "var(--text-dim)",
+              fontFamily: "var(--font-mono)", fontSize: 11, textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              color: on ? "var(--accent)" : "var(--text-dim)",
               padding: "14px 14px 12px",
-              borderBottom: `3px solid ${on ? "var(--accent)" : "transparent"}`,
-              transition: "color 120ms ease, border-color 120ms ease",
+              borderBottom: `2px solid ${on ? "var(--accent)" : "transparent"}`,
+              transition: "color 0.15s, background 0.15s, border-color 0.15s",
             }}
             onMouseEnter={(e) => { if (!on) e.currentTarget.style.color = "var(--text)"; }}
             onMouseLeave={(e) => { if (!on) e.currentTarget.style.color = "var(--text-dim)"; }}
