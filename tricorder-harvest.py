@@ -344,10 +344,17 @@ def harvest(args):
             merged_dt = datetime.fromisoformat(
                 pr["merged_at"].replace("Z", "+00:00"))
 
-            # Stop if we've gone past our window
+            # Results are sorted by updated_at desc, not merged_at, so an old
+            # PR with recent activity can appear early. Skip out-of-window PRs
+            # and only stop once updated_at itself is before the window
+            # (merged_at <= updated_at, so nothing later can be in-window).
             if since_dt and merged_dt < since_dt:
-                done = True
-                break
+                updated_dt = datetime.fromisoformat(
+                    (pr.get("updated_at") or pr["merged_at"]).replace("Z", "+00:00"))
+                if updated_dt < since_dt:
+                    done = True
+                    break
+                continue
 
             if pr["number"] in seen_numbers:
                 continue

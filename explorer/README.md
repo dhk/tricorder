@@ -4,12 +4,13 @@ The [live explorer](https://dhk.github.io/tricorder/explorer/) contains sample d
 Do not publish a generated `data.js` until it has passed the privacy review in
 [docs/PRIVACY.md](../docs/PRIVACY.md).
 
-The interactive React artifact for a synthesis run. Five tabs over the output of
-`tricorder learn`, in priority order (maturity pipeline is the action output, so
-it leads):
+The interactive React artifact for a synthesis run. An orientation tab followed by
+five data tabs over the output of `tricorder learn`, in priority order (maturity
+pipeline is the action output, so it leads the data tabs):
 
 | Tab | Reads | Shows |
 |-----|-------|-------|
+| Start Here | run summary fields | orientation: what tricorder is about, the four-step pipeline, how to read each tab, the maturity ladder, gap types, colour legend, caveats, and links back to the repo. Default tab on first load |
 | Maturity Pipeline | `patterns[]` | read-only kanban, `judgment → guidance → convention → rule → deterministic`; the two actionable columns carry a green wash |
 | Pattern Coverage | `patterns[]` | reviewer × 9-dimension coverage grid (discrete green steps, not a heat map); click a cell for quoted evidence |
 | Team Gaps | `gaps[]` | coverage / knowledge / blind-spot panels, most-critical first |
