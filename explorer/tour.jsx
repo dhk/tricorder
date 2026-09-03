@@ -202,7 +202,7 @@ function Onboarding({ active, setActive }) {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
             {[
-              { label: "repo",    value: REPO_URL.replace("https://", "") + " ↗", href: REPO_URL },
+              { label: "writing", value: "www.dhk.io ↗", href: "https://www.dhk.io", note: "DHK's writing and research" },
               { label: "contact", value: "tricorder@dhk.io", href: "mailto:tricorder@dhk.io", note: "the author" },
             ].map(({ label, value, href, note }) => (
               <div key={label} style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
