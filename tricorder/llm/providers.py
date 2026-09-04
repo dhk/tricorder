@@ -41,39 +41,38 @@ class AnthropicProvider(LLMProvider):
     name: str = "anthropic"
 
     def generate(self, system: str, user: str, max_tokens: int) -> str:
-        # Two layers. The SDK timeout covers the normal case. The alarm is a
-        # backstop for a request that never completes and never times out
-        # (observed on 2026-09-03: a call held an open socket for an hour at
-        # zero CPU). Alarm only works on the main thread of a Unix process;
-        # elsewhere we fall through to the SDK timeout alone.
-        import signal
+        # The SDK's own timeout has been observed not to end a call whose TLS
+        # read blocks (2026-09-03: one call held a socket for an hour at zero
+        # CPU), and an alarm raised inside the SDK's read is caught by its retry
+        # loop. So the call runs on a daemon thread and the caller waits with a
+        # hard wall-clock budget; a call that never returns is abandoned and
+        # reported as LLMCallTimeout, which the scripts' retry path handles.
         import threading
 
         budget = call_budget_s(max_tokens)
+        box: dict = {}
 
         def _call():
-            msg = self.client.messages.create(
-                model=self.model,
-                max_tokens=max_tokens,
-                system=system,
-                messages=[{"role": "user", "content": user}],
-                timeout=float(max(30, budget - 15)),
-            )
-            return msg.content[0].text
+            try:
+                msg = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=max_tokens,
+                    system=system,
+                    messages=[{"role": "user", "content": user}],
+                    timeout=float(max(30, budget - 15)),
+                )
+                box["text"] = msg.content[0].text
+            except BaseException as e:  # noqa: BLE001 - surface anything the SDK raises
+                box["error"] = e
 
-        if threading.current_thread() is not threading.main_thread() or not hasattr(signal, "SIGALRM"):
-            return _call()
-
-        def _alarm(signum, frame):
-            raise LLMCallTimeout(f"model call exceeded {budget}s wall clock")
-
-        previous = signal.signal(signal.SIGALRM, _alarm)
-        signal.alarm(budget)
-        try:
-            return _call()
-        finally:
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, previous)
+        worker = threading.Thread(target=_call, name="anthropic-call", daemon=True)
+        worker.start()
+        worker.join(budget)
+        if worker.is_alive():
+            raise LLMCallTimeout(f"model call exceeded {budget}s wall clock; abandoned")
+        if "error" in box:
+            raise box["error"]
+        return box["text"]
 
 
 @dataclass
@@ -129,7 +128,7 @@ def build_provider(config, api_key: str):
 
         return AnthropicProvider(
             model=config.model,
-            client=anthropic.Anthropic(api_key=api_key, timeout=float(MIN_HARD_TIMEOUT_S - 15), max_retries=3),
+            client=anthropic.Anthropic(api_key=api_key, timeout=float(MIN_HARD_TIMEOUT_S - 15), max_retries=1),
         )
 
     if config.provider == "gemini":
