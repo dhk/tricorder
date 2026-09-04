@@ -63,6 +63,24 @@ class OversightTest(unittest.TestCase):
         block = oversight_prompt_block(ov)
         self.assertIn("capability-minimality [high-stakes]: 2 of 3 PRs", block)
 
+    def test_engagement_split_between_humans_and_bots(self):
+        records = [
+            rec(1, "a", reviews=[("bob", "APPROVED", "")], comments=[("codex[bot]", "src/x.ts")], files=["src/x.ts"]),   # bot only
+            rec(2, "a", reviews=[("bob", "APPROVED", "")], comments=[("bob", "src/y.ts"), ("codex[bot]", "src/y.ts")], files=["src/y.ts"]),  # both
+            rec(3, "a", reviews=[("bob", "APPROVED", "")], comments=[("a", "src/z.ts")], files=["src/z.ts"]),  # author reply only -> nobody
+            rec(4, "a", reviews=[("bob", "APPROVED", "")], files=["src/w.ts"]),  # nobody
+        ]
+        ov = compute(records, load_lens("product-engineering"))
+        s = ov["summary"]
+        self.assertEqual(s["inline_comments_by_bots"], 2)
+        self.assertEqual(s["inline_comments_by_pr_authors"], 1)
+        self.assertEqual(s["inline_comments_by_human_reviewers"], 1)
+        self.assertEqual(s["prs_bot_only"], 1)
+        e = ov["per_tag"]["source"]["engagement"]
+        self.assertEqual(e, {"human_and_bot": 1, "human_only": 0, "bot_only": 1, "nobody": 2})
+        block = oversight_prompt_block(ov)
+        self.assertIn("bot commented and no human reviewer did: 1 of 4", block)
+
     def test_without_changed_files_touch_counts_are_none(self):
         records = [rec(1, "a", reviews=[("bob", "APPROVED", "")], comments=[("bob", "src/App.tsx")])]
         ov = compute(records, self.lens)

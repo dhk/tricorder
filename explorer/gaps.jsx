@@ -82,6 +82,11 @@ function OversightPanel() {
         In agentic development, review is where human oversight concentrates. This is where it landed in the window:
         <strong style={{ color: "var(--text)" }}> {s.prs_without_human_engagement} of {s.prs} PRs</strong> merged with no human engagement at all, and
         <strong style={{ color: "var(--text)" }}> {s.silent_approvals} of {s.approvals} approvals</strong> carried no comment.
+        {s.inline_comments_by_bots !== undefined && (
+          <span> Inline comments: <strong style={{ color: "var(--text)" }}>{s.inline_comments_by_human_reviewers}</strong> by human reviewers,
+          <strong style={{ color: "var(--text)" }}> {s.inline_comments_by_bots}</strong> by bots, {s.inline_comments_by_pr_authors} by authors replying on their own PRs.
+          On <strong style={{ color: "var(--text)" }}>{s.prs_bot_only}</strong> PRs a bot commented and no human reviewer did.</span>
+        )}
         {s.prs_with_changed_files ? "" : " Changed-file lists are missing from this cache, so per-axis touch counts are unavailable."}
       </p>
       {axes.length > 0 && (
@@ -90,7 +95,9 @@ function OversightPanel() {
             <thead><tr>
               <th style={th}>Axis</th><th style={th}>Stakes</th>
               <th style={{ ...th, textAlign: "right" }}>PRs touching</th>
-              <th style={{ ...th, textAlign: "right" }}>No human comment</th>
+              <th style={{ ...th, textAlign: "right" }}>Human reviewer</th>
+              <th style={{ ...th, textAlign: "right" }}>Bot only</th>
+              <th style={{ ...th, textAlign: "right" }}>Nobody</th>
               <th style={{ ...th, textAlign: "right" }}>Silent share</th>
               <th style={{ ...th, textAlign: "right" }}>Comments</th>
               <th style={{ ...th, textAlign: "right" }}>Reviewers</th>
@@ -101,7 +108,9 @@ function OversightPanel() {
                   <td style={{ ...td, fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text)" }}>{a.axis}</td>
                   <td style={td}>{a.high_stakes ? <Tag group="team" size="xs">high</Tag> : <Mono dim style={{ fontSize: 11 }}>—</Mono>}</td>
                   <td style={num}>{a.prs_touching}</td>
-                  <td style={num}>{a.prs_touching_without_comment}</td>
+                  <td style={num}>{a.engagement ? (a.engagement.human_and_bot + a.engagement.human_only) : "—"}</td>
+                  <td style={num}>{a.engagement ? a.engagement.bot_only : "—"}</td>
+                  <td style={num}>{a.engagement ? a.engagement.nobody : "—"}</td>
                   <td style={{ ...num, color: (a.silent_share || 0) >= 0.5 && a.high_stakes ? "var(--accent-orange)" : "var(--text-muted)" }}>{pct(a.silent_share)}</td>
                   <td style={num}>{a.comments}</td>
                   <td style={num}>{a.distinct_reviewers}</td>
