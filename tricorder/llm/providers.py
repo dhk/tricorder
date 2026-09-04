@@ -16,6 +16,24 @@ class LLMProvider:
         raise NotImplementedError
 
 
+MIN_HARD_TIMEOUT_S = 90       # wall-clock ceiling for an ordinary call
+SECONDS_PER_OUTPUT_TOKEN = 1 / 40  # generous generation-rate allowance for large max_tokens
+
+
+def call_budget_s(max_tokens: int) -> int:
+    """Wall-clock ceiling for one call: 90s, or longer when a large response is requested.
+
+    A normal Phase 1 call finishes in seconds; a Phase 4 call asking for 8192
+    output tokens can legitimately run two to three minutes. A flat ceiling
+    would kill the second kind, so the budget scales with max_tokens.
+    """
+    return max(MIN_HARD_TIMEOUT_S, int(30 + max_tokens * SECONDS_PER_OUTPUT_TOKEN))
+
+
+class LLMCallTimeout(RuntimeError):
+    """Raised when a single model call exceeds its wall-clock budget."""
+
+
 @dataclass
 class AnthropicProvider(LLMProvider):
     model: str
@@ -23,13 +41,38 @@ class AnthropicProvider(LLMProvider):
     name: str = "anthropic"
 
     def generate(self, system: str, user: str, max_tokens: int) -> str:
-        msg = self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
-        return msg.content[0].text
+        # The SDK's own timeout has been observed not to end a call whose TLS
+        # read blocks (2026-09-03: one call held a socket for an hour at zero
+        # CPU), and an alarm raised inside the SDK's read is caught by its retry
+        # loop. So the call runs on a daemon thread and the caller waits with a
+        # hard wall-clock budget; a call that never returns is abandoned and
+        # reported as LLMCallTimeout, which the scripts' retry path handles.
+        import threading
+
+        budget = call_budget_s(max_tokens)
+        box: dict = {}
+
+        def _call():
+            try:
+                msg = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=max_tokens,
+                    system=system,
+                    messages=[{"role": "user", "content": user}],
+                    timeout=float(max(30, budget - 15)),
+                )
+                box["text"] = msg.content[0].text
+            except BaseException as e:  # noqa: BLE001 - surface anything the SDK raises
+                box["error"] = e
+
+        worker = threading.Thread(target=_call, name="anthropic-call", daemon=True)
+        worker.start()
+        worker.join(budget)
+        if worker.is_alive():
+            raise LLMCallTimeout(f"model call exceeded {budget}s wall clock; abandoned")
+        if "error" in box:
+            raise box["error"]
+        return box["text"]
 
 
 @dataclass
@@ -85,7 +128,7 @@ def build_provider(config, api_key: str):
 
         return AnthropicProvider(
             model=config.model,
-            client=anthropic.Anthropic(api_key=api_key),
+            client=anthropic.Anthropic(api_key=api_key, timeout=float(MIN_HARD_TIMEOUT_S - 15), max_retries=1),
         )
 
     if config.provider == "gemini":
