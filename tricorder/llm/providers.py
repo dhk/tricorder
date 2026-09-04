@@ -16,12 +16,22 @@ class LLMProvider:
         raise NotImplementedError
 
 
-REQUEST_TIMEOUT_S = 120.0     # per-request read timeout passed to the SDK
-HARD_TIMEOUT_S = 300          # wall-clock ceiling per call, enforced with SIGALRM as a backstop
+MIN_HARD_TIMEOUT_S = 90       # wall-clock ceiling for an ordinary call
+SECONDS_PER_OUTPUT_TOKEN = 1 / 40  # generous generation-rate allowance for large max_tokens
+
+
+def call_budget_s(max_tokens: int) -> int:
+    """Wall-clock ceiling for one call: 90s, or longer when a large response is requested.
+
+    A normal Phase 1 call finishes in seconds; a Phase 4 call asking for 8192
+    output tokens can legitimately run two to three minutes. A flat ceiling
+    would kill the second kind, so the budget scales with max_tokens.
+    """
+    return max(MIN_HARD_TIMEOUT_S, int(30 + max_tokens * SECONDS_PER_OUTPUT_TOKEN))
 
 
 class LLMCallTimeout(RuntimeError):
-    """Raised when a single model call exceeds HARD_TIMEOUT_S wall-clock seconds."""
+    """Raised when a single model call exceeds its wall-clock budget."""
 
 
 @dataclass
@@ -39,13 +49,15 @@ class AnthropicProvider(LLMProvider):
         import signal
         import threading
 
+        budget = call_budget_s(max_tokens)
+
         def _call():
             msg = self.client.messages.create(
                 model=self.model,
                 max_tokens=max_tokens,
                 system=system,
                 messages=[{"role": "user", "content": user}],
-                timeout=REQUEST_TIMEOUT_S,
+                timeout=float(max(30, budget - 15)),
             )
             return msg.content[0].text
 
@@ -53,10 +65,10 @@ class AnthropicProvider(LLMProvider):
             return _call()
 
         def _alarm(signum, frame):
-            raise LLMCallTimeout(f"model call exceeded {HARD_TIMEOUT_S}s wall clock")
+            raise LLMCallTimeout(f"model call exceeded {budget}s wall clock")
 
         previous = signal.signal(signal.SIGALRM, _alarm)
-        signal.alarm(HARD_TIMEOUT_S)
+        signal.alarm(budget)
         try:
             return _call()
         finally:
@@ -117,7 +129,7 @@ def build_provider(config, api_key: str):
 
         return AnthropicProvider(
             model=config.model,
-            client=anthropic.Anthropic(api_key=api_key, timeout=120.0, max_retries=3),
+            client=anthropic.Anthropic(api_key=api_key, timeout=float(MIN_HARD_TIMEOUT_S - 15), max_retries=3),
         )
 
     if config.provider == "gemini":
