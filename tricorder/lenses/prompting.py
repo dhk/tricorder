@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+from collections import Counter
 from typing import Any, Iterable
 
 from tricorder.lenses import Lens
@@ -123,6 +124,8 @@ Gap taxonomy:
   blind_spot    — a named best practice from this lens that never appears in any review
 
 Report gaps only against this lens's axes. If a dimension is already enforced by a tooling gate listed below, report it as institutionalized, not as a gap.
+
+The user message carries a RECORD DIGEST computed over every extracted pattern in the window. Judge whether an axis is present or absent from its coverage count there, never from whether an example happens to be shown. Only an axis with zero patterns qualifies as a blind_spot by absence; an axis with substantial coverage is a strength or a knowledge_gap, decided on the quality of what reviewers said.
 
 Respond ONLY with valid JSON. No preamble. No markdown fences.
 
@@ -336,6 +339,131 @@ def authorities_markdown(lens: Lens) -> list[str]:
         kind = "" if a.get("kind") == "primary" else " *(secondary)*"
         lines.append(f"- **{a['name']}**{kind}: {a['url']}")
     return lines
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 input: a digest of the whole record
+# ---------------------------------------------------------------------------
+
+MATURITY_ORDER = ["judgment", "guidance", "convention", "rule", "deterministic"]
+
+
+def _category_axes(lens: Lens) -> dict[str, list[str]]:
+    """Category id -> axis ids, from both the category and the axis side of the lens."""
+    out: dict[str, list[str]] = {c["id"]: list(c.get("axes") or []) for c in lens.categories}
+    for x in lens.axes:
+        for c in x.get("categories") or []:
+            out.setdefault(c, [])
+            if x["id"] not in out[c]:
+                out[c].append(x["id"])
+    return out
+
+
+def _representative(items: list[tuple[Any, dict]], k: int) -> list[tuple[Any, dict]]:
+    """Up to ``k`` patterns: highest maturity and cited first, spread across reviewers, deterministic."""
+    def rank(row):
+        pr, pt = row
+        mat = pt.get("maturity")
+        m = MATURITY_ORDER.index(mat) if mat in MATURITY_ORDER else -1
+        return (-m, 0 if pt.get("standard_citation") else 1, str(pr), str(pt.get("signal") or ""))
+    ordered = sorted(items, key=rank)
+    picked: list[tuple[Any, dict]] = []
+    seen_reviewers: set = set()
+    for row in ordered:                       # one per reviewer first
+        rv = row[1].get("reviewer") or ""
+        if rv in seen_reviewers:
+            continue
+        picked.append(row)
+        seen_reviewers.add(rv)
+        if len(picked) >= k:
+            return picked
+    for row in ordered:                       # then fill in order
+        if row in picked:
+            continue
+        picked.append(row)
+        if len(picked) >= k:
+            break
+    return picked
+
+
+def phase4_record_digest(pr_results: Iterable[dict], reviewer_profiles: Iterable[dict], lens: Lens, *,
+                         examples_per_category: int = 6, char_budget: int = 40_000) -> str:
+    """The Phase 4 user-prompt body: counts over the whole record plus a spread of examples.
+
+    Replaces the old ``json.dumps(all_patterns)[:8000]`` truncation, which showed
+    the model a dozen patterns from the lowest-numbered PRs and nothing else, so
+    every axis it could not see became a blind spot. Here the counts per
+    category and per axis are computed deterministically over every pattern;
+    examples are chosen to spread across reviewers and PRs; every reviewer
+    profile gets one line. The example count shrinks until the text fits
+    ``char_budget``; the counts never do.
+    """
+    rows: list[tuple[Any, dict]] = []
+    for r in pr_results:
+        if not isinstance(r, dict) or r.get("_error"):
+            continue
+        pr = r.get("pr_number") or r.get("_pr_number")
+        for pt in r.get("patterns") or []:
+            if isinstance(pt, dict):
+                rows.append((pr, pt))
+    profiles = [rp for rp in reviewer_profiles if isinstance(rp, dict) and not rp.get("_error")]
+
+    cat_ids = list(lens.category_ids)
+    by_cat: dict[str, list[tuple[Any, dict]]] = {c: [] for c in cat_ids}
+    for pr, pt in rows:
+        by_cat.setdefault(pt.get("category") or "other", []).append((pr, pt))
+    cat_order = cat_ids + sorted(c for c in by_cat if c not in cat_ids)
+    axes_of = _category_axes(lens)
+
+    def mix(items):
+        c = Counter(pt.get("maturity") for _, pt in items)
+        return " / ".join(f"{m} {c[m]}" for m in MATURITY_ORDER if c.get(m)) or "none"
+
+    def render(k: int) -> str:
+        lines = [
+            f"RECORD DIGEST — computed over all {len(rows)} patterns from {len({pr for pr, _ in rows})} PRs. "
+            "The counts are the whole record; only the examples are a selection.",
+            "",
+            "Patterns by category (count | PRs | distinct reviewers | maturity mix):",
+        ]
+        for c in cat_order:
+            items = by_cat.get(c, [])
+            lines.append(f"- {c}: {len(items)} | {len({pr for pr, _ in items})} PRs | "
+                         f"{len({pt.get('reviewer') for _, pt in items} - {None, ''})} reviewers | {mix(items)}")
+        lines += ["", "Axis coverage (patterns whose category maps to the axis; 0 means genuinely absent from the record, "
+                      "a large count means present even if no example below shows it):"]
+        for x in lens.axes:
+            items = [(pr, pt) for pr, pt in rows if x["id"] in axes_of.get(pt.get("category"), [])]
+            flag = "ABSENT" if not items else "present"
+            lines.append(f"- {x['id']}: {len(items)} patterns | {len({pr for pr, _ in items})} PRs | "
+                         f"{len({pt.get('reviewer') for _, pt in items} - {None, ''})} reviewers — {flag}")
+        lines += ["", f"Representative signals (up to {k} per category; highest maturity and cited first, spread across reviewers):"]
+        for c in cat_order:
+            for pr, pt in _representative(by_cat.get(c, []), k):
+                cite = f"; cites {str(pt.get('standard_citation'))[:80]}" if pt.get("standard_citation") else ""
+                lines.append(f"- [{c}] PR #{pr} · reviewer {pt.get('reviewer') or '?'} · {pt.get('maturity') or '?'}{cite}: "
+                             f"{str(pt.get('signal') or '').strip()[:160]}")
+        cites = Counter(str(pt.get("standard_citation")) for _, pt in rows if pt.get("standard_citation"))
+        if cites:
+            lines += ["", "Most-cited standards:"]
+            lines += [f"- {n}× {s[:120]}" for s, n in cites.most_common(8)]
+        lines += ["", f"Reviewer fingerprints (all {len(profiles)} reviewers, one line each):"]
+        for rp in profiles:
+            name = rp.get("reviewer") or rp.get("_reviewer") or "?"
+            focus = "; ".join(f"{str(a.get('area') or '')[:70]} ({a.get('frequency') or '?'})"
+                              for a in (rp.get("primary_focus_areas") or [])[:4] if isinstance(a, dict))
+            blind = "; ".join(str(b.get("area") or "")[:60]
+                              for b in (rp.get("apparent_blind_spots") or [])[:3] if isinstance(b, dict))
+            lines.append(f"- {name}: {rp.get('pr_count', '?')} PRs | style {rp.get('review_style') or '?'} | "
+                         f"signal {rp.get('signal_quality') or '?'} | focus: {focus or '—'} | blind spots: {blind or '—'}")
+        return "\n".join(lines)
+
+    k = max(1, examples_per_category)
+    text = render(k)
+    while len(text) > char_budget and k > 1:
+        k -= 1
+        text = render(k)
+    return text
 
 
 # ---------------------------------------------------------------------------
