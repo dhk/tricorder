@@ -45,6 +45,7 @@ from tricorder.lenses.detect import (
     composition_check, detect, fetch_github, github_token, review_path_check,
 )
 from tricorder.lenses.prompting import (
+    phase4_record_digest,
     authorities_markdown, coerce_categories, secondary_block, smoke_check, system_prompt,
 )
 from tricorder.lenses.cache import load_cached, save_cached, synthesis_dir, write_current
@@ -582,20 +583,12 @@ def main():
     if team_gaps is not None:
         print("  (cached)\n")
     else:
-        all_patterns = []
-        for r in pr_results:
-            all_patterns.extend(r.get("patterns", []))
-
         team_prompt_lines = [
             f"Team: {', '.join(manifest['contributors'])}",
             f"Window: {manifest['date_range']['from']} → {manifest['date_range']['to']}",
             f"PR count: {manifest['pr_count']}",
             "",
-            "Aggregated pattern signals:",
-            json.dumps(all_patterns, indent=2)[:8000],
-            "",
-            "Reviewer fingerprints:",
-            json.dumps([{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles], indent=2)[:4000],
+            phase4_record_digest(pr_results, reviewer_profiles, lens),
             "",
             oversight_prompt_block(oversight),
         ]

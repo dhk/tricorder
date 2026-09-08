@@ -40,6 +40,7 @@ from tricorder.lenses.detect import (
     composition_check, detect, fetch_github, github_token, review_path_check,
 )
 from tricorder.lenses.prompting import (
+    phase4_record_digest,
     authorities_markdown, coerce_categories, secondary_block, smoke_check, system_prompt,
 )
 from tricorder.lenses.cache import load_cached, save_cached, synthesis_dir, write_current
@@ -459,8 +460,13 @@ def _run_minority_report(
     synth_dir: Path,
     tri_dir: Path,
     available_providers: list[str],
+    lens: Lens | None = None,
 ) -> dict | None:
-    """Run Phase 4 with all available providers, then compare."""
+    """Run Phase 4 with all available providers, then compare.
+
+    With a lens, the Phase 4 input is the whole-record digest; without one it
+    falls back to the legacy truncated JSON dump.
+    """
     from tricorder.llm import build_llm_provider
 
     if len(available_providers) < 2:
@@ -471,22 +477,28 @@ def _run_minority_report(
         print("  Set ANTHROPIC_API_KEY and GEMINI_API_KEY to enable.")
         return None
 
-    all_patterns: list[dict] = []
-    for r in pr_results:
-        all_patterns.extend(r.get("patterns", []))
-
-    team_prompt_lines = [
-        f"PR count: {len(pr_results)}",
-        "",
-        "Aggregated pattern signals:",
-        json.dumps(all_patterns, indent=2)[:8000],
-        "",
-        "Reviewer fingerprints (summary):",
-        json.dumps(
-            [{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles],
-            indent=2,
-        )[:4000],
-    ]
+    if lens is not None:
+        team_prompt_lines = [
+            f"PR count: {len(pr_results)}",
+            "",
+            phase4_record_digest(pr_results, reviewer_profiles, lens),
+        ]
+    else:
+        all_patterns: list[dict] = []
+        for r in pr_results:
+            all_patterns.extend(r.get("patterns", []))
+        team_prompt_lines = [
+            f"PR count: {len(pr_results)}",
+            "",
+            "Aggregated pattern signals:",
+            json.dumps(all_patterns, indent=2)[:8000],
+            "",
+            "Reviewer fingerprints (summary):",
+            json.dumps(
+                [{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles],
+                indent=2,
+            )[:4000],
+        ]
     team_prompt = "\n".join(team_prompt_lines)
 
     print(f"\nMinority Report — running Phase 4 with {len(available_providers)} providers ...")
@@ -1111,23 +1123,12 @@ def run(args: list[str]) -> int:
     if team_gaps is not None:
         print("  (cached)\n")
     else:
-        all_patterns: list[dict] = []
-        for r in pr_results:
-            all_patterns.extend(r.get("patterns", []))
-
         team_lines = [
             f"Team members: {', '.join(authors_list)}",
             f"PR count: {len(pr_records)}",
             f"Reviewers: {', '.join(reviewers_list)}",
             "",
-            "Aggregated pattern signals:",
-            json.dumps(all_patterns, indent=2)[:8000],
-            "",
-            "Reviewer fingerprints (summary):",
-            json.dumps(
-                [{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles],
-                indent=2
-            )[:4000],
+            phase4_record_digest(pr_results, reviewer_profiles, lens),
             "",
             oversight_prompt_block(oversight),
         ]
@@ -1157,7 +1158,7 @@ def run(args: list[str]) -> int:
     if parsed.minority_report:
         from tricorder.llm import detect_all_available_providers
         available = detect_all_available_providers()
-        _run_minority_report(pr_results, reviewer_profiles, synth_dir, tri_dir, available)
+        _run_minority_report(pr_results, reviewer_profiles, synth_dir, tri_dir, available, lens=lens)
 
     # ── AI Diff ───────────────────────────────────────────────────────────────
     if parsed.ai_diff:
