@@ -45,6 +45,7 @@ from tricorder.lenses.detect import (
     composition_check, detect, fetch_github, github_token, review_path_check,
 )
 from tricorder.lenses.prompting import (
+    phase4_record_digest,
     authorities_markdown, coerce_categories, secondary_block, smoke_check, system_prompt,
 )
 from tricorder.lenses.cache import load_cached, save_cached, synthesis_dir, write_current
@@ -175,12 +176,20 @@ def render_markdown(manifest, pr_results, reviewer_profiles, author_profiles, te
         osum = oversight["summary"]
         lines.append(f"- PRs with no human engagement (approve-only or nothing): **{osum['prs_without_human_engagement']} of {osum['prs']}**")
         lines.append(f"- Silent approvals (approve with no comment): **{osum['silent_approvals']} of {osum['approvals']}**")
+        if "inline_comments_by_bots" in osum:
+            lines.append(f"- Inline comments: **{osum['inline_comments_by_human_reviewers']}** by human reviewers, "
+                         f"**{osum['inline_comments_by_bots']}** by bots or AI reviewers, "
+                         f"{osum['inline_comments_by_pr_authors']} by PR authors replying on their own PRs")
+            lines.append(f"- PRs where a bot commented and no human reviewer did: **{osum['prs_bot_only']} of {osum['prs']}**")
         if osum.get("prs_with_changed_files"):
-            lines += ["", "| Axis | High-stakes | PRs touching | Without any human comment | Silent share | Comments | Reviewers |", "|---|---|---:|---:|---:|---:|---:|"]
+            lines += ["", "Per axis: of the PRs that changed files under the axis, who commented on those files.", "",
+                      "| Axis | High-stakes | PRs touching | Human reviewer | Bot only | Nobody | Silent share | Comments | Reviewers |", "|---|---|---:|---:|---:|---:|---:|---:|---:|"]
             for a in oversight["per_axis"]:
                 if a.get("prs_touching") is None:
                     continue
-                lines.append(f"| {a['axis']} | {'yes' if a['high_stakes'] else ''} | {a['prs_touching']} | {a['prs_touching_without_comment']} | {(a['silent_share'] or 0):.0%} | {a['comments']} | {a['distinct_reviewers']} |")
+                e = a.get("engagement") or {}
+                human = e.get("human_and_bot", 0) + e.get("human_only", 0)
+                lines.append(f"| {a['axis']} | {'yes' if a['high_stakes'] else ''} | {a['prs_touching']} | {human} | {e.get('bot_only', 0)} | {e.get('nobody', 0)} | {(a['silent_share'] or 0):.0%} | {a['comments']} | {a['distinct_reviewers']} |")
         lines += ["", "| Reviewer | PRs | Approvals | Silent approvals | Silent share | Inline comments / PR |", "|---|---:|---:|---:|---:|---:|"]
         for r in oversight["per_reviewer"]:
             share = f"{r['silent_share']:.0%}" if r["silent_share"] is not None else "—"
@@ -574,20 +583,12 @@ def main():
     if team_gaps is not None:
         print("  (cached)\n")
     else:
-        all_patterns = []
-        for r in pr_results:
-            all_patterns.extend(r.get("patterns", []))
-
         team_prompt_lines = [
             f"Team: {', '.join(manifest['contributors'])}",
             f"Window: {manifest['date_range']['from']} → {manifest['date_range']['to']}",
             f"PR count: {manifest['pr_count']}",
             "",
-            "Aggregated pattern signals:",
-            json.dumps(all_patterns, indent=2)[:8000],
-            "",
-            "Reviewer fingerprints:",
-            json.dumps([{k: v for k, v in rp.items() if not k.startswith("_")} for rp in reviewer_profiles], indent=2)[:4000],
+            phase4_record_digest(pr_results, reviewer_profiles, lens),
             "",
             oversight_prompt_block(oversight),
         ]

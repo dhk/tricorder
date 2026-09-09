@@ -36,3 +36,5 @@ The lens contract from the handoff prompt is implemented in `tricorder/lenses/` 
 ## Validation
 
 `product-engineering-desktop` passed its production-repository evaluation on block/berd on 2026-09-03: [findings/perplexity-lenses/VALIDATION.md](findings/perplexity-lenses/VALIDATION.md).
+
+block/buzz was re-run under the parent `product-engineering` lens on 2026-09-04 as a run record, not a promotion: [VALIDATION-buzz.md](VALIDATION-buzz.md). Its oversight measurement is where the human-versus-bot engagement split first showed up.

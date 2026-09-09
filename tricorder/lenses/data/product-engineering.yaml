@@ -100,6 +100,30 @@ lens:
       min_share_of_comments_on_tagged_paths: 0.6
 
   file_tags:
+    - glob: "**/package.json"
+      tag: "dependency-manifest"
+    - glob: "**/Cargo.toml"
+      tag: "dependency-manifest"
+    - glob: "**/Cargo.lock"
+      tag: "dependency-manifest"
+    - glob: "**/pubspec.yaml"
+      tag: "dependency-manifest"
+    - glob: "**/pubspec.lock"
+      tag: "dependency-manifest"
+    - glob: "**/go.mod"
+      tag: "dependency-manifest"
+    - glob: "**/go.sum"
+      tag: "dependency-manifest"
+    - glob: "**/pyproject.toml"
+      tag: "dependency-manifest"
+    - glob: "**/requirements*.txt"
+      tag: "dependency-manifest"
+    - glob: "**/*.lock"
+      tag: "dependency-manifest"
+    - glob: "**/*lock.yaml"
+      tag: "dependency-manifest"
+    - glob: "**/*lock.json"
+      tag: "dependency-manifest"
     - glob: "**/*.test.*"
       tag: "test"
     - glob: "**/*.spec.*"
@@ -252,6 +276,7 @@ lens:
 
   axes:
     - id: test-coverage
+      tags: [test]
       question: "Do changes ship with unit, integration, or contract tests that cover the new behavior and its failure paths?"
       categories: [testing]
       authorities: [google-code-review, dora]
@@ -259,6 +284,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: api-contract-stability
+      tags: [source]
       question: "Are breaking changes to public interfaces flagged, versioned, and communicated?"
       categories: [api-contract]
       authorities: [semver]
@@ -266,6 +292,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: error-handling
+      tags: [source]
       question: "Are errors surfaced and handled explicitly rather than swallowed or converted to silent partial results?"
       categories: [error-handling, correctness]
       authorities: [pragmatic-programmer, google-code-review]
@@ -273,6 +300,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: observability
+      tags: [source, config]
       question: "Do new code paths carry logging, tracing, or metrics sufficient to debug them in production?"
       categories: [observability]
       authorities: [dora]
@@ -280,6 +308,7 @@ lens:
       max_maturity: convention
       phase4_absence_is_finding: true
     - id: security-hygiene
+      tags: [source, config, ci]
       question: "Are secrets, input validation, and authorization checks handled per OWASP guidance?"
       categories: [security]
       authorities: [owasp-top-10]
@@ -287,6 +316,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: true
     - id: dependency-management
+      tags: [dependency-manifest]
       question: "Are dependency additions justified and pinned, with supply-chain awareness?"
       categories: [dependencies]
       authorities: [semver]
@@ -294,6 +324,7 @@ lens:
       max_maturity: rule
       phase4_absence_is_finding: false
     - id: documentation
+      tags: [docs]
       question: "Are non-obvious decisions documented in READMEs, ADRs, or inline where they are made?"
       categories: [documentation]
       authorities: [google-code-review]
