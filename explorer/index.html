@@ -101,8 +101,20 @@
   <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
   <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
 
-  <!-- Data + components -->
-  <script src="data.js"></script>
+  <!-- Data: one file per rendered repository under data/, chosen by ?repo=<slug>.
+       The index lists what exists; the slug is only ever taken from that list. -->
+  <script src="data/index.js"></script>
+  <script>
+    (function () {
+      var idx = window.TRICORDER_INDEX || { entries: [] };
+      var slugs = idx.entries.map(function (e) { return e.slug; });
+      var want = null;
+      try { want = new URLSearchParams(window.location.search).get("repo"); } catch (e) {}
+      var slug = (want && slugs.indexOf(want) >= 0) ? want : (idx["default"] || slugs[0]);
+      if (slug) document.write('<script src="data/' + slug + '.js"><\/script>');
+    })();
+  </script>
+  <!-- Components -->
   <script type="text/babel" src="shared.jsx"></script>
   <script type="text/babel" src="coverage.jsx"></script>
   <script type="text/babel" src="pipeline.jsx"></script>

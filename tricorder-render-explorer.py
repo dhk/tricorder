@@ -8,17 +8,24 @@ fresh data.js for the interactive explorer. Applies a name map if one exists.
 Usage:
     python tricorder-render-explorer.py OWNER/REPO
     python tricorder-render-explorer.py OWNER/REPO --name-map PATH
-    python tricorder-render-explorer.py OWNER/REPO --out PATH/data.js
+    python tricorder-render-explorer.py OWNER/REPO --out PATH/name.js
+    python tricorder-render-explorer.py OWNER/REPO --default
     python tricorder-render-explorer.py OWNER/REPO --no-anonymize
 
 Defaults:
     --name-map   ~/.tricorder/<owner>__<repo>-name-map.json  (auto-detected)
-    --out        explorer/data.js  (relative to this script)
+    --out        explorer/data/<owner>__<repo>.js  (relative to this script)
+
+Every render also updates explorer/data/index.{json,js}, which the page reads
+to offer a repository picker and to choose the file for ?repo=<slug>. The
+first repository rendered becomes the page default; --default moves it.
 """
 
 import argparse
 import json
 import re
+
+from tricorder.explorer_index import data_path, update_index
 import os
 import glob
 import sys
@@ -30,7 +37,7 @@ from collections import defaultdict
 
 CACHE_BASE  = Path.home() / ".learn-from-work" / "cache"
 SCRIPT_DIR  = Path(__file__).parent
-DEFAULT_OUT = SCRIPT_DIR / "explorer" / "data.js"
+EXPLORER_DIR = SCRIPT_DIR / "explorer"
 
 CATEGORIES = ["grain", "naming", "testing", "documentation", "style",
               "performance", "modeling", "schema", "business-logic"]
@@ -468,7 +475,7 @@ def read_version(script_dir: Path) -> str:
     return "dev"
 
 
-def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymized: bool):
+def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymized: bool, make_default: bool = False):
     from tricorder.lenses.cache import current_dir
     manifest    = load_manifest(cache_dir)
     synth       = current_dir(cache_dir / "synthesis") or (cache_dir / "synthesis")
@@ -553,6 +560,14 @@ def render(repo: str, cache_dir: Path, name_map: dict, out_path: Path, anonymize
     out_path.write_text(js)
     print(f"\n  ✓  Written to: {out_path}")
 
+    if out_path.parent.name == "data" and out_path.stem == repo.replace("/", "__"):
+        idx = update_index(out_path.parent.parent, {
+            "repo": repo, "window": window_str, "pr_count": pr_count,
+            "anonymized": bool(anonymized), "version": version,
+            "lens": (taxonomy.get("lens") or {}).get("name") if isinstance(taxonomy.get("lens"), dict) else None,
+        }, make_default=make_default)
+        print(f"  ✓  Index: {len(idx['entries'])} repositories, default {idx['default']}")
+
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
 
@@ -560,8 +575,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("repo",         help="OWNER/REPO  e.g. cal-itp/data-infra")
     ap.add_argument("--name-map",   help="Path to JSON name map (auto-detected if omitted)")
-    ap.add_argument("--out",        help="Output path for data.js (default: explorer/data.js next to this script)")
+    ap.add_argument("--out",        help="Output path (default: explorer/data/<owner>__<repo>.js next to this script)")
     ap.add_argument("--no-anonymize", action="store_true", help="Skip name map even if one is found")
+    ap.add_argument("--default",    action="store_true", help="Make this repository the explorer's default page")
     args = ap.parse_args()
 
     repo_slug = args.repo.replace("/", "__")
@@ -572,7 +588,7 @@ def main():
         print("Run:  tricorder harvest {args.repo}", file=sys.stderr)
         sys.exit(1)
 
-    out_path = Path(args.out) if args.out else DEFAULT_OUT
+    out_path = Path(args.out) if args.out else data_path(EXPLORER_DIR, args.repo)
 
     print(f"\ntricorder-render-explorer")
     print(f"  Repo:  {args.repo}")
@@ -590,10 +606,10 @@ def main():
             print("  To anonymize: create ~/.tricorder/{slug}-name-map.json")
             print('  Format: {"mapping": {"real-login": "Alias", ...}}\n')
 
-    render(args.repo, cache_dir, name_map, out_path, anonymized)
+    render(args.repo, cache_dir, name_map, out_path, anonymized, make_default=args.default)
 
-    print(f"\n  Next: commit explorer/data.js → GitHub Pages updates automatically.")
-    print(f"  Explorer: https://dhk.github.io/tricorder/explorer/\n")
+    print(f"\n  Next: commit explorer/data/ → GitHub Pages updates automatically.")
+    print(f"  Explorer: https://dhk.github.io/tricorder/explorer/?repo={repo_slug}\n")
 
 
 if __name__ == "__main__":

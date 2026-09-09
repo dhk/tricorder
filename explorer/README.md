@@ -1,7 +1,7 @@
 # tricorder — explorer
 
 The [live explorer](https://dhk.github.io/tricorder/explorer/) contains sample data.
-Do not publish a generated `data.js` until it has passed the privacy review in
+Do not publish a generated data file until it has passed the privacy review in
 [docs/PRIVACY.md](../docs/PRIVACY.md).
 
 The interactive React artifact for a synthesis run. An orientation tab followed by
@@ -28,9 +28,12 @@ cd explorer && python -m http.server 8000   # then open http://localhost:8000
 
 ## Wiring in a real run
 
-All tabs are data-driven from one global, `window.TRICORDER_DATA`, defined in `data.js`.
-The `tricorder build` step overwrites `data.js` (or injects the same global) with the
-run's output. Shape:
+All tabs are data-driven from one global, `window.TRICORDER_DATA`. Each rendered
+repository is its own file, `data/<owner>__<repo>.js`, and `data/index.js` lists
+them. The page loads the index first, then the file named by `?repo=<slug>` in the
+URL, falling back to the index default; with two or more entries the header shows a
+repository picker. `tricorder build` and `tricorder-render-explorer.py` write the
+data file and update the index together. Shape of a data file:
 
 ```js
 window.TRICORDER_DATA = {
@@ -86,5 +89,6 @@ window.TRICORDER_DATA = {
 Tag colors follow the content-type convention: patterns → cobalt, reviewers/tools →
 purple, data/analysis → teal, team/gaps → orange.
 
-The `data.js` currently checked in is a sample run against `cal-itp/data-infra` for
-demo and visual regression.
+The default entry checked in is a sample run against `cal-itp/data-infra` for demo
+and visual regression. Other checked-in entries are anonymized runs on public
+repositories; each is reachable at `?repo=<slug>` and from the header picker.
