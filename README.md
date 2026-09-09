@@ -8,9 +8,21 @@ Tricorder helps teams understand how well they build and systematically raise th
 
 Today it does that as a repository learning system: it turns local repository evidence, git history, and code-review discussions into an inspectable map of recurring standards, repeated correction, expertise concentration, team gaps, and opportunities to move useful knowledge upstream into education, workflow, tooling, or automation.
 
-**[Try the live explorer](https://dhk.github.io/tricorder/explorer/)** (sample data) ·
+**[Try the live explorer](https://dhk.github.io/tricorder/explorer/)** ·
 [How to use Tricorder](HOWTO.md) · [Documentation index](docs/README.md) ·
 [Privacy and data flow](docs/PRIVACY.md)
+
+## Studies
+
+Three published runs. Each explorer link opens that repository's data; the header
+picker switches between them. Contributor names are aliases; review text, PR
+titles, and file paths are as found in the public repositories.
+
+| Repository | Explorer | Report | Window | PRs | Lens |
+|------------|----------|--------|--------|-----|------|
+| [cal-itp/data-infra](https://github.com/cal-itp/data-infra) | [open](https://dhk.github.io/tricorder/explorer/?repo=cal-itp__data-infra) | [2026-06-02](https://github.com/dhk/adventures-in-ai/blob/main/tricorder/2026-06-02-cal-itp__data-infra.md) | 2026-03-02 → 2026-05-30 | 190 | analytics-engineering |
+| [block/buzz](https://github.com/block/buzz) | [open](https://dhk.github.io/tricorder/explorer/?repo=block__buzz) | [2026-09-08](https://github.com/dhk/adventures-in-ai/blob/main/tricorder/2026-09-08-block__buzz.md) | 2026-08-17 → 2026-09-03 | 272 | product-engineering |
+| [block/berd](https://github.com/block/berd) | [open](https://dhk.github.io/tricorder/explorer/?repo=block__berd) | [2026-09-09](https://github.com/dhk/adventures-in-ai/blob/main/tricorder/2026-09-09-block__berd.md) | 2026-08-12 → 2026-09-03 | 163 | product-engineering-desktop |
 
 ## Product governance
 
