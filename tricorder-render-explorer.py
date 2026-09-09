@@ -18,6 +18,7 @@ Defaults:
 
 import argparse
 import json
+import re
 import os
 import glob
 import sys
@@ -102,14 +103,24 @@ def load_name_map(repo_slug: str, explicit_path: str | None) -> dict:
     return {}
 
 
+def _name_pattern(name_map: dict):
+    """One regex matching any mapped login as a whole token.
+
+    Logins are [A-Za-z0-9-]; a match may not touch another such character, so
+    the login ``brow`` no longer rewrites ``browser`` and ``wpfleger6`` cannot
+    fire inside ``wpfleger96``. Longest first so a login that prefixes another
+    is tried after it.
+    """
+    keys = sorted(name_map, key=len, reverse=True)
+    return re.compile(r"(?<![A-Za-z0-9_-])(?:" + "|".join(re.escape(k) for k in keys) + r")(?![A-Za-z0-9_-])")
+
+
 def apply_map(obj, name_map: dict):
     """Recursively replace real logins with aliases in any JSON-serialisable obj."""
     if not name_map:
         return obj
     if isinstance(obj, str):
-        for real, alias in name_map.items():
-            obj = obj.replace(real, alias)
-        return obj
+        return _name_pattern(name_map).sub(lambda m: name_map[m.group(0)], obj)
     if isinstance(obj, list):
         return [apply_map(x, name_map) for x in obj]
     if isinstance(obj, dict):
