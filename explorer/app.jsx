@@ -109,6 +109,41 @@ function AboutModal({ onClose }) {
   );
 }
 
+// Which rendered repository to show. One entry: plain label. Several: a select
+// that reloads the page with ?repo=<slug>; the loader in index.html only honours
+// slugs present in the index, so the value can never name an arbitrary file.
+function RepoPicker() {
+  const idx = window.TRICORDER_INDEX || { entries: [] };
+  const entries = idx.entries || [];
+  const currentSlug = (DATA.repo || "").replace("/", "__");
+  if (entries.length < 2) {
+    return <Mono dim style={{ fontSize: 13, whiteSpace: "nowrap" }}>{DATA.repo}</Mono>;
+  }
+  const go = (e) => {
+    const slug = e.target.value;
+    const url = new URL(window.location.href);
+    url.searchParams.set("repo", slug);
+    url.hash = "intro";
+    window.location.assign(url.toString());
+  };
+  return (
+    <label style={{ display: "inline-flex", alignItems: "baseline", gap: 6, whiteSpace: "nowrap" }}>
+      <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Repository</span>
+      <select value={currentSlug} onChange={go} aria-label="Repository" style={{
+        fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--text-muted)",
+        background: "transparent", border: "1px solid var(--border)", borderRadius: "var(--radius)",
+        padding: "2px 6px", cursor: "pointer",
+      }}>
+        {entries.map(e => (
+          <option key={e.slug} value={e.slug}>
+            {e.repo}{e.anonymized ? "" : " (private)"}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function TopBar({ onAbout }) {
   return (
     <header style={{
@@ -126,7 +161,7 @@ function TopBar({ onAbout }) {
         <WipMark />
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 14, flexWrap: "wrap", marginLeft: "auto" }}>
-        <Mono dim style={{ fontSize: 13, whiteSpace: "nowrap" }}>{DATA.repo}</Mono>
+        <RepoPicker />
         <span style={{ color: "var(--border)" }}>·</span>
         <Mono dim style={{ fontSize: 13, whiteSpace: "nowrap" }}>{DATA.window}</Mono>
         <span style={{ color: "var(--border)" }}>·</span>

@@ -215,7 +215,9 @@ tricorder build OWNER/REPO --open
 The local server uses `http://localhost:7372`. A hosted sample is available at the
 [live explorer](https://dhk.github.io/tricorder/explorer/).
 
-`build` writes `explorer/data.js`, a portable JavaScript data file. With no name map,
+`build` writes `explorer/data/<owner>__<repo>.js`, a portable JavaScript data file, and
+updates `explorer/data/index.js` so the page can list and switch between repositories
+(`?repo=<slug>`). With no name map,
 it contains real identities and is labeled private. A name map replaces configured
 login strings with aliases and changes the explorer label to team, but aliases alone
 do not remove identifying quotations, repository names, file paths, rare events, or

@@ -24,6 +24,8 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
+from tricorder.explorer_index import data_path, slug_for, update_index
+
 
 # ---------------------------------------------------------------------------
 # Category / radar constants (must match explorer app)
@@ -386,11 +388,13 @@ def run(args: list[str]) -> int:
     parser.add_argument("repo", nargs="?", default=None,
                         help="OWNER/REPO (default: inferred from git remote)")
     parser.add_argument("--out", default=None, metavar="PATH",
-                        help="Path for data.js (default: explorer/data.js in the tricorder install dir)")
+                        help="Output path (default: explorer/data/<owner>__<repo>.js in the tricorder install dir)")
     parser.add_argument("--name-map", default=None, metavar="PATH",
                         help="Path to name-map JSON (default: ~/.tricorder/<owner>__<repo>-name-map.json)")
     parser.add_argument("--no-anonymize", action="store_true",
                         help="Skip name map even if one is auto-detected")
+    parser.add_argument("--default", action="store_true",
+                        help="Make this repository the explorer's default page")
     parser.add_argument("--open", action="store_true",
                         help="Open the explorer in a browser after building (starts a local server)")
     parser.add_argument("--port", type=int, default=7372, metavar="PORT",
@@ -447,9 +451,9 @@ def run(args: list[str]) -> int:
     if parsed.out:
         out_path = Path(parsed.out).expanduser().resolve()
     else:
-        # Default: explorer/data.js relative to the tricorder package install
+        # Default: explorer/data/<owner>__<repo>.js relative to the tricorder package install
         install_dir = Path(__file__).parent.parent.parent
-        out_path = install_dir / "explorer" / "data.js"
+        out_path = data_path(install_dir / "explorer", repo)
 
     # Name map
     name_map: dict = {}
@@ -533,7 +537,16 @@ def run(args: list[str]) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(js)
 
-    explorer_dir = out_path.parent
+    # A file written into explorer/data/ under its slug joins the page's index.
+    if out_path.parent.name == "data" and out_path.stem == slug_for(repo):
+        explorer_dir = out_path.parent.parent
+        idx = update_index(explorer_dir, {
+            "repo": repo, "window": window_str, "pr_count": pr_count,
+            "anonymized": bool(name_map), "version": version,
+        }, make_default=parsed.default)
+        print(f"  ✓ index: {len(idx['entries'])} repositories, default {idx['default']}")
+    else:
+        explorer_dir = out_path.parent
     explorer_html = explorer_dir / "index.html"
     url = f"http://localhost:{parsed.port}/"
 
