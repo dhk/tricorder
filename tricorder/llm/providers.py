@@ -3,9 +3,54 @@
 from __future__ import annotations
 
 import json
+import signal
+import threading
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 import requests
+
+
+ANTHROPIC_REQUEST_TIMEOUT_SECONDS = 120
+ANTHROPIC_WALL_CLOCK_TIMEOUT_SECONDS = 300
+ANTHROPIC_MAX_RETRIES = 3
+
+
+class LLMCallTimeout(TimeoutError):
+    pass
+
+
+@contextmanager
+def _anthropic_wall_clock_timeout(seconds: int):
+    if (
+        seconds <= 0
+        or not hasattr(signal, "SIGALRM")
+        or threading.current_thread() is not threading.main_thread()
+    ):
+        yield
+        return
+
+    def _raise_timeout(signum, frame):
+        raise LLMCallTimeout(f"Anthropic call exceeded {seconds}s wall-clock timeout")
+
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    if hasattr(signal, "setitimer"):
+        previous_timer = signal.setitimer(signal.ITIMER_REAL, seconds)
+        signal.signal(signal.SIGALRM, _raise_timeout)
+        try:
+            yield
+        finally:
+            signal.signal(signal.SIGALRM, previous_handler)
+            signal.setitimer(signal.ITIMER_REAL, *previous_timer)
+        return
+
+    signal.signal(signal.SIGALRM, _raise_timeout)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 class LLMProvider:
@@ -23,12 +68,14 @@ class AnthropicProvider(LLMProvider):
     name: str = "anthropic"
 
     def generate(self, system: str, user: str, max_tokens: int) -> str:
-        msg = self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
+        with _anthropic_wall_clock_timeout(ANTHROPIC_WALL_CLOCK_TIMEOUT_SECONDS):
+            msg = self.client.messages.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                system=system,
+                messages=[{"role": "user", "content": user}],
+                timeout=ANTHROPIC_REQUEST_TIMEOUT_SECONDS,
+            )
         return msg.content[0].text
 
 
@@ -85,7 +132,11 @@ def build_provider(config, api_key: str):
 
         return AnthropicProvider(
             model=config.model,
-            client=anthropic.Anthropic(api_key=api_key),
+            client=anthropic.Anthropic(
+                api_key=api_key,
+                max_retries=ANTHROPIC_MAX_RETRIES,
+                timeout=ANTHROPIC_REQUEST_TIMEOUT_SECONDS,
+            ),
         )
 
     if config.provider == "gemini":
