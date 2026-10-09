@@ -11,9 +11,13 @@ assumes you're comfortable with a terminal and git. A styled version of this pag
 [dhk.github.io/tricorder/docs/impact-advocate/](https://dhk.github.io/tricorder/docs/impact-advocate/).
 For what the skill does and how, see the [system spec](IMPACT-ADVOCATE-SPEC.md).
 
-> **No API key needed.** The skill runs on your Claude plan in Claude Code, GitHub access is
-> a sign-in (`gh auth login`), and the two tricorder commands this guide uses
+> **Privacy-first: runs entirely inside your own Claude session, with your own access. No
+> server, no telemetry, no extra AI provider.** No API key is needed: GitHub access is a
+> sign-in (`gh auth login`), and the two tricorder commands this guide uses
 > (`discover --history` and `analyze`) call no AI provider.
+>
+> On an employer repo, check that your company's policy allows your Claude plan to read its
+> code.
 
 > **Scope.** The skill assesses only the person running it. Tricorder's
 > [constitution §6](../CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people) rules out
