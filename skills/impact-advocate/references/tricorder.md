@@ -8,12 +8,27 @@ quality and influence of review work, which raw counts flatten. Install and cred
 Tell the person to run the steps one at a time and inspect `.tricorder/` after each (never
 commit that directory):
 
+Lead with the no-key path. Most people have no Anthropic or Gemini API key, and they don't
+need one: you are already the LLM.
+
+**Without an API key**
+
 | Step | Command | Access | What it adds to the case |
 |---|---|---|---|
 | 1 | `tricorder discover --history` | local only | Contributors, hotspots, timeline: evidence of **ownership** of the areas they claim |
-| 2 | `tricorder analyze OWNER/REPO --since <window start>` | GitHub read token | Review observations, patterns, and an **expertise map**: whether others' code in an area gets reviewed by them |
-| 3 | `tricorder learn OWNER/REPO --dry-run`, then without `--dry-run`, `--visibility private` | LLM provider key | **Reviewer fingerprint** and **author growth profile**, plus **oversight density**: the share of their approvals that carried comments vs. silent approvals |
-| 4 | `tricorder build OWNER/REPO --open` | local | Explorer at `localhost:7372` to locate and screenshot specific evidence |
+| 2 | `tricorder analyze OWNER/REPO --since <window start>` | GitHub sign-in or token | Review observations, an **expertise map**, and a local cache of every review and inline comment, under `.tricorder/OWNER__REPO/.raw/reviews/` and `.raw/comments/` |
+
+After step 2, offer to read `expertise-map.json` and the person's own entries in the `.raw/`
+review and comment caches yourself, then characterize their reviewing: areas, recurring
+asks, share of approvals with comments. Cite each point to a PR. Ignore other people's
+comments except as context; never quote or characterize colleagues.
+
+**With an API key (optional)**
+
+| Step | Command | Access | What it adds |
+|---|---|---|---|
+| 3 | `tricorder learn OWNER/REPO --dry-run`, then without `--dry-run`, `--visibility private` | Anthropic or Gemini key | **Reviewer fingerprint**, **author growth profile**, and the computed **oversight density** table |
+| 4 | `tricorder build OWNER/REPO --open` | needs step 3's `learnings.json` | Explorer at `localhost:7372` for browsing and screenshots |
 
 ## How to use what it produces
 
