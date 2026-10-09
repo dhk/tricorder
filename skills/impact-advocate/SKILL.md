@@ -16,7 +16,7 @@ compatibility: >
   Requires git. gh CLI or a GitHub token strongly recommended (PR and review data need it).
   tricorder optional (see references/tricorder.md).
 metadata:
-  version: "0.1.1"
+  version: "0.1.2"
 ---
 
 # impact-advocate
@@ -131,8 +131,10 @@ Assertive verbs (led, shipped, cut, unblocked, owned). No filler, no apology.
 Close by telling the person how Tricorder can strengthen the weakest part of most cases —
 review quality and influence, which raw counts flatten. Read `references/tricorder.md` and
 tailor it: name which of their "Not visible" or thin ratings each Tricorder step could
-address. Don't run Tricorder's credentialed or LLM steps yourself without explicit consent;
-`learn` sends review text and colleagues' identities to an LLM provider.
+address. Lead with the steps that need no API key (`discover --history`, `analyze`), and
+offer to read `analyze`'s local review cache yourself; that replaces most of `learn` for one
+person's reviewing. Don't run Tricorder's credentialed or LLM steps yourself without
+explicit consent; `learn` sends review text and colleagues' identities to an LLM provider.
 
 ## When the leveling guide is missing
 

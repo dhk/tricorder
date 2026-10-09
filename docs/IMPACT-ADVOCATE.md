@@ -10,6 +10,11 @@ This guide takes you from nothing installed to a finished document in seven step
 assumes you're comfortable with a terminal and git. A styled version of this page is at
 [dhk.github.io/tricorder/docs/impact-advocate/](https://dhk.github.io/tricorder/docs/impact-advocate/).
 
+> **No API key needed for the core workflow.** The skill runs on your Claude plan in Claude
+> Code, and GitHub access is a sign-in (`gh auth login`). Of tricorder's commands, only
+> `learn`, `interpret` and `improve` call an AI provider, and the explorer (`build`) needs
+> `learn`'s output. Everything else in this guide works without a key.
+
 > **Scope.** The skill assesses only the person running it. Tricorder's
 > [constitution §6](../CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people) rules out
 > performance-review use, with one narrow exception: you run it on yourself, you own the
@@ -36,8 +41,8 @@ assumes you're comfortable with a terminal and git. A styled version of this pag
 | Python 3.9+ | `python3 --version` | For tricorder |
 | git | `git --version` | Yes |
 | GitHub CLI, signed in | `gh auth status` | Strongly recommended: without it, PR and review data are invisible |
-| An agent that runs skills: Claude Code, or Claude.ai with code execution on | `claude --version` | Yes (or paste the skill into any LLM chat) |
-| An Anthropic or Gemini API key | `echo $ANTHROPIC_API_KEY` | Only for `tricorder learn` (step 7) |
+| An agent that runs skills: Claude Code, or Claude.ai with code execution on | `claude --version` | Yes (or paste the skill into any LLM chat). Runs on your Claude plan; no API key |
+| An Anthropic or Gemini API key | `echo $ANTHROPIC_API_KEY` | No. Optional, for `tricorder learn` and the explorer (step 7) |
 
 ## 2. Install tricorder
 
@@ -82,9 +87,9 @@ export GITHUB_TOKEN=...            # never commit it
 Tricorder checks `GITHUB_TOKEN` first, then `gh auth token`. For a private or SSO-protected
 organization, the token or `gh` identity must be authorized for that organization.
 
-### LLM provider (only for `tricorder learn`)
+### Optional: AI provider key (for `tricorder learn` and the explorer)
 
-Skip this if you won't run step 7's third command. Otherwise set exactly one key:
+Skip this unless you want step 7's optional half. If you do, set exactly one key:
 
 ```bash
 export ANTHROPIC_API_KEY=...       # or GEMINI_API_KEY=...
@@ -203,22 +208,41 @@ What happens next:
 
 Counts flatten review work, which is often where senior impact lives. Tricorder fills that
 gap. Run these from inside a repository you're analyzing, with the virtual environment
-active, and inspect `.tricorder/` after each step before granting more access:
+active, and inspect `.tricorder/` after each step before granting more access.
+
+### Without an API key
 
 | Step | Command | Access | What it adds to your case |
 |---|---|---|---|
 | 1 | `tricorder discover --history` | Local only | Contributors, hotspots, timeline: evidence for the areas you own |
-| 2 | `tricorder analyze OWNER/REPO --since 2026-04-01` | GitHub read | Review observations and an expertise map: whose code you review, in which areas |
-| 3 | `tricorder learn OWNER/REPO --dry-run` | None (prints the prompts) | Shows exactly what would be sent to the LLM |
-| 4 | `tricorder learn OWNER/REPO --visibility private` | LLM provider | Your reviewer fingerprint, author growth profile, and oversight density (approvals with comments vs. silent approvals) |
-| 5 | `tricorder build OWNER/REPO --open` | Local | Explorer at `http://localhost:7372` for finding and screenshotting evidence |
+| 2 | `tricorder analyze OWNER/REPO --since 2026-04-01` | GitHub sign-in | Review observations, an expertise map, and a local copy of every review and inline comment in the window |
 
 Replace the `--since` date with the start of your window; `analyze` fetches PRs merged on or
-after it. `analyze` excludes AI reviewers (Copilot, CodeRabbit and others) by default, so the
-review evidence it finds is human.
+after it. It excludes AI reviewers (Copilot, CodeRabbit and others) by default, so the review
+evidence is human.
 
-Then tell the skill what you found ("tricorder says I'm the main reviewer on `ingest/`; add
-that") so it can follow each finding back to the PR or comment and cite that. Tricorder's
+Then let the skill do the reading. In the same Claude Code session, ask:
+
+```text
+Read .tricorder/OWNER__REPO/expertise-map.json and my reviews and inline comments under
+.tricorder/OWNER__REPO/.raw/reviews/ and .raw/comments/. Characterize how I review: which
+areas, what I consistently push for, how often my approvals carry comments. Cite PRs.
+```
+
+This covers most of what `learn` would tell you about your own reviewing, with every point
+traced to a PR you can link. It runs on your Claude plan, and nothing goes to a separate AI
+provider.
+
+### With an API key (optional)
+
+| Step | Command | Access | What it adds |
+|---|---|---|---|
+| 3 | `tricorder learn OWNER/REPO --dry-run` | None (prints the prompts) | Shows exactly what would be sent to the provider |
+| 4 | `tricorder learn OWNER/REPO --visibility private` | AI provider key | Reviewer fingerprint, author growth profile, and the computed oversight-density table |
+| 5 | `tricorder build OWNER/REPO --open` | Needs step 4's output | Explorer at `http://localhost:7372` for browsing and screenshots |
+
+Worth it mainly for the explorer and for team-level patterns. Tell the skill what you found
+so it can trace each finding back to the PR or comment and cite that. Tricorder's
 LLM-written judgments are experimental and never go into the document as fact; they're
 pointers to evidence, not the evidence itself.
 
@@ -243,6 +267,7 @@ pointers to evidence, not the evidence itself.
 | The document has no review or PR timing data | The skill had no GitHub access. Run `gh auth login` and ask it to re-harvest. |
 | `No GitHub token found` from tricorder | Set `GITHUB_TOKEN` or run `gh auth login`. |
 | `review-observations.json not found` | Run `tricorder analyze` for the same repository before `learn`. |
+| `learnings.json not found` from `build` | The explorer needs `tricorder learn` output, which needs an API key. Skip it, or run `learn` first. |
 | `learn` refuses to pick a provider | Both API keys are set. Pass `--provider anthropic` or `--provider gemini`. |
 | The skill doesn't trigger | Invoke it directly with `/impact-advocate`, or check that `~/.claude/skills/impact-advocate/SKILL.md` exists. |
 | Claude.ai rejects the upload | The zip's top level must be the `impact-advocate/` folder, not its contents or a parent folder. |
