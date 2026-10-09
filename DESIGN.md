@@ -76,10 +76,11 @@ At every level, tricorder states clearly what access it used, what it did not ac
 |---|---|---|---|---|---|---|
 | 0 | `discover` | Local repository files only | No | None | `.tricorder/repository-profile.yml`, `.tricorder/repository-fingerprint.json` | If repository path is unreadable/writable output location fails, exit with actionable filesystem error and no partial trust escalation |
 | 1 | `discover --history` | Local git history only | No | None | `.tricorder/contributors.json`, `.tricorder/hotspots.json`, `.tricorder/repository-timeline.json` | If git history is unavailable, exit with actionable git error and suggest running from a git repository |
-| 2 | `analyze` | GitHub PR/review metadata + local repo context files | Yes (GitHub API) | `GITHUB_TOKEN` | `.tricorder/review-observations.json`, `.tricorder/review-patterns.json`, `.tricorder/expertise-map.json` | If token/missing scopes/API errors occur, exit with actionable auth/API error; do not proceed to LLM levels |
+| 2 | `analyze` | GitHub PR/review metadata + local repo context files | Yes (GitHub API) | `GITHUB_TOKEN`, else `gh auth token` | `.tricorder/review-observations.json`, `.tricorder/review-patterns.json`, `.tricorder/expertise-map.json` | If token/missing scopes/API errors occur, exit with actionable auth/API error; do not proceed to LLM levels |
 | 3 | `learn` | Level 2 artifacts | Yes (LLM API) | Provider API key (`ANTHROPIC_API_KEY` or `GEMINI_API_KEY`) | `.tricorder/learnings.json`, `.tricorder/standards-candidates.json`, markdown report | If LLM auth/quota/request errors occur, stop at last completed step; preserve completed artifacts for resume |
 | 4 | `interpret` | Level 3 artifacts + selected lens | Yes (LLM API) | Provider API key | `.tricorder/interpretations.json` | If lens is unsupported or LLM call fails, return actionable error and keep prior artifacts unchanged |
 | 5 | `improve` | All prior artifacts | Yes (LLM API) | Provider API key | `.tricorder/improvement-plan.md`, `.tricorder/roadmap.json` | If required upstream artifacts are missing, fail fast with missing-prerequisite error and suggested command sequence |
+| — | `build` | Level 3 artifacts (`learnings.json`) + optional name map | No | None of its own; needs Level 3 output, so a provider key upstream | `explorer/data/<owner>__<repo>.js`, `explorer/data/index.js` | If `learnings.json` is missing, exit with `learnings.json not found` |
 
 This table is the authoritative trust boundary for v2 cutover implementation.
 

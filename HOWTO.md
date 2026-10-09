@@ -49,6 +49,22 @@ These commands require no credentials or network. `discover` reads the local
 filesystem; `--history` additionally invokes local git history. Review the generated
 `.tricorder/` artifacts before continuing.
 
+### What you can do without an API key
+
+| Command | Needs | Key? |
+|---|---|---|
+| `discover`, `discover --history` | local files and git | No |
+| `analyze` | GitHub sign-in (`gh auth login`) or `GITHUB_TOKEN` | No |
+| `learn`, `interpret`, `improve` | Anthropic or Gemini | **Yes** |
+| `build` | `learnings.json` from `learn` | Indirectly |
+
+`analyze` caches each PR's reviews and inline comments under
+`.tricorder/OWNER__REPO/.raw/reviews/` and `.raw/comments/`, alongside
+`review-observations.json`, `review-patterns.json` and `expertise-map.json`. Those files are
+readable as-is, and a coding agent you already run (Claude Code, for example) can summarize
+them without tricorder calling a provider. `make-it-so` skips the keyed levels when no key is
+set.
+
 ## Credentials
 
 ### GitHub
@@ -212,7 +228,8 @@ target carefully before authorizing that separate write workflow.
 tricorder build OWNER/REPO --open
 ```
 
-The local server uses `http://localhost:7372`. A hosted sample is available at the
+`build` reads `learnings.json`, so run `learn` first; without it, `build` stops with
+`learnings.json not found`. It makes no network calls itself. The local server uses `http://localhost:7372`. A hosted sample is available at the
 [live explorer](https://dhk.github.io/tricorder/explorer/).
 
 `build` writes `explorer/data/<owner>__<repo>.js`, a portable JavaScript data file, and
@@ -249,6 +266,7 @@ because you can inspect artifacts before GitHub or LLM access is added.
 - `No GitHub token found`: set a valid `GITHUB_TOKEN` or authenticate `gh`.
 - `review-observations.json not found`: run `tricorder analyze` for the same repo.
 - LLM key missing or ambiguous: set one provider key and/or pass `--provider`.
+- `learnings.json not found` from `build`: run `tricorder learn` first (needs a provider key).
 - Interrupted `learn`: rerun it; completed intermediate responses are reused.
 - To remove local analysis, delete the specific repository subdirectory under
   `.tricorder/` after confirming it is the intended target.

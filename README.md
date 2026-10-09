@@ -66,7 +66,13 @@ to inspect the boundary before granting more access:
 | `tricorder learn OWNER/REPO` | configured LLM provider | learnings and named reviewer/author profiles |
 | `tricorder interpret OWNER/REPO` | LLM provider + lens | domain interpretation |
 | `tricorder improve OWNER/REPO` | LLM provider | prioritized roadmap |
-| `tricorder build --open` | local artifacts | interactive explorer at `localhost:7372` |
+| `tricorder build --open` | `learn` output (no new access) | interactive explorer at `localhost:7372` |
+
+**Without an API key** you get `discover`, `discover --history` and `analyze`: the repository
+profile, ownership and hotspots, and a local cache of every review and inline comment
+(`.tricorder/OWNER__REPO/.raw/`) that you can read yourself or hand to the coding agent you
+already use. `learn`, `interpret` and `improve` need an Anthropic or Gemini key, and the
+explorer needs `learn`'s output.
 
 ```text
 local files ──> git history ──> GitHub review data ──> LLM analysis ──> explorer
