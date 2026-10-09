@@ -199,7 +199,13 @@ review. Tricorder is not a performance-review system, a developer ranking system
 *your own* GitHub record over a window you choose and writes an evidence-led Markdown impact
 document, rated against your role and level, for a self-review or promotion case. It runs
 under the narrow self-directed exception in [CONSTITUTION.md §6](CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people):
-you run it on yourself, you own the output, and no colleague is ranked. Step-by-step guide,
+you run it on yourself, you own the output, and no colleague is ranked.
+
+**Privacy-first: runs entirely inside your own Claude session, with your own access. No
+server, no telemetry, no extra AI provider.** On an employer repo, check that your company's
+policy allows your Claude plan to read its code.
+
+Step-by-step guide,
 from installing tricorder to reviewing the finished document:
 [web version](https://dhk.github.io/tricorder/docs/impact-advocate/) ·
 [Markdown](docs/IMPACT-ADVOCATE.md).
