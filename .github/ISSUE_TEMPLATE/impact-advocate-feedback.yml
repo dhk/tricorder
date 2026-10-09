@@ -1,0 +1,106 @@
+name: "Impact Advocate beta feedback"
+description: "Report your experience running Impact Advocate on your own GitHub history."
+title: "[Impact Advocate beta] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Impact Advocate. Please do not include private source code, private repository details, personal performance documents, credentials, or identifiable information about colleagues. Submissions are public.
+        Use 1 = strongly no / unsuccessful and 5 = strongly yes / excellent. Select N/A if you did not reach that step.
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your perspective
+      options:
+        - Individual contributor (junior/mid)
+        - Senior engineer
+        - Staff/principal engineer
+        - Engineering manager
+        - Open-source maintainer
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: repository
+    attributes:
+      label: Repository context
+      options:
+        - Public multi-contributor
+        - Private multi-contributor
+        - Public solo
+        - Private solo
+        - Did not run
+    validations:
+      required: true
+  - type: dropdown
+    id: setup
+    attributes:
+      label: 1. Could you install and complete the run without assistance?
+      options: ["1", "2", "3", "4", "5", "N/A"]
+    validations:
+      required: true
+  - type: dropdown
+    id: coverage
+    attributes:
+      label: 2. Did it identify your most important work?
+      options: ["1", "2", "3", "4", "5", "N/A"]
+    validations:
+      required: true
+  - type: dropdown
+    id: accuracy
+    attributes:
+      label: 3. Were its claims and linked evidence accurate?
+      options: ["1", "2", "3", "4", "5", "N/A"]
+    validations:
+      required: true
+  - type: dropdown
+    id: calibration
+    attributes:
+      label: 4. Did the ratings fairly reflect your chosen career ladder?
+      options: ["1", "2", "3", "4", "5", "N/A"]
+    validations:
+      required: true
+  - type: dropdown
+    id: usefulness
+    attributes:
+      label: 5. Would you use or share the resulting document?
+      options: ["1", "2", "3", "4", "5", "N/A"]
+    validations:
+      required: true
+  - type: textarea
+    id: true-positive
+    attributes:
+      label: One thing it correctly identified
+      description: Summarize without disclosing private or colleague data.
+      placeholder: "It correctly surfaced the sustained migration work..."
+    validations:
+      required: true
+  - type: textarea
+    id: missed
+    attributes:
+      label: One important contribution it missed
+      placeholder: "It did not see incident leadership outside GitHub..."
+    validations:
+      required: true
+  - type: textarea
+    id: inference
+    attributes:
+      label: One questionable inference or unsupported claim
+      placeholder: "It inferred outcome X from merge count; no outcome was established..."
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Biggest failure, missing capability, or setup friction
+      placeholder: "Where did you get blocked or lose confidence?"
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Public feedback confirmation
+      options:
+        - label: "I have removed private, sensitive, and colleague-identifying information."
+          required: true
