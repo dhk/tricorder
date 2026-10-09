@@ -9,6 +9,7 @@ ownership, expertise, and the quality of your code review.
 This guide takes you from nothing installed to a finished document in eight steps. It
 assumes you're comfortable with a terminal and git. A styled version of this page is at
 [dhk.github.io/tricorder/docs/impact-advocate/](https://dhk.github.io/tricorder/docs/impact-advocate/).
+For what the skill does and how, see the [system spec](IMPACT-ADVOCATE-SPEC.md).
 
 > **No API key needed.** The skill runs on your Claude plan in Claude Code, GitHub access is
 > a sign-in (`gh auth login`), and the two tricorder commands this guide uses
