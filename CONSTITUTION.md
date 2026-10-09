@@ -82,6 +82,15 @@ A repeated issue associated with one person may reflect unclear guidance, missin
 
 Likewise, a highly effective reviewer may indicate valuable expertise and also institutional fragility if important standards exist only in that person's head.
 
+**Narrow exception: self-directed impact evidence.** A person may use Tricorder, or skills built on it such as [`impact-advocate`](skills/impact-advocate/SKILL.md), to assemble evidence of their *own* work for their own advocacy. This is permitted only when all of the following hold:
+
+- the person being assessed is the one who runs it, on their own record;
+- they own the output and decide whether anyone else sees it;
+- no colleague is named, ranked, or quoted in it, and team comparisons appear only as anonymous distributions;
+- every claim stays subject to §8: observed or inferred from inspectable evidence, never asserted because a model produced it.
+
+Assessing anyone else (a report, a peer, a team) remains out of bounds.
+
 The question is:
 
 > What does this evidence tell us about the capability of the team and the system around it?
