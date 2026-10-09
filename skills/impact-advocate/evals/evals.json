@@ -1,0 +1,39 @@
+{
+  "skill_name": "impact-advocate",
+  "evals": [
+    {
+      "id": 1,
+      "name": "interview-first",
+      "prompt": "hey, review season is coming up and I need to pull together my self-review. I'm a senior engineer, most of my work is on github. can you help me show what I've done?",
+      "expected_output": "A first reply that interviews before acting: lookback window, GitHub identities and emails, repos, level to assess against, leveling guide/role description, KPIs/OKRs. No commands run.",
+      "files": [],
+      "assertions": [
+        "Asks for the lookback window",
+        "Asks for GitHub login(s) and commit email addresses",
+        "Asks which repos/orgs to include",
+        "Asks for a leveling guide or role description",
+        "Asks for KPIs or OKRs",
+        "Asks what work the person is proudest of (may be in a later round)",
+        "Runs no commands or repo queries before replying"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "full-run-git-only",
+      "prompt": "Write my impact doc. Intake answers, so skip the interview and go: I'm Dave Holmes-Kinsella, GitHub login dhk, commit emails davehk@gmail.com and github@dhk.io. Window 2026-07-01 to 2026-10-01. Repo: dhk/tricorder, full-history local clone (read-only). No gh CLI or GitHub token available, git only. Assess at my current level, Staff Engineer. No leveling guide; role description: 'Staff engineer: sets technical direction for a product area, ships high-leverage systems, raises team standards through docs, research and tooling, and makes others more effective.' OKR: 'Publish 3 public tricorder case studies with explorer links.' Audience: self-review draft, first person.",
+      "expected_output": "A Markdown impact document following the report template, every rating backed by SHAs/PR numbers/counts, Observed/Inferred labels, review work marked not visible (git only), co-authored commits disclosed, a Tricorder section with privacy caveats, and a methodology appendix with commands.",
+      "files": [],
+      "assertions": [
+        "Has a scorecard table with Exceeds/Meets/Not visible ratings",
+        "Every Exceeds/Meets rating cites a commit SHA, PR number, or count",
+        "Uses Observed and Inferred labels",
+        "Marks review work as not visible because only git was available",
+        "Discloses Co-Authored-By / AI-assisted commits in the methodology",
+        "States there is no team baseline (sole human contributor)",
+        "Includes a Tricorder section naming discover --history and a privacy caveat for learn",
+        "Lists the commands behind the numbers",
+        "Maps evidence to the stated OKR"
+      ]
+    }
+  ]
+}

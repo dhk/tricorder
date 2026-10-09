@@ -187,5 +187,14 @@ Tricorder is under active development. The six-level v2 command surface is shipp
 discipline lenses and generated judgments remain experimental and require human
 review. Tricorder is not a performance-review system, a developer ranking system, a live code reviewer, or a guarantee that anonymized output is safe to publish.
 
+## Self-directed impact evidence
+
+[`skills/impact-advocate`](skills/impact-advocate/SKILL.md) is an agent skill that mines
+*your own* GitHub record over a window you choose and writes an evidence-led Markdown impact
+document, rated against your role and level, for a self-review or promotion case. It runs
+under the narrow self-directed exception in [CONSTITUTION.md §6](CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people):
+you run it on yourself, you own the output, and no colleague is ranked. How to use it:
+[docs/IMPACT-ADVOCATE.md](docs/IMPACT-ADVOCATE.md).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and test instructions and
 [SECURITY.md](SECURITY.md) for private vulnerability reporting.

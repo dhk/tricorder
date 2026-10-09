@@ -59,7 +59,7 @@ Together they can eventually answer complementary questions: how we work, and ho
 
 ## What Tricorder does not aspire to be
 
-Tricorder is not an employee ranking system, performance-review system, productivity scoreboard, or surveillance product.
+Tricorder is not an employee ranking system, performance-review system, productivity scoreboard, or surveillance product. The one exception is self-directed: a person assembling evidence of their own work, under the conditions in [CONSTITUTION.md §6](CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people).
 
 It is not a substitute for live review.
 
