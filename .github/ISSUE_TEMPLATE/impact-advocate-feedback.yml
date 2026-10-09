@@ -14,6 +14,11 @@ body:
       label: Your perspective
       options:
         - Individual contributor (junior/mid)
+        - Data analyst
+        - Analytics engineer
+        - Senior/lead analyst
+        - Data scientist
+        - Analytics manager
         - Senior engineer
         - Staff/principal engineer
         - Engineering manager
@@ -57,7 +62,7 @@ body:
   - type: dropdown
     id: calibration
     attributes:
-      label: 4. Did the ratings fairly reflect your chosen career ladder?
+      label: 4. Did the ratings fairly reflect your chosen role expectations or career ladder?
       options: ["1", "2", "3", "4", "5", "N/A"]
     validations:
       required: true
