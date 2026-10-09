@@ -10,6 +10,8 @@
 - [DESIGN](../DESIGN.md) — v2 architecture and product decisions
 - [SKILL](../SKILL.md) — agent-oriented technical specification
 - [Explorer README](../explorer/README.md) — explorer data shape and local serving
+- [Impact advocate](IMPACT-ADVOCATE.md) — how to build your own impact or promotion packet;
+  [system spec](IMPACT-ADVOCATE-SPEC.md) for what the skill does and how
 - [Synthetic review audit](case-studies/synthetic-review-audit/README.md) — key-free before/audit/after case study with explicit evidence boundaries
 - [Research passes](research/README.md) — briefs, handoff prompts, and independent findings that de-risk design decisions; currently `repo-lens` (per-archetype lenses, test case `block/berd`)
 
