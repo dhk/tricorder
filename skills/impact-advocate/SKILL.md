@@ -1,6 +1,5 @@
 ---
 name: impact-advocate
-version: 0.1.0
 description: >
   Mines a person's own GitHub record (commits, pull requests, reviews, issues) over a lookback
   window they choose and writes an evidence-led Markdown impact document that rates their work
@@ -13,11 +12,11 @@ description: >
   this half", "help me show my impact", "mine my GitHub for my review", or "am I performing at
   the next level", even if they don't mention GitHub or Tricorder by name. Self-directed only:
   it assesses the person asking, never someone else.
-visibility: public
-depends_on:
-  - git (required)
-  - gh CLI or a GitHub token (strongly recommended; review and PR data need it)
-  - tricorder (optional, see references/tricorder.md)
+compatibility: >
+  Requires git. gh CLI or a GitHub token strongly recommended (PR and review data need it).
+  tricorder optional (see references/tricorder.md).
+metadata:
+  version: "0.1.1"
 ---
 
 # impact-advocate

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Impact Advocate Guide</title>
+<meta name="description" content="Install tricorder, configure access, and run the impact-advocate skill to build an evidence-led impact document from your own GitHub record.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: sticky step rail on the left (wide screens), one 70ch reading column; stacks on phones.
+   Tokens follow the tricorder explorer's design system. */
+:root{
+  --bg:#f5f6fa; --bg2:#eceef5; --bg3:#e0e3f0; --border:#c8cde0;
+  --text:#0d0f1a; --muted:#2a2d42; --dim:#5a5d78;
+  --accent:#2b50e8; --accent-hover:#1a3bd4; --accent-soft:#e4e9fd;
+  --teal:#0b8f99; --orange:#c24d1f; --orange-soft:#fbe9e1;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --radius:4px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f111a; --bg2:#171a26; --bg3:#222637; --border:#343a52;
+  --text:#e6e8f2; --muted:#c3c7da; --dim:#8c91ab;
+  --accent:#7d97ff; --accent-hover:#a3b5ff; --accent-soft:#1d2550;
+  --teal:#4fd0d8; --orange:#f08a5d; --orange-soft:#3a2219; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f111a; --bg2:#171a26; --bg3:#222637; --border:#343a52;
+  --text:#e6e8f2; --muted:#c3c7da; --dim:#8c91ab;
+  --accent:#7d97ff; --accent-hover:#a3b5ff; --accent-soft:#1d2550;
+  --teal:#4fd0d8; --orange:#f08a5d; --orange-soft:#3a2219; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent)} a:hover{color:var(--accent-hover)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.skip{position:absolute;left:16px;top:-100px;background:var(--accent);color:var(--bg);padding:8px 16px;border-radius:var(--radius);font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.08em;z-index:10}
+.skip:focus{top:16px}
+
+.page{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:32px 64px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
+.rail{position:sticky;top:24px;align-self:start;font-family:var(--mono);font-size:13px}
+.rail .brand{display:block;color:var(--dim);text-decoration:none;text-transform:uppercase;letter-spacing:.1em;font-size:11px;margin-bottom:16px}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;counter-reset:s}
+.rail li a{display:flex;gap:10px;padding:6px 8px;border-radius:var(--radius);color:var(--muted);text-decoration:none}
+.rail li a:hover{background:var(--bg2);color:var(--text)}
+.rail li a.on{background:var(--accent-soft);color:var(--accent)}
+.rail .n{color:var(--dim);font-variant-numeric:tabular-nums;min-width:1.4em}
+.rail li a.on .n{color:var(--accent)}
+
+main{min-width:0;max-width:72ch}
+.eyebrow{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin:0 0 8px}
+h1{font-size:clamp(1.9rem,4vw,2.6rem);line-height:1.15;letter-spacing:-.01em;margin:0 0 16px;text-wrap:balance}
+.lede{font-size:1.1rem;color:var(--muted);margin:0 0 20px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 16px;font:13px var(--mono);color:var(--dim);margin-bottom:28px}
+.scope{border:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);padding:14px 18px;font-size:.95rem;color:var(--muted)}
+.scope strong{color:var(--text)}
+
+section.step{padding-top:40px;margin-top:40px;border-top:1px solid var(--border)}
+.step-head{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
+.step-num{font:500 13px var(--mono);color:var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:2px 8px;font-variant-numeric:tabular-nums}
+h2{font-size:1.45rem;line-height:1.25;margin:0;text-wrap:balance}
+h3{font-size:1.05rem;margin:28px 0 8px}
+p{margin:0 0 14px}
+ul,ol.plain{margin:0 0 14px;padding-left:1.3em}
+li{margin:4px 0}
+code{font:.88em var(--mono);background:var(--bg3);padding:1px 5px;border-radius:3px}
+
+.code{position:relative;margin:0 0 16px}
+.code pre{margin:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;overflow-x:auto;font:13.5px/1.6 var(--mono)}
+.code pre code{background:none;padding:0;font:inherit}
+.code .c{color:var(--dim)}
+.copy{position:absolute;top:8px;right:8px;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--dim);cursor:pointer}
+.copy:hover{color:var(--text)}
+
+.tbl{overflow-x:auto;margin:0 0 16px;border:1px solid var(--border);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+th{background:var(--bg2);font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+td.req{white-space:nowrap}
+.pill{display:inline-block;font:500 11px var(--mono);padding:1px 7px;border-radius:999px;background:var(--bg3);color:var(--muted)}
+.pill.yes{background:var(--accent-soft);color:var(--accent)}
+
+.callout{border-left:3px solid var(--orange);background:var(--orange-soft);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:0 0 16px;font-size:.95rem}
+.callout strong{color:var(--orange)}
+
+.checklist{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:6px}
+.checklist li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;margin:0}
+.checklist input{margin-top:5px;accent-color:var(--accent)}
+.checklist label{cursor:pointer}
+
+.flow{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:10px;counter-reset:f}
+.flow li{counter-increment:f;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;margin:0}
+.flow li::before{content:counter(f);font:500 12px var(--mono);color:var(--teal);border:1px solid var(--border);border-radius:50%;width:24px;height:24px;display:grid;place-items:center;margin-top:1px}
+
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--border);font-size:.9rem;color:var(--dim)}
+
+@media (max-width:860px){
+  .page{grid-template-columns:minmax(0,1fr);gap:24px}
+  .rail{position:static}
+  .rail ol{flex-direction:row;flex-wrap:wrap;gap:4px}
+  .rail li a{padding:4px 8px;border:1px solid var(--border)}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="page">
+<nav class="rail" aria-label="Steps">
+  <a class="brand" href="https://github.com/dhk/tricorder">tricorder</a>
+  <ol>
+    <li><a href="#prereqs"><span class="n">1</span>Prerequisites</a></li>
+    <li><a href="#install"><span class="n">2</span>Install tricorder</a></li>
+    <li><a href="#configure"><span class="n">3</span>Configure access</a></li>
+    <li><a href="#skill"><span class="n">4</span>Install the skill</a></li>
+    <li><a href="#inputs"><span class="n">5</span>Gather inputs</a></li>
+    <li><a href="#run"><span class="n">6</span>Run the skill</a></li>
+    <li><a href="#tricorder"><span class="n">7</span>Add tricorder evidence</a></li>
+    <li><a href="#review"><span class="n">8</span>Review and share</a></li>
+    <li><a href="#trouble"><span class="n">?</span>Troubleshooting</a></li>
+  </ol>
+</nav>
+
+<main id="main">
+<p class="eyebrow">tricorder · impact-advocate</p>
+<h1>Make the case for your impact, from your own GitHub record</h1>
+<p class="lede"><code>impact-advocate</code> is an agent skill that mines your commits, pull requests and reviews over a window you choose, then writes a Markdown document that rates your work against your role and level. Every claim is linked or counted. Tricorder adds the evidence counts miss: ownership, expertise and the quality of your code review.</p>
+<div class="meta"><span>8 steps</span><span>Python 3.9+ · git · gh · Claude Code</span><span><a href="https://github.com/dhk/tricorder/blob/main/docs/IMPACT-ADVOCATE.md">Markdown version</a></span></div>
+<div class="scope"><strong>Self-directed only.</strong> The skill assesses the person running it, nobody else. Tricorder's <a href="https://github.com/dhk/tricorder/blob/main/CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people">constitution §6</a> rules out performance-review use with one narrow exception: you run it on yourself, you own the output, and no colleague is ranked.</div>
+
+<section class="step" id="prereqs">
+<div class="step-head"><span class="step-num">01</span><h2>Check prerequisites</h2></div>
+<div class="tbl"><table>
+<thead><tr><th>You need</th><th>Check with</th><th>Required</th></tr></thead>
+<tbody>
+<tr><td>Python 3.9+</td><td><code>python3 --version</code></td><td class="req"><span class="pill yes">for tricorder</span></td></tr>
+<tr><td>git</td><td><code>git --version</code></td><td class="req"><span class="pill yes">yes</span></td></tr>
+<tr><td>GitHub CLI, signed in</td><td><code>gh auth status</code></td><td class="req"><span class="pill yes">strongly</span></td></tr>
+<tr><td>Claude Code, or Claude.ai with code execution on</td><td><code>claude --version</code></td><td class="req"><span class="pill yes">yes</span></td></tr>
+<tr><td>Anthropic or Gemini API key</td><td><code>echo $ANTHROPIC_API_KEY</code></td><td class="req"><span class="pill">step 7 only</span></td></tr>
+</tbody></table></div>
+<p>Without the GitHub CLI or a token, pull request and review data are invisible, and for senior roles review is often the strongest evidence.</p>
+</section>
+
+<section class="step" id="install">
+<div class="step-head"><span class="step-num">02</span><h2>Install tricorder</h2></div>
+<p>Clone the repository rather than installing from a package URL. The skill lives in the repository, and <code>tricorder build</code> writes its explorer data into the install directory.</p>
+<div class="code"><pre><code>git clone https://github.com/dhk/tricorder.git
+cd tricorder
+python3 -m venv .venv
+source .venv/bin/activate          <span class="c"># Windows: .venv\Scripts\activate</span>
+python -m pip install --upgrade pip
+python -m pip install -e .
+tricorder --version</code></pre></div>
+<p>The virtual environment keeps tricorder out of your system Python. Run <code>source .venv/bin/activate</code> again in each new terminal. Avoid <code>npm install dhk/tricorder</code> unless you want npm to run <code>pip install</code> in whichever Python environment it finds.</p>
+</section>
+
+<section class="step" id="configure">
+<div class="step-head"><span class="step-num">03</span><h2>Configure access</h2></div>
+<h3>GitHub</h3>
+<p>The skill and tricorder both use the GitHub CLI:</p>
+<div class="code"><pre><code>gh auth login
+gh auth status</code></pre></div>
+<p>Prefer a token? Create a <a href="https://github.com/settings/personal-access-tokens">fine-grained personal access token</a> with read-only access to Contents, Pull requests, Issues and Metadata on the repositories you'll analyze. Tricorder checks <code>GITHUB_TOKEN</code> first, then <code>gh auth token</code>. Organizations with SSO need the token authorized for them.</p>
+<div class="code"><pre><code>export GITHUB_TOKEN=...            <span class="c"># never commit it</span></code></pre></div>
+
+<h3>LLM provider (only for <code>tricorder learn</code>)</h3>
+<p>Set exactly one key. If both are set, tricorder refuses to guess and asks for <code>--provider</code>.</p>
+<div class="code"><pre><code>export ANTHROPIC_API_KEY=...       <span class="c"># or GEMINI_API_KEY=...</span>
+tricorder config --init --global   <span class="c"># optional: writes ~/.tricorder/config.yml</span></code></pre></div>
+<p>The config file holds the provider, an optional pinned model, a default report directory, and reviewer allow and deny lists. Keys stay in environment variables.</p>
+<div class="callout"><strong>Check before you run <code>learn</code> on an employer repository.</strong> It sends review text and colleagues' GitHub identities to the LLM provider. Confirm that your employer's policy and the provider's retention terms allow it. See <a href="https://github.com/dhk/tricorder/blob/main/docs/PRIVACY.md">PRIVACY.md</a>.</div>
+
+<h3>Keep artifacts out of git</h3>
+<p>Tricorder writes to <code>.tricorder/</code> inside the repository you analyze, and those files can name colleagues. Exclude it locally:</p>
+<div class="code"><pre><code>echo ".tricorder/" >> .git/info/exclude</code></pre></div>
+</section>
+
+<section class="step" id="skill">
+<div class="step-head"><span class="step-num">04</span><h2>Install the skill</h2></div>
+<h3>Claude Code</h3>
+<p>From the tricorder clone, copy the skill into your personal skills directory so it's available in every project:</p>
+<div class="code"><pre><code>mkdir -p ~/.claude/skills
+cp -rf skills/impact-advocate ~/.claude/skills/</code></pre></div>
+<p>Claude Code picks up new skills without a restart. If <code>~/.claude/skills</code> didn't exist when your session started, run <code>/reload-skills</code>. To scope the skill to one repository, copy it to that repository's <code>.claude/skills/</code> instead. (<a href="https://code.claude.com/docs/en/skills">Claude Code skills docs</a>)</p>
+<h3>Claude.ai</h3>
+<p>Turn on code execution first: Settings → Capabilities on Free, Pro and Max; on Team and Enterprise an admin enables skills. Zip the folder so <code>impact-advocate/</code> is the top level, then upload it under Customize → Skills → Upload a skill. (<a href="https://support.claude.com/en/articles/12512180-using-skills-in-claude">Using skills in Claude</a>)</p>
+<div class="code"><pre><code>cd skills &amp;&amp; zip -r ../impact-advocate.zip impact-advocate &amp;&amp; cd ..</code></pre></div>
+<p>Claude.ai can't read your local clones, so you lose the git-history half of the evidence. Use Claude Code when you can.</p>
+<h3>Any other agent</h3>
+<p>Give it <code>skills/impact-advocate/SKILL.md</code> as instructions and the four files in <code>references/</code> as context.</p>
+</section>
+
+<section class="step" id="inputs">
+<div class="step-head"><span class="step-num">05</span><h2>Gather your inputs</h2></div>
+<p>The skill interviews you before it runs anything. With these ready, the interview takes a few minutes.</p>
+<ul class="checklist">
+<li><input type="checkbox" id="in-window"><label for="in-window"><strong>Lookback window</strong>: usually your last review date to today.</label></li>
+<li><input type="checkbox" id="in-ids"><label for="in-ids"><strong>Every GitHub login and commit email</strong> from that window. List them with <code>git log --format='%ae' | sort -u</code>.</label></li>
+<li><input type="checkbox" id="in-repos"><label for="in-repos"><strong>Repositories, cloned with full history.</strong> Shallow clones undercount silently. Check with <code>git rev-parse --is-shallow-repository</code>; fix with <code>git fetch --unshallow</code>.</label></li>
+<li><input type="checkbox" id="in-level"><label for="in-level"><strong>Level to assess against</strong>: current for a self-review, next for a promotion case.</label></li>
+<li><input type="checkbox" id="in-ladder"><label for="in-ladder"><strong>Leveling guide or career ladder.</strong> If you don't have one, the skill offers a public ladder you choose and labels every rating with it.</label></li>
+<li><input type="checkbox" id="in-okr"><label for="in-okr"><strong>KPIs or OKRs</strong> for the window, with targets.</label></li>
+<li><input type="checkbox" id="in-proud"><label for="in-proud"><strong>The 2–4 pieces of work you're proudest of</strong>, in rough notes.</label></li>
+<li><input type="checkbox" id="in-conv"><label for="in-conv"><strong>Conventions that skew counts</strong>: squash merges, stacked PRs, pairing, bots or AI agents that open PRs for you.</label></li>
+</ul>
+</section>
+
+<section class="step" id="run">
+<div class="step-head"><span class="step-num">06</span><h2>Run the skill</h2></div>
+<p>Start Claude Code in a working directory outside the repositories you're analyzing; the document is written there.</p>
+<div class="code"><pre><code>mkdir -p ~/impact &amp;&amp; cd ~/impact
+claude</code></pre></div>
+<p>Invoke the skill directly, or just ask:</p>
+<div class="code"><pre><code>/impact-advocate</code></pre></div>
+<div class="code"><pre><code>Review season is coming up. Help me pull together my self-review from GitHub for the last six months.</code></pre></div>
+<ol class="flow">
+<li><div><strong>Interview.</strong> Three short rounds: scope and yardstick, what mattered, then context the repository can't show. Nothing runs until you say "go". To skip it, paste your answers from step 5 into the first message and say so; the skill lists every assumption at the top of the document.</div></li>
+<li><div><strong>Harvest.</strong> It reads <code>gh</code> and local git history and logs the command behind every number.</div></li>
+<li><div><strong>Rate.</strong> Each expectation gets <em>Exceeds</em>, <em>Meets</em>, or <em>Not visible in GitHub</em>. There's no "below": a repository shows that evidence exists far better than it shows that a behavior is missing.</div></li>
+<li><div><strong>Write.</strong> You get <code>impact-&lt;login&gt;-&lt;start&gt;-to-&lt;end&gt;.md</code>: headline, scorecard, where you exceed, where you meet, goals, numbers, what isn't visible, next-level gap for promotion cases, tricorder suggestions, and a methodology appendix.</div></li>
+</ol>
+</section>
+
+<section class="step" id="tricorder">
+<div class="step-head"><span class="step-num">07</span><h2>Add tricorder evidence</h2></div>
+<p>Counts flatten review work, which is often where senior impact lives. Run these from inside a repository you're analyzing, with the virtual environment active. Inspect <code>.tricorder/</code> after each step before granting more access.</p>
+<div class="tbl"><table>
+<thead><tr><th>Command</th><th>Access</th><th>Adds to your case</th></tr></thead>
+<tbody>
+<tr><td><code>tricorder discover --history</code></td><td>Local</td><td>Contributors, hotspots and timeline: evidence for the areas you own</td></tr>
+<tr><td><code>tricorder analyze OWNER/REPO --since 2026-04-01</code></td><td>GitHub read</td><td>Review observations and an expertise map: whose code you review, and where</td></tr>
+<tr><td><code>tricorder learn OWNER/REPO --dry-run</code></td><td>None</td><td>Prints exactly what would be sent to the LLM</td></tr>
+<tr><td><code>tricorder learn OWNER/REPO --visibility private</code></td><td>LLM provider</td><td>Your reviewer fingerprint, author growth profile, and oversight density: approvals with comments vs. silent ones</td></tr>
+<tr><td><code>tricorder build OWNER/REPO --open</code></td><td>Local</td><td>Explorer at <code>localhost:7372</code> for finding and screenshotting evidence</td></tr>
+</tbody></table></div>
+<p>Set <code>--since</code> to the start of your window; <code>analyze</code> fetches PRs merged on or after it and excludes AI reviewers such as Copilot and CodeRabbit by default. Then tell the skill what you found ("tricorder says I'm the main reviewer on <code>ingest/</code>; add that") so it can trace each finding to the PR or comment and cite that.</p>
+<p>Tricorder's LLM-written judgments are experimental. They point to evidence; they never go into the document as fact. See the <a href="https://dhk.github.io/tricorder/explorer/">live explorer</a> for what the output looks like.</p>
+</section>
+
+<section class="step" id="review">
+<div class="step-head"><span class="step-num">08</span><h2>Review before you share</h2></div>
+<ul class="checklist">
+<li><input type="checkbox" id="rv-links"><label for="rv-links">Open every link. You're accountable for the document.</label></li>
+<li><input type="checkbox" id="rv-rerun"><label for="rv-rerun">Re-run two or three commands from the methodology appendix and check the numbers match.</label></li>
+<li><input type="checkbox" id="rv-names"><label for="rv-names">Check that no colleague is named, ranked or quoted.</label></li>
+<li><input type="checkbox" id="rv-coauth"><label for="rv-coauth">Check how co-authored and AI-assisted commits are described. The document discloses them because anyone can see the trailers in the log.</label></li>
+<li><input type="checkbox" id="rv-nv"><label for="rv-nv">Fill the <em>Not visible in GitHub</em> section with what you'll bring instead: design docs, incident records, dashboards, peer quotes.</label></li>
+<li><input type="checkbox" id="rv-private"><label for="rv-private">Keep <code>.tricorder/</code> and any private report to yourself. They name people.</label></li>
+</ul>
+</section>
+
+<section class="step" id="trouble">
+<div class="step-head"><span class="step-num">Help</span><h2>Troubleshooting</h2></div>
+<div class="tbl"><table>
+<thead><tr><th>Symptom</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td><code>tricorder: command not found</code></td><td>Activate the virtual environment in the tricorder clone.</td></tr>
+<tr><td>Commit counts look low</td><td>The clone is shallow or an email is missing. Run <code>git fetch --unshallow</code> and add every email from <code>git log --format='%ae' | sort -u</code>.</td></tr>
+<tr><td>No review or PR timing data</td><td>The skill had no GitHub access. Run <code>gh auth login</code> and ask it to re-harvest.</td></tr>
+<tr><td><code>No GitHub token found</code></td><td>Set <code>GITHUB_TOKEN</code> or run <code>gh auth login</code>.</td></tr>
+<tr><td><code>review-observations.json not found</code></td><td>Run <code>tricorder analyze</code> for the same repository before <code>learn</code>.</td></tr>
+<tr><td><code>learn</code> won't pick a provider</td><td>Both keys are set. Pass <code>--provider anthropic</code> or <code>--provider gemini</code>.</td></tr>
+<tr><td>The skill doesn't trigger</td><td>Invoke it with <code>/impact-advocate</code>, or check that <code>~/.claude/skills/impact-advocate/SKILL.md</code> exists.</td></tr>
+<tr><td>Claude.ai rejects the upload</td><td>The zip's top level must be the <code>impact-advocate/</code> folder.</td></tr>
+<tr><td>The skill won't assess a colleague</td><td>Working as designed. Use <code>tricorder learn</code> for team-level analysis.</td></tr>
+</tbody></table></div>
+<p><strong>Limits.</strong> GitHub isn't the whole job: incidents, design reviews and mentoring often leave little trace. Team comparisons need several contributors; in a solo repository the skill reports no baseline. The skill has been evaluated on two scenarios, both on a single-contributor repository using git only.</p>
+</section>
+
+<footer>Part of <a href="https://github.com/dhk/tricorder">tricorder</a>. Source for this page: <a href="https://github.com/dhk/tricorder/blob/main/docs/IMPACT-ADVOCATE.md">docs/IMPACT-ADVOCATE.md</a>. MIT licensed.</footer>
+</main>
+</div>
+<script>
+document.querySelectorAll(".code").forEach(function(box){
+  var b=document.createElement("button");b.className="copy";b.type="button";b.textContent="Copy";
+  b.addEventListener("click",function(){
+    var text=box.querySelector("pre").innerText.replace(/\s+#.*$/gm,"");
+    var done=function(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy"},1500)};
+    if(navigator.clipboard){navigator.clipboard.writeText(text).then(done,function(){b.textContent="Select"})}
+  });
+  box.appendChild(b);
+});
+var links=[].slice.call(document.querySelectorAll(".rail li a"));
+var secs=links.map(function(a){return document.querySelector(a.getAttribute("href"))});
+if("IntersectionObserver" in window){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle("on",a.getAttribute("href")==="#"+e.target.id)})}})},{rootMargin:"-30% 0px -60% 0px"});
+  secs.forEach(function(s){s&&io.observe(s)});
+}
+</script>
+</body>
+</html>
