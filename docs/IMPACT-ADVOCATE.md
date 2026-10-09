@@ -1,106 +1,260 @@
 # How to use impact-advocate
 
 `impact-advocate` is an agent skill that mines **your own** GitHub record and writes a
-Markdown document you can use in a self-review, promotion packet, or manager 1:1. It rates
-your work against your role and level, shows where you **exceed** and where you **meet**
-expectations, and backs every claim with a link or a number.
+Markdown document for a self-review, promotion packet, or manager 1:1. It rates your work
+against your role and level, shows where you **exceed** and where you **meet** expectations,
+and backs every claim with a link or a number. Tricorder adds evidence that raw counts miss:
+ownership, expertise, and the quality of your code review.
 
-It is self-directed by design. Tricorder's [constitution §6](../CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people)
-rules out performance-review use, with one narrow exception: you run it on yourself, you own
-the output, and no colleague is ranked. The skill declines requests to assess anyone else.
+This guide takes you from nothing installed to a finished document in seven steps. It
+assumes you're comfortable with a terminal and git. A styled version of this page is at
+[dhk.github.io/tricorder/docs/impact-advocate/](https://dhk.github.io/tricorder/docs/impact-advocate/).
 
-## What you need
+> **Scope.** The skill assesses only the person running it. Tricorder's
+> [constitution §6](../CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people) rules out
+> performance-review use, with one narrow exception: you run it on yourself, you own the
+> output, and no colleague is ranked. The skill declines requests to assess anyone else.
 
-| Need | Why | Without it |
+**Contents**
+
+1. [Check prerequisites](#1-check-prerequisites)
+2. [Install tricorder](#2-install-tricorder)
+3. [Configure access](#3-configure-access)
+4. [Install the skill](#4-install-the-skill)
+5. [Gather your inputs](#5-gather-your-inputs)
+6. [Run the skill](#6-run-the-skill)
+7. [Strengthen the case with tricorder](#7-strengthen-the-case-with-tricorder)
+8. [Review before you share](#8-review-before-you-share)
+9. [Troubleshooting](#troubleshooting)
+
+---
+
+## 1. Check prerequisites
+
+| You need | Check with | Required? |
 |---|---|---|
-| An agent that supports skills (Claude Code, Claude.ai) or any LLM chat | Runs the skill | Paste `SKILL.md` and its references into the chat |
-| `git` and local clones of your repos | Commits, ownership, tests, co-authorship | Required |
-| `gh` authenticated, or a `GITHUB_TOKEN` with read access | PRs, merge times, **reviews you gave**, issues | Review work is reported as "Not visible in GitHub" |
-| Your leveling guide or role description | The yardstick | The skill offers a public ladder you choose, and labels every rating with it |
-| Your KPIs / OKRs | Connects PRs to outcomes | The "Contribution to goals" section is skipped |
-| [Tricorder](../HOWTO.md) (optional) | Evidence of review quality, ownership and expertise | The case leans on counts alone |
+| Python 3.9+ | `python3 --version` | For tricorder |
+| git | `git --version` | Yes |
+| GitHub CLI, signed in | `gh auth status` | Strongly recommended: without it, PR and review data are invisible |
+| An agent that runs skills: Claude Code, or Claude.ai with code execution on | `claude --version` | Yes (or paste the skill into any LLM chat) |
+| An Anthropic or Gemini API key | `echo $ANTHROPIC_API_KEY` | Only for `tricorder learn` (step 7) |
 
-## Install
+## 2. Install tricorder
 
-**Claude Code** — copy the skill into your personal skills directory so it is available in
-every repository:
+Clone the repository rather than installing from a package URL. The skill lives in the
+repository, and `tricorder build` writes its explorer data into the install directory.
 
 ```bash
 git clone https://github.com/dhk/tricorder.git
-mkdir -p ~/.claude/skills
-cp -rf tricorder/skills/impact-advocate ~/.claude/skills/
+cd tricorder
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+tricorder --version
 ```
 
-Or copy it into one repository's `.claude/skills/` to scope it there.
+`tricorder --version` should print a version number. The virtual environment keeps tricorder
+out of your system Python; run `source .venv/bin/activate` again in each new terminal.
+Don't use `npm install dhk/tricorder` unless you want npm to run `pip install` in whatever
+Python environment it finds (see [HOWTO.md](../HOWTO.md#npm-bridge)).
 
-**Claude.ai** — zip the `skills/impact-advocate` folder and upload it as a custom skill.
+## 3. Configure access
 
-**Other agents** — give the agent `SKILL.md` as its instructions and the files in
-`references/` as context.
+### GitHub (for the skill and for `tricorder analyze`)
 
-## Run it
+The simplest route is the GitHub CLI. Both the skill and tricorder use it:
 
-Ask in your own words; the skill triggers on requests like:
+```bash
+gh auth login
+gh auth status
+```
 
-> "Review season is coming up — help me pull together my self-review from GitHub."
->
-> "Mine my GitHub for the last six months and make the case I'm operating at Staff."
+If you'd rather use a token, create a
+[fine-grained personal access token](https://github.com/settings/personal-access-tokens)
+with **read-only** access to Contents, Pull requests, Issues and Metadata on the repositories
+you'll analyze, then:
 
-The skill then:
+```bash
+export GITHUB_TOKEN=...            # never commit it
+```
 
-1. **Interviews you** in three short rounds, and runs nothing until you say "go":
-   - *Scope and yardstick* — lookback window, every GitHub login and commit email, which
-     repos, level to assess against (current or next), leveling guide, KPIs/OKRs.
-   - *What mattered* — the 2–4 things you're proudest of, and your role description.
-   - *Context* — audience, conventions that skew counts (squash merges, stacked PRs, bots),
-     how to describe co-authored and AI-assisted commits, off-GitHub work to look for.
-2. **Harvests evidence** — delivery, reach, ownership, quality, review, design, unblocking,
-   goal linkage — logging the command behind every number.
-3. **Rates** each expectation **Exceeds**, **Meets**, or **Not visible in GitHub**. There is
-   no "below": a repo shows the presence of evidence far better than the absence of behavior.
-4. **Writes** `impact-<login>-<start>-to-<end>.md`: headline, scorecard, where you exceed,
-   where you meet, goals, numbers, blind spots, next-level gap, Tricorder suggestions, and a
-   methodology appendix.
+Tricorder checks `GITHUB_TOKEN` first, then `gh auth token`. For a private or SSO-protected
+organization, the token or `gh` identity must be authorized for that organization.
 
-Already know your answers? Put them in the first message and say "skip the interview" — the
-skill lists every assumption at the top of the document instead.
+### LLM provider (only for `tricorder learn`)
 
-## Reading the output
+Skip this if you won't run step 7's third command. Otherwise set exactly one key:
 
-- **`Observed:`** claims come straight from the record. **`Inferred:`** claims carry a
-  one-line reason. These follow the constitution's [§8 evidence labels](../CONSTITUTION.md#8-evidence-before-assertion).
-- Numbers carry their sample size; anything with n < 5 is flagged.
-- Team comparisons are anonymous medians. If you are the only contributor, the document says
-  so and treats sole ownership as a scope claim instead.
-- **Check every link before you send it.** The skill is told never to fabricate, but you are
-  the one accountable for the document.
+```bash
+export ANTHROPIC_API_KEY=...       # or GEMINI_API_KEY=...
+```
 
-## Strengthen it with Tricorder
+Optionally write a config file that pins the provider for every repository:
 
-Raw counts flatten review work, which is often where senior impact lives. Tricorder fills that
-gap. Run each step and inspect `.tricorder/` before the next:
+```bash
+tricorder config --init --global   # writes ~/.tricorder/config.yml
+```
 
-| Step | Command | Adds to your case |
-|---|---|---|
-| 1 | `tricorder discover --history` | Ownership: contributors, hotspots, timeline |
-| 2 | `tricorder analyze OWNER/REPO --since <window start>` | Expertise map: whose code you review, in which areas |
-| 3 | `tricorder learn OWNER/REPO --dry-run`, then `--visibility private` | Your reviewer fingerprint, author growth profile, and oversight density (approvals with comments vs. silent approvals) |
-| 4 | `tricorder build OWNER/REPO --open` | Explorer for finding and screenshotting evidence |
+It holds `llm.provider` (`anthropic` or `gemini`), an optional `llm.model`, an `output.dir`
+for reports, and reviewer allow/deny lists. Keys stay in environment variables, never in the
+file.
 
-Treat Tricorder output as **pointers, not verdicts**: follow each finding to the PR or comment
-behind it and cite that. Its LLM-generated judgments are experimental and never go into the
-document as fact.
+**Before you run `learn` on an employer repository**, confirm that your employer's policy and
+the provider's data-retention terms allow sending review text and colleagues' GitHub
+identities to that provider. See [PRIVACY.md](PRIVACY.md).
 
-**Privacy.** `learn` sends PR text, review comments and GitHub identities — your colleagues'
-included — to the configured LLM provider. Confirm your employer's policy and the provider's
-retention terms first, keep the named artifacts private, and quote only your own
-contributions. See [PRIVACY.md](PRIVACY.md).
+### Keep artifacts out of git
+
+Tricorder writes to `.tricorder/` inside the repository you analyze, and those files can name
+your colleagues. Add it to that repository's ignore list:
+
+```bash
+echo ".tricorder/" >> .git/info/exclude    # local only, nothing to commit
+```
+
+## 4. Install the skill
+
+**Claude Code.** Copy the skill folder into your personal skills directory so it works in
+every project:
+
+```bash
+mkdir -p ~/.claude/skills
+cp -rf skills/impact-advocate ~/.claude/skills/
+```
+
+Run this from the tricorder clone. To scope it to one repository instead, copy it to that
+repository's `.claude/skills/`. Claude Code picks up new skills without a restart; if you
+created `~/.claude/skills` for the first time while a session was open, run `/reload-skills`.
+([Claude Code skills docs](https://code.claude.com/docs/en/skills))
+
+**Claude.ai.** Turn on code execution first: on Free, Pro and Max plans it's under
+Settings → Capabilities; on Team and Enterprise an admin enables skills for the organization.
+Then zip the folder so `impact-advocate/` is the zip's top level, and upload it under
+Customize → Skills → Upload a skill.
+([Using skills in Claude](https://support.claude.com/en/articles/12512180-using-skills-in-claude))
+
+```bash
+cd skills && zip -r ../impact-advocate.zip impact-advocate && cd ..
+```
+
+Claude.ai can't read your local clones, so it only works from GitHub data you give it. Use
+Claude Code if you want the git-history half of the evidence.
+
+**Any other agent.** Give it `skills/impact-advocate/SKILL.md` as instructions and the four
+files in `skills/impact-advocate/references/` as context.
+
+## 5. Gather your inputs
+
+The skill interviews you before it runs anything. Having these ready makes that take a few
+minutes instead of a back-and-forth:
+
+- [ ] **Lookback window**: usually the date of your last review to today.
+- [ ] **Every GitHub login and commit email** you used in that window. Check with
+      `git log --format='%ae' | sort -u` in each repository.
+- [ ] **Repositories**, cloned locally with **full history**. A shallow clone silently
+      undercounts; check with `git rev-parse --is-shallow-repository` and fix with
+      `git fetch --unshallow`.
+- [ ] **Level to assess against**: your current level for a self-review, the next one for a
+      promotion case.
+- [ ] **Leveling guide or career ladder** (a file path or pasted text). If you don't have one,
+      the skill offers to use a public ladder you choose and labels every rating with it.
+- [ ] **KPIs or OKRs** for the window, with targets.
+- [ ] **The 2–4 pieces of work you're proudest of**, in rough notes.
+- [ ] **Conventions that skew counts**: squash merges, stacked PRs, pairing, bots or AI agents
+      that open PRs for you.
+
+## 6. Run the skill
+
+Start Claude Code in a working directory outside the repositories you're analyzing (the
+document is written there):
+
+```bash
+mkdir -p ~/impact && cd ~/impact
+claude
+```
+
+Then ask in your own words, or invoke the skill directly:
+
+```text
+/impact-advocate
+```
+
+```text
+Review season is coming up. Help me pull together my self-review from GitHub for the last six months.
+```
+
+What happens next:
+
+1. **Interview.** Three short rounds of questions: scope and yardstick, what mattered, then
+   context the repository can't show. Nothing runs until you say "go". To skip the interview,
+   put your answers from step 5 in the first message and say so; the skill lists every
+   assumption at the top of the document instead.
+2. **Harvest.** It reads `gh` and local git history and logs the command behind every number.
+3. **Rating.** Each expectation gets **Exceeds**, **Meets**, or **Not visible in GitHub**.
+   There's no "below": a repository shows that evidence exists far better than it shows that
+   a behavior is missing.
+4. **Document.** It writes `impact-<login>-<start>-to-<end>.md` with a headline, scorecard,
+   where you exceed, where you meet, contribution to goals, numbers, what isn't visible in
+   GitHub, the next-level gap (promotion cases), tricorder suggestions, and a methodology
+   appendix.
+
+## 7. Strengthen the case with tricorder
+
+Counts flatten review work, which is often where senior impact lives. Tricorder fills that
+gap. Run these from inside a repository you're analyzing, with the virtual environment
+active, and inspect `.tricorder/` after each step before granting more access:
+
+| Step | Command | Access | What it adds to your case |
+|---|---|---|---|
+| 1 | `tricorder discover --history` | Local only | Contributors, hotspots, timeline: evidence for the areas you own |
+| 2 | `tricorder analyze OWNER/REPO --since 2026-04-01` | GitHub read | Review observations and an expertise map: whose code you review, in which areas |
+| 3 | `tricorder learn OWNER/REPO --dry-run` | None (prints the prompts) | Shows exactly what would be sent to the LLM |
+| 4 | `tricorder learn OWNER/REPO --visibility private` | LLM provider | Your reviewer fingerprint, author growth profile, and oversight density (approvals with comments vs. silent approvals) |
+| 5 | `tricorder build OWNER/REPO --open` | Local | Explorer at `http://localhost:7372` for finding and screenshotting evidence |
+
+Replace the `--since` date with the start of your window; `analyze` fetches PRs merged on or
+after it. `analyze` excludes AI reviewers (Copilot, CodeRabbit and others) by default, so the
+review evidence it finds is human.
+
+Then tell the skill what you found ("tricorder says I'm the main reviewer on `ingest/`; add
+that") so it can follow each finding back to the PR or comment and cite that. Tricorder's
+LLM-written judgments are experimental and never go into the document as fact; they're
+pointers to evidence, not the evidence itself.
+
+## 8. Review before you share
+
+- [ ] Open every link. The skill is told never to fabricate, but you're accountable for the
+      document.
+- [ ] Re-run two or three commands from the methodology appendix and check the numbers match.
+- [ ] Check that no colleague is named, ranked, or quoted.
+- [ ] Check that co-authored and AI-assisted commits are described the way you want; the
+      document discloses them because anyone can see the trailers in the log.
+- [ ] Fill the **Not visible in GitHub** section with what you'll bring instead: design docs,
+      incident records, dashboards, peer quotes.
+- [ ] Keep `.tricorder/` and any `--visibility private` report to yourself. They name people.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `tricorder: command not found` | Activate the virtual environment: `source .venv/bin/activate` in the tricorder clone. |
+| Commit counts look low | The clone is shallow, or a commit email is missing. Run `git fetch --unshallow` and add every email from `git log --format='%ae' \| sort -u`. |
+| The document has no review or PR timing data | The skill had no GitHub access. Run `gh auth login` and ask it to re-harvest. |
+| `No GitHub token found` from tricorder | Set `GITHUB_TOKEN` or run `gh auth login`. |
+| `review-observations.json not found` | Run `tricorder analyze` for the same repository before `learn`. |
+| `learn` refuses to pick a provider | Both API keys are set. Pass `--provider anthropic` or `--provider gemini`. |
+| The skill doesn't trigger | Invoke it directly with `/impact-advocate`, or check that `~/.claude/skills/impact-advocate/SKILL.md` exists. |
+| Claude.ai rejects the upload | The zip's top level must be the `impact-advocate/` folder, not its contents or a parent folder. |
+| The skill won't assess a colleague | Working as designed. Use `tricorder learn` for team-level analysis instead. |
 
 ## Limits
 
-- GitHub is not the whole job. Incidents, design reviews, mentoring and cross-team work often
-  leave little trace; the "Not visible in GitHub" section tells you what to bring instead.
-- Squash merges, pairing, and bots that open PRs for you distort counts. Tell the skill about
-  them in the interview.
-- Without `gh` or a token, review activity is invisible, and for senior roles that is often
-  the strongest evidence. Get read access if you can.
+- GitHub isn't the whole job. Incidents, design reviews, mentoring and cross-team work often
+  leave little trace there.
+- Without `gh` or a token, review activity is invisible, and for senior roles that's often
+  the strongest evidence.
+- Team comparisons only make sense in repositories with several contributors. In a solo
+  repository the skill says there's no baseline and treats sole ownership as a scope claim.
+- The skill has been evaluated on two scenarios, both on a single-contributor repository
+  using git only. Results on multi-contributor repositories with GitHub access are untested.
