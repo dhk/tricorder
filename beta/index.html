@@ -6,15 +6,62 @@
 <title>Impact Advocate — Technical Beta</title>
 <meta name="description" content="Try Impact Advocate on your own GitHub history and help evaluate its evidence quality.">
 <style>
-:root{color-scheme:light;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f8f9fb;color:#17212e}*{box-sizing:border-box}body{margin:0}main{max-width:780px;margin:0 auto;padding:64px 24px}h1{font-size:clamp(2.3rem,7vw,4rem);line-height:1.05;letter-spacing:-.045em;margin:12px 0 20px}h2{margin-top:42px;font-size:1.35rem}p,li{line-height:1.65}p{color:#435265}.eyebrow{font-size:.8rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#2e5686}.lead{font-size:1.25rem}.card{background:white;border:1px solid #dbe1e7;border-radius:16px;padding:24px;margin-top:24px}.button{display:inline-block;background:#172b47;color:white;text-decoration:none;padding:13px 21px;border-radius:10px;font-weight:700;margin:9px 12px 9px 0}.button.secondary{background:white;border:1px solid #b9c4d0;color:#172b47}a{color:#145b99}footer{padding-top:44px;color:#677789;font-size:.87rem}ol{padding-left:25px}small{color:#617081}
+/* DHK Design System v2.0 (Electric Cobalt, light only): https://dhk.io/design-system.md
+   Tokens mirror DHK-website src/styles/global.css; do not add colours here. */
+:root{
+  --bg:#f5f6fa; --bg2:#eceef5; --bg3:#e0e3f0;
+  --border:#c8cde0; --border-light:#d8dbeb;
+  --text:#0d0f1a; --text-muted:#2a2d42; --text-dim:#5a5d78;
+  --accent:#2b50e8; --accent-hover:#1a3bd4;
+  --font-sans:system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:48px; --sp8:64px;
+  --radius:4px; --motion-fast:0.15s;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text-muted);font:400 16px/1.75 var(--font-sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);transition:color var(--motion-fast)} a:hover{color:var(--accent-hover)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:focus:not(:focus-visible){outline:none}
+.skip{position:absolute;left:var(--sp4);top:-100px;background:var(--accent);color:#fff;padding:var(--sp3) var(--sp5);border-radius:var(--radius);font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.1em;text-decoration:none}
+.skip:focus{top:var(--sp4)}
+main{max-width:680px;margin:0 auto;padding-inline:var(--sp5);padding-block:var(--sp8);display:flex;flex-direction:column;gap:var(--sp5)}
+main p,main ol,main h1,main h2{margin:0}
+.eyebrow{font:400 12px var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+h1{color:var(--text);font-size:clamp(42px,5vw,64px);font-weight:700;line-height:1.1;letter-spacing:-.02em;text-wrap:balance}
+h2{color:var(--text);font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.25;border-top:1px solid var(--border);padding-top:var(--sp7);margin-top:var(--sp4)}
+.lead{font-size:17px;color:var(--text-dim)}
+strong{color:var(--text)}
+.actions{display:flex;flex-wrap:wrap;gap:var(--sp3)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp5);display:flex;flex-direction:column;gap:var(--sp3)}
+.card ol{padding-left:1.3em}
+.button{display:inline-flex;align-items:center;min-height:44px;font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.1em;text-decoration:none;padding:var(--sp3) var(--sp5);border-radius:var(--radius);background:var(--accent);color:#fff;border:1px solid var(--accent);transition:opacity var(--motion-fast),color var(--motion-fast),border-color var(--motion-fast)}
+.button:hover{color:#fff;opacity:.85}
+.button.secondary{background:transparent;color:var(--text);border-color:var(--border);align-self:flex-start}
+.button.secondary:hover{color:var(--accent);border-color:var(--accent);opacity:1}
+ol{padding-left:1.3em;display:flex;flex-direction:column;gap:var(--sp2)}
+small{font:400 12px var(--font-mono);letter-spacing:.04em;color:var(--text-dim)}
+footer{border-top:1px solid var(--border);padding-top:var(--sp5);margin-top:var(--sp6);font:400 12px var(--font-mono);letter-spacing:.04em;color:var(--text-dim)}
+@media (max-width:640px){main{padding-inline:var(--sp4);padding-block:var(--sp7)}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+}
+@media print{
+  :root{--bg:#fff;--bg2:#fff;--bg3:#fff}
+  .skip,.actions{display:none}
+  body{color:#000}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:10pt}
+}
 </style>
 </head>
-<body><main>
+<body><a class="skip" href="#main">Skip to content</a><main id="main">
 <div class="eyebrow">Tricorder / open technical beta</div>
 <h1>Can an AI-generated promotion packet survive a technical practitioner's scrutiny?</h1>
 <p class="lead">Impact Advocate turns your own GitHub history into a self-review draft, linked to evidence and calibrated to your role. We need skeptical engineers and analysts to discover what it gets wrong.</p>
-<a class="button" href="https://github.com/dhk/tricorder/blob/main/docs/IMPACT-ADVOCATE.md">Try Impact Advocate</a>
-<a class="button secondary" href="https://github.com/dhk/tricorder/issues/new?template=impact-advocate-feedback.yml">Submit your feedback</a>
+<div class="actions"><a class="button" href="https://github.com/dhk/tricorder/blob/main/docs/IMPACT-ADVOCATE.md">Try Impact Advocate</a>
+<a class="button secondary" href="https://github.com/dhk/tricorder/issues/new?template=impact-advocate-feedback.yml">Submit your feedback</a></div>
 <div class="card"><strong>Who we're looking for</strong><p>Data analysts, analytics engineers, data scientists, Senior/Staff software engineers, engineering and analytics managers, open-source maintainers, and Claude Code users. Solo and multi-contributor repositories are both useful.</p><p><strong>What it does:</strong> interviews you about your role, inspects your authorized GitHub history, and produces a Markdown evidence document. It distinguishes observed contributions from inferences and says "Not visible in GitHub" when evidence is unavailable.</p></div>
 <h2>How to test it</h2>
 <ol>

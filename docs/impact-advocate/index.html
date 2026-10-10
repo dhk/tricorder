@@ -9,102 +9,110 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* Layout: sticky step rail on the left (wide screens), one 70ch reading column; stacks on phones.
-   Tokens follow the tricorder explorer's design system. */
+/* DHK Design System v2.0 (Electric Cobalt, light only): https://dhk.io/design-system.md
+   Tokens mirror DHK-website src/styles/global.css; do not add colours here. */
 :root{
-  --bg:#f5f6fa; --bg2:#eceef5; --bg3:#e0e3f0; --border:#c8cde0;
-  --text:#0d0f1a; --muted:#2a2d42; --dim:#5a5d78;
-  --accent:#2b50e8; --accent-hover:#1a3bd4; --accent-soft:#e4e9fd;
-  --teal:#0b8f99; --orange:#c24d1f; --orange-soft:#fbe9e1;
-  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  --mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --radius:4px;
+  --bg:#f5f6fa; --bg2:#eceef5; --bg3:#e0e3f0;
+  --border:#c8cde0; --border-light:#d8dbeb;
+  --text:#0d0f1a; --text-muted:#2a2d42; --text-dim:#5a5d78;
+  --accent:#2b50e8; --accent-hover:#1a3bd4;
+  --accent-purple:#8b2adc; --accent-orange:#e05c2a; --accent-teal:#0ea5b0;
+  --font-sans:system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --sp1:4px; --sp2:8px; --sp3:12px; --sp4:16px; --sp5:24px; --sp6:32px; --sp7:48px; --sp8:64px;
+  --max-width:1200px; --radius:4px;
+  --motion-fast:0.15s;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0f111a; --bg2:#171a26; --bg3:#222637; --border:#343a52;
-  --text:#e6e8f2; --muted:#c3c7da; --dim:#8c91ab;
-  --accent:#7d97ff; --accent-hover:#a3b5ff; --accent-soft:#1d2550;
-  --teal:#4fd0d8; --orange:#f08a5d; --orange-soft:#3a2219; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0f111a; --bg2:#171a26; --bg3:#222637; --border:#343a52;
-  --text:#e6e8f2; --muted:#c3c7da; --dim:#8c91ab;
-  --accent:#7d97ff; --accent-hover:#a3b5ff; --accent-soft:#1d2550;
-  --teal:#4fd0d8; --orange:#f08a5d; --orange-soft:#3a2219; color-scheme:dark}
-
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
-a{color:var(--accent)} a:hover{color:var(--accent-hover)}
+body{margin:0;background:var(--bg);color:var(--text-muted);font:400 16px/1.75 var(--font-sans);-webkit-font-smoothing:antialiased}
+a{color:var(--accent);transition:color var(--motion-fast)} a:hover{color:var(--accent-hover)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.skip{position:absolute;left:16px;top:-100px;background:var(--accent);color:var(--bg);padding:8px 16px;border-radius:var(--radius);font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.08em;z-index:10}
-.skip:focus{top:16px}
+:focus:not(:focus-visible){outline:none}
+.skip{position:absolute;left:var(--sp4);top:-100px;background:var(--accent);color:#fff;padding:var(--sp3) var(--sp5);border-radius:var(--radius);font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.1em;z-index:10;text-decoration:none}
+.skip:focus{top:var(--sp4)}
 
-.page{max-width:1120px;margin:0 auto;padding-inline:16px;padding-block:32px 64px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
-.rail{position:sticky;top:24px;align-self:start;font-family:var(--mono);font-size:13px}
-.rail .brand{display:block;color:var(--dim);text-decoration:none;text-transform:uppercase;letter-spacing:.1em;font-size:11px;margin-bottom:16px}
-.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;counter-reset:s}
-.rail li a{display:flex;gap:10px;padding:6px 8px;border-radius:var(--radius);color:var(--muted);text-decoration:none}
-.rail li a:hover{background:var(--bg2);color:var(--text)}
-.rail li a.on{background:var(--accent-soft);color:var(--accent)}
-.rail .n{color:var(--dim);font-variant-numeric:tabular-nums;min-width:1.4em}
-.rail li a.on .n{color:var(--accent)}
+.page{max-width:var(--max-width);margin:0 auto;padding-inline:var(--sp5);padding-block:var(--sp7) var(--sp8);display:grid;grid-template-columns:220px minmax(0,1fr);gap:var(--sp7)}
+.rail{position:sticky;top:var(--sp5);align-self:start;font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.1em}
+.rail .brand{display:flex;align-items:center;gap:var(--sp2);color:var(--text);text-decoration:none;margin-bottom:var(--sp4)}
+.rail .brand::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.rail ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp1)}
+.rail li a{display:flex;gap:var(--sp3);padding:var(--sp2) var(--sp3);color:var(--text-dim);text-decoration:none;border-left:2px solid transparent;transition:color var(--motion-fast),background var(--motion-fast),border-color var(--motion-fast)}
+.rail li a:hover{color:var(--text);background:var(--bg3)}
+.rail li a.on{color:var(--accent);border-left-color:var(--accent)}
+.rail .n{font-variant-numeric:tabular-nums;min-width:1.4em}
 
-main{min-width:0;max-width:72ch}
-.eyebrow{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin:0 0 8px}
-h1{font-size:clamp(1.9rem,4vw,2.6rem);line-height:1.15;letter-spacing:-.01em;margin:0 0 16px;text-wrap:balance}
-.lede{font-size:1.1rem;color:var(--muted);margin:0 0 20px}
-.meta{display:flex;flex-wrap:wrap;gap:8px 16px;font:13px var(--mono);color:var(--dim);margin-bottom:28px}
-.scope{border:1px solid var(--border);background:var(--bg2);border-radius:var(--radius);padding:14px 18px;font-size:.95rem;color:var(--muted)}
+main{min-width:0;max-width:680px;display:flex;flex-direction:column;gap:var(--sp5)}
+main p,main ul,main ol,main h1,main h2,main h3{margin:0}
+.eyebrow{font:400 12px var(--font-mono);letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+h1{color:var(--text);font-size:clamp(42px,5vw,64px);font-weight:700;line-height:1.1;letter-spacing:-.02em;text-wrap:balance}
+h2{color:var(--text);font-size:28px;font-weight:600;letter-spacing:-.01em;line-height:1.25}
+h3{color:var(--text);font-size:20px;font-weight:600;line-height:1.3}
+.lede{font-size:17px;color:var(--text-dim)}
+.meta{display:flex;flex-wrap:wrap;gap:var(--sp2) var(--sp4);font:400 12px var(--font-mono);letter-spacing:.04em;color:var(--text-dim)}
+.scope{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp4) var(--sp5);font-size:15px}
 .scope strong{color:var(--text)}
 
-section.step{padding-top:40px;margin-top:40px;border-top:1px solid var(--border)}
-.step-head{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
-.step-num{font:500 13px var(--mono);color:var(--accent);background:var(--accent-soft);border-radius:var(--radius);padding:2px 8px;font-variant-numeric:tabular-nums}
-h2{font-size:1.45rem;line-height:1.25;margin:0;text-wrap:balance}
-h3{font-size:1.05rem;margin:28px 0 8px}
-p{margin:0 0 14px}
-ul,ol.plain{margin:0 0 14px;padding-left:1.3em}
-li{margin:4px 0}
-code{font:.88em var(--mono);background:var(--bg3);padding:1px 5px;border-radius:3px}
+section.step{display:flex;flex-direction:column;gap:var(--sp4);border-top:1px solid var(--border);padding-top:var(--sp7);margin-top:var(--sp4)}
+.step-head{display:flex;flex-direction:column;gap:var(--sp2)}
+.step-num{font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim)}
+.step-num::before{content:"Step "}
+#trouble .step-num::before{content:""}
+ul,ol.plain{padding-left:1.3em}
+code{font:400 13px var(--font-mono);background:var(--bg3);color:var(--accent);padding:1px var(--sp1);border-radius:var(--radius)}
 
-.code{position:relative;margin:0 0 16px}
-.code pre{margin:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;overflow-x:auto;font:13.5px/1.6 var(--mono)}
-.code pre code{background:none;padding:0;font:inherit}
-.code .c{color:var(--dim)}
-.copy{position:absolute;top:8px;right:8px;font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--dim);cursor:pointer}
-.copy:hover{color:var(--text)}
+.code{position:relative}
+.code pre{margin:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp4);overflow-x:auto;font:400 13px/1.6 var(--font-mono);color:var(--text)}
+.code pre code{background:none;padding:0;color:inherit;font:inherit}
+.code .c{color:var(--text-dim)}
+.code.prompt pre{border:none;border-left:2px solid var(--accent);font-size:14px;white-space:pre-wrap}
+.copy{position:absolute;top:var(--sp2);right:var(--sp2);font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.1em;padding:var(--sp1) var(--sp3);border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text-dim);cursor:pointer;transition:color var(--motion-fast),border-color var(--motion-fast)}
+.copy:hover{color:var(--accent);border-color:var(--accent)}
 
-.tbl{overflow-x:auto;margin:0 0 16px;border:1px solid var(--border);border-radius:var(--radius)}
-table{border-collapse:collapse;width:100%;font-size:.9rem}
-th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--border)}
-tr:last-child td{border-bottom:none}
-th{background:var(--bg2);font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th{font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);text-align:left;padding:var(--sp3) var(--sp4);border-bottom:1px solid var(--border)}
+td{font-size:15px;color:var(--text-muted);padding:var(--sp4);border-bottom:1px solid var(--border-light);vertical-align:top}
+tbody tr:hover{background:var(--bg3)}
 td.req{white-space:nowrap}
-.pill{display:inline-block;font:500 11px var(--mono);padding:1px 7px;border-radius:999px;background:var(--bg3);color:var(--muted)}
-.pill.yes{background:var(--accent-soft);color:var(--accent)}
+.pill{display:inline-block;font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.08em;padding:2px var(--sp2);border-radius:var(--radius);color:var(--text-dim);background:var(--bg3)}
+.pill.yes{color:var(--accent);background:rgb(43 80 232 / 10%)}
 
-.callout{border-left:3px solid var(--orange);background:var(--orange-soft);padding:12px 16px;border-radius:0 var(--radius) var(--radius) 0;margin:0 0 16px;font-size:.95rem}
-.callout strong{color:var(--orange)}
-
-.checklist{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:6px}
-.checklist li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;margin:0}
-.checklist input{margin-top:5px;accent-color:var(--accent)}
+.checklist{list-style:none;padding:0;display:flex;flex-direction:column;gap:var(--sp2)}
+.checklist li{display:grid;grid-template-columns:16px minmax(0,1fr);gap:var(--sp3)}
+.checklist input{width:16px;height:16px;margin-top:6px;accent-color:var(--accent)}
 .checklist label{cursor:pointer}
+.checklist strong{color:var(--text)}
 
-.flow{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:10px;counter-reset:f}
-.flow li{counter-increment:f;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;margin:0}
-.flow li::before{content:counter(f);font:500 12px var(--mono);color:var(--teal);border:1px solid var(--border);border-radius:50%;width:24px;height:24px;display:grid;place-items:center;margin-top:1px}
+.flow{list-style:none;padding:0;display:flex;flex-direction:column;gap:var(--sp3);counter-reset:f}
+.flow li{counter-increment:f;display:grid;grid-template-columns:28px minmax(0,1fr);gap:var(--sp3)}
+.flow li::before{content:counter(f);font:400 11px var(--font-mono);color:var(--accent);border:1px solid var(--border);border-radius:50%;width:24px;height:24px;display:grid;place-items:center;margin-top:3px}
+.flow strong{color:var(--text)}
 
-footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--border);font-size:.9rem;color:var(--dim)}
+footer{border-top:1px solid var(--border);padding-top:var(--sp5);margin-top:var(--sp6);font:400 12px var(--font-mono);letter-spacing:.04em;color:var(--text-dim)}
 
-@media (max-width:860px){
-  .page{grid-template-columns:minmax(0,1fr);gap:24px}
+@media (max-width:1024px){.page{grid-template-columns:180px minmax(0,1fr);gap:var(--sp6)}}
+@media (max-width:640px){
+  .page{grid-template-columns:minmax(0,1fr);gap:var(--sp5);padding-inline:var(--sp4)}
   .rail{position:static}
-  .rail ol{flex-direction:row;flex-wrap:wrap;gap:4px}
-  .rail li a{padding:4px 8px;border:1px solid var(--border)}
+  .rail ol{flex-direction:row;overflow-x:auto;gap:var(--sp1)}
+  .rail li a{white-space:nowrap;border-left:none;border-bottom:2px solid transparent;min-height:44px;align-items:center}
+  .rail li a.on{border-bottom-color:var(--accent)}
 }
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important;scroll-behavior:auto!important}
+}
+@media print{
+  :root{--bg:#fff;--bg2:#fff;--bg3:#fff}
+  .rail,.skip,.copy,.no-print{display:none}
+  .page{display:block}
+  body{color:#000}
+  a{color:#000;text-decoration:underline}
+  a[href^="http"]::after{content:" (" attr(href) ")";font-size:10pt}
+  main{max-width:none}
+  h2,h3{break-after:avoid}
+  pre,.tbl{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -130,7 +138,7 @@ footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--border);font-
 <h1>Make the case for your impact, from your own GitHub record</h1>
 <p class="lede"><code>impact-advocate</code> is an agent skill that mines your commits, pull requests and reviews over a window you choose, then writes a Markdown document that rates your work against your role and level. Every claim is linked or counted. Tricorder adds the evidence counts miss: ownership, expertise and the quality of your code review.</p>
 <div class="meta"><span>8 steps</span><span>Python 3.9+ · git · gh · Claude Code</span><span>No API key required</span><span><a href="https://github.com/dhk/tricorder/blob/main/docs/IMPACT-ADVOCATE.md">Markdown version</a></span></div>
-<div class="scope" style="margin-bottom:12px"><strong>Privacy-first: runs entirely inside your own Claude session, with your own access. No server, no telemetry, no extra AI provider.</strong> No API key is needed: GitHub access is a sign-in (<code>gh auth login</code>), and the two tricorder commands this guide uses (<code>discover --history</code> and <code>analyze</code>) call no AI provider. On an employer repo, check that your company's policy allows your Claude plan to read its code.</div>
+<div class="scope"><strong>Privacy-first: runs entirely inside your own Claude session, with your own access. No server, no telemetry, no extra AI provider.</strong> No API key is needed: GitHub access is a sign-in (<code>gh auth login</code>), and the two tricorder commands this guide uses (<code>discover --history</code> and <code>analyze</code>) call no AI provider. On an employer repo, check that your company's policy allows your Claude plan to read its code.</div>
 <div class="scope"><strong>Self-directed only.</strong> The skill assesses the person running it, nobody else. Tricorder's <a href="https://github.com/dhk/tricorder/blob/main/CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people">constitution §6</a> rules out performance-review use with one narrow exception: you run it on yourself, you own the output, and no colleague is ranked.</div>
 
 <section class="step" id="prereqs">
@@ -230,7 +238,7 @@ claude</code></pre></div>
 <tr><td><code>tricorder analyze OWNER/REPO --since 2026-04-01</code></td><td>GitHub sign-in</td><td>Review observations, an expertise map, and a local copy of every review and inline comment in the window</td></tr>
 </tbody></table></div>
 <p>Set <code>--since</code> to the start of your window; <code>analyze</code> fetches PRs merged on or after it and excludes AI reviewers such as Copilot and CodeRabbit by default. Then let the skill do the reading. In the same Claude Code session, ask:</p>
-<div class="code"><pre><code>Read ~/src/REPO/.tricorder/OWNER__REPO/expertise-map.json and my reviews and inline comments
+<div class="code prompt"><pre><code>Read ~/src/REPO/.tricorder/OWNER__REPO/expertise-map.json and my reviews and inline comments
 under ~/src/REPO/.tricorder/OWNER__REPO/.raw/reviews/ and .raw/comments/. Characterize how I
 review: which areas, what I consistently push for, how often my approvals carry comments.
 Cite PRs.</code></pre></div>
