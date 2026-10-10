@@ -68,12 +68,12 @@ function ReviewerCard({ r }) {
       <div style={{ height: 244, margin: "8px -6px 6px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData} outerRadius="72%" margin={{ top: 14, right: 18, bottom: 14, left: 18 }}>
-            <PolarGrid stroke="#d8dbeb" />
+            <PolarGrid stroke={token("--border-light")} />
             <PolarAngleAxis dataKey="category"
-              tick={{ fontFamily: "DM Mono, monospace", fontSize: 11, fill: "#5a5d78" }} />
+              tick={{ fontFamily: "DM Mono, monospace", fontSize: 11, fill: token("--text-dim") }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-            <Radar dataKey="value" stroke="#2b50e8" strokeWidth={2}
-              fill="#2b50e8" fillOpacity={0.15} isAnimationActive={true} animationDuration={1000} animationEasing="ease-out" />
+            <Radar dataKey="value" stroke={token("--accent")} strokeWidth={2}
+              fill={token("--accent")} fillOpacity={0.15} isAnimationActive={true} animationDuration={1000} animationEasing="ease-out" />
           </RadarChart>
         </ResponsiveContainer>
       </div>
@@ -113,12 +113,12 @@ function ReviewerCard({ r }) {
 // All reviewers on one chart. High/medium signal = bold stroke + fill.
 // Low signal = faint outline. Immediately shows who covers what and the gaps.
 
-// Series colours: hex mirrors of the design system's --viz-* tokens (cobalt,
-// amber, red, teal, purple, sienna) followed by the three semantic accents.
-// Reviewers beyond nine cycle; the legend keeps them distinguishable by name.
-const COMPOSITE_PALETTE = [
-  "#2b50e8", "#e8a030", "#d94040", "#0ea58a", "#9b42d8", "#c47830",
-  "#8b2adc", "#e05c2a", "#0ea5b0",
+// Series colours: the design system's six --viz-* tokens (cobalt, amber, red,
+// teal, purple, sienna) followed by the three semantic accents, resolved from
+// index.html. Reviewers beyond nine cycle; the legend keeps them distinguishable by name.
+const COMPOSITE_TOKENS = [
+  "--viz-us", "--viz-se", "--viz-gb", "--viz-fr", "--viz-jp", "--viz-in",
+  "--accent-purple", "--accent-orange", "--accent-teal",
 ];
 
 function CompositeRadar() {
@@ -127,6 +127,7 @@ function CompositeRadar() {
     ResponsiveContainer, PolarRadiusAxis, Legend,
   } = Recharts;
 
+  const palette = COMPOSITE_TOKENS.map(token);
   const revs = DATA.reviewers.filter(r => r.category_freq);
 
   const chartData = DATA.RADAR_CATEGORIES.map(cat => {
@@ -148,14 +149,14 @@ function CompositeRadar() {
       <div style={{ height: 380, margin: "0 -6px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={chartData} outerRadius="68%" margin={{ top: 16, right: 32, bottom: 0, left: 32 }}>
-            <PolarGrid stroke="#d8dbeb" />
+            <PolarGrid stroke={token("--border-light")} />
             <PolarAngleAxis dataKey="category"
-              tick={{ fontFamily: "DM Mono, monospace", fontSize: 11, fill: "#5a5d78" }} />
+              tick={{ fontFamily: "DM Mono, monospace", fontSize: 11, fill: token("--text-dim") }} />
             <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
             {revs.map((r, i) => {
               const isHigh = r.signal_quality === "high";
               const isMed  = r.signal_quality === "medium";
-              const color  = COMPOSITE_PALETTE[i % COMPOSITE_PALETTE.length];
+              const color  = palette[i % palette.length];
               return (
                 <Radar key={r.login} name={r.login} dataKey={r.login}
                   stroke={color} strokeWidth={isHigh ? 2.5 : 2}
