@@ -4,17 +4,20 @@ const { useState, useEffect, useRef, useMemo } = React;
 const DATA = window.TRICORDER_DATA;
 
 // --- colour families per content-type group -------------------------------
-// DHK design system semantic accents (hex mirrors of global.css tokens, since
-// rgba() tints cannot read a CSS variable):
+// DHK design system semantic accents, read from the tokens in index.html:
 //   patterns -> cobalt (--accent)   tools/reviewers -> purple (--accent-purple)
 //   data/analysis -> teal (--accent-teal)   team/gaps -> orange (--accent-orange)
 // Tag tint = 10-12% alpha of the accent; text = the accent at full strength.
+const tint = (v, pct) => `color-mix(in srgb, var(${v}) ${pct}%, transparent)`;
 const GROUP_COLORS = {
-  pattern: { fg: "#2b50e8", bg: "rgba(43,80,232,0.10)",  bd: "rgba(43,80,232,0.30)"  },
-  tool:    { fg: "#8b2adc", bg: "rgba(139,42,220,0.10)", bd: "rgba(139,42,220,0.30)" },
-  data:    { fg: "#0ea5b0", bg: "rgba(14,165,176,0.10)", bd: "rgba(14,165,176,0.30)" },
-  team:    { fg: "#e05c2a", bg: "rgba(224,92,42,0.10)",  bd: "rgba(224,92,42,0.28)"  },
+  pattern: { fg: "var(--accent)",        bg: tint("--accent", 10),        bd: tint("--accent", 30) },
+  tool:    { fg: "var(--accent-purple)", bg: tint("--accent-purple", 10), bd: tint("--accent-purple", 30) },
+  data:    { fg: "var(--accent-teal)",   bg: tint("--accent-teal", 10),   bd: tint("--accent-teal", 30) },
+  team:    { fg: "var(--accent-orange)", bg: tint("--accent-orange", 10), bd: tint("--accent-orange", 28) },
 };
+
+// Resolved token value, for SVG chart props (Recharts) that need a literal colour.
+const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 function groupForCategory(cat) {
   return DATA.CATEGORY_GROUP[cat] || "pattern";
@@ -107,7 +110,7 @@ function TabExplainer({ read, act }) {
 }
 
 Object.assign(window, {
-  DATA, GROUP_COLORS, groupForCategory, Tag, Mono, CardHeading, TabExplainer,
+  DATA, GROUP_COLORS, token, groupForCategory, Tag, Mono, CardHeading, TabExplainer,
   MATURITY, MATURITY_ORDER, FREQ_NUM, freqToNum,
   useState, useEffect, useRef, useMemo,
 });
