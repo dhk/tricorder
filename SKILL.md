@@ -1,6 +1,5 @@
 ---
 name: tricorder
-version: 1.1.0
 description: >
   Analyzes GitHub pull request review history for a repository over a time window to extract
   learning signals: patterns ready for institutionalization, reviewer focus fingerprints,
@@ -12,12 +11,13 @@ description: >
   ~/.learn-from-work/cache/. Trigger on: "tricorder", "scan PRs", "analyze PRs", "learn from PRs", "review signal",
   "what are we learning from code review", "PR patterns", or any request to extract learning
   from pull request history.
-visibility: private
-depends_on:
-  - gh CLI (authenticated)
-  - one provider key: ANTHROPIC_API_KEY or GEMINI_API_KEY
-cache_dir: ~/.learn-from-work/cache/
-output_dir: adventures-in-ai/tricorder/
+compatibility: >
+  Requires an authenticated gh CLI and one LLM provider key (ANTHROPIC_API_KEY or GEMINI_API_KEY).
+metadata:
+  version: "1.1.0"
+  visibility: private
+  cache_dir: ~/.learn-from-work/cache/
+  output_dir: adventures-in-ai/tricorder/
 ---
 
 # tricorder
