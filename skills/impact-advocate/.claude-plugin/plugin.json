@@ -1,0 +1,14 @@
+{
+  "name": "impact-advocate",
+  "version": "0.2.0",
+  "description": "Turns your own GitHub record into an evidence-led impact document for a self-review or promotion case. Every claim is linked or counted.",
+  "author": {
+    "name": "dhk",
+    "url": "https://github.com/dhk"
+  },
+  "homepage": "https://dhk.github.io/tricorder/docs/impact-advocate/",
+  "repository": "https://github.com/dhk/tricorder",
+  "license": "MIT",
+  "keywords": ["self-review", "promotion", "impact", "github"],
+  "skills": ["./"]
+}

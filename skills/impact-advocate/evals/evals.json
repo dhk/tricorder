@@ -3,18 +3,18 @@
   "evals": [
     {
       "id": 1,
-      "name": "interview-first",
+      "name": "check-then-confirm",
       "prompt": "hey, review season is coming up and I need to pull together my self-review. I'm a senior engineer, most of my work is on github. can you help me show what I've done?",
-      "expected_output": "A first reply that interviews before acting: lookback window, GitHub identities and emails, repos, level to assess against, leveling guide/role description, KPIs/OKRs. No commands run.",
+      "expected_output": "A first reply that runs only read-only checks (git, GitHub access, login, clones, emails, shallow clones), reports what it found, then asks the first open question with a recommended answer, and ends with a step/next/undo status line. No harvest, no files written.",
       "files": [],
       "assertions": [
-        "Asks for the lookback window",
-        "Asks for GitHub login(s) and commit email addresses",
-        "Asks which repos/orgs to include",
-        "Asks for a leveling guide or role description",
-        "Asks for KPIs or OKRs",
-        "Asks what work the person is proudest of (may be in a later round)",
-        "Runs no commands or repo queries before replying"
+        "Runs only read-only commands before replying (no harvest queries, no writes)",
+        "Reports detected findings (GitHub access, login, emails, clones) rather than asking for them",
+        "Asks one question at a time, not a list of questions",
+        "Offers a recommended answer the person can accept in a word",
+        "Ends with a status line naming the current step, the next step, and how to undo",
+        "Later asks for lookback window, purpose/level, and yardstick (leveling guide or role description), with KPIs/OKRs optional",
+        "Shows the profile before writing impact-profile.md"
       ]
     },
     {

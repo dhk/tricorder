@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Impact Advocate Guide</title>
-<meta name="description" content="Install tricorder, configure access, and run the impact-advocate skill to build an evidence-led impact document from your own GitHub record.">
+<meta name="description" content="Install the impact-advocate skill in one command and turn your own GitHub record into an evidence-led impact document.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -57,12 +57,14 @@ section.step{display:flex;flex-direction:column;gap:var(--sp4);border-top:1px so
 .step-head{display:flex;flex-direction:column;gap:var(--sp2)}
 .step-num{font:400 11px var(--font-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim)}
 .step-num::before{content:"Step "}
-#trouble .step-num::before{content:""}
+#trouble .step-num::before,#stronger .step-num::before,#undo .step-num::before{content:""}
+details summary{cursor:pointer;color:var(--text)}
+details[open]{display:flex;flex-direction:column;gap:var(--sp3)}
 ul,ol.plain{padding-left:1.3em}
 code{font:400 13px var(--font-mono);background:var(--bg3);color:var(--accent);padding:1px var(--sp1);border-radius:var(--radius)}
 
 .code{position:relative}
-.code pre{margin:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp4);overflow-x:auto;font:400 13px/1.6 var(--font-mono);color:var(--text)}
+.code pre{margin:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:var(--sp4) 72px var(--sp4) var(--sp4);overflow-x:auto;font:400 13px/1.6 var(--font-mono);color:var(--text)}
 .code pre code{background:none;padding:0;color:inherit;font:inherit}
 .code .c{color:var(--text-dim)}
 .code.prompt pre{border:none;border-left:2px solid var(--accent);font-size:14px;white-space:pre-wrap}
@@ -121,14 +123,11 @@ footer{border-top:1px solid var(--border);padding-top:var(--sp5);margin-top:var(
 <nav class="rail" aria-label="Steps">
   <a class="brand" href="https://github.com/dhk/tricorder">tricorder</a>
   <ol>
-    <li><a href="#prereqs"><span class="n">1</span>Prerequisites</a></li>
-    <li><a href="#install"><span class="n">2</span>Install tricorder</a></li>
-    <li><a href="#configure"><span class="n">3</span>Configure access</a></li>
-    <li><a href="#skill"><span class="n">4</span>Install the skill</a></li>
-    <li><a href="#inputs"><span class="n">5</span>Gather inputs</a></li>
-    <li><a href="#run"><span class="n">6</span>Run the skill</a></li>
-    <li><a href="#tricorder"><span class="n">7</span>Add tricorder evidence</a></li>
-    <li><a href="#review"><span class="n">8</span>Review and share</a></li>
+    <li><a href="#install"><span class="n">1</span>Install</a></li>
+    <li><a href="#run"><span class="n">2</span>Run</a></li>
+    <li><a href="#review"><span class="n">3</span>Review</a></li>
+    <li><a href="#stronger"><span class="n">+</span>Make it stronger</a></li>
+    <li><a href="#undo"><span class="n">↺</span>Undo</a></li>
     <li><a href="#trouble"><span class="n">?</span>Troubleshooting</a></li>
   </ol>
 </nav>
@@ -136,125 +135,66 @@ footer{border-top:1px solid var(--border);padding-top:var(--sp5);margin-top:var(
 <main id="main">
 <p class="eyebrow">tricorder · impact-advocate</p>
 <h1>Make the case for your impact, from your own GitHub record</h1>
-<p class="lede"><code>impact-advocate</code> is an agent skill that mines your commits, pull requests and reviews over a window you choose, then writes a Markdown document that rates your work against your role and level. Every claim is linked or counted. Tricorder adds the evidence counts miss: ownership, expertise and the quality of your code review.</p>
-<div class="meta"><span>8 steps</span><span>Python 3.9+ · git · gh · Claude Code</span><span>No API key required</span><span><a href="https://github.com/dhk/tricorder/blob/main/docs/IMPACT-ADVOCATE.md">Markdown version</a></span></div>
-<div class="scope"><strong>Privacy-first: runs entirely inside your own Claude session, with your own access. No server, no telemetry, no extra AI provider.</strong> No API key is needed: GitHub access is a sign-in (<code>gh auth login</code>), and the two tricorder commands this guide uses (<code>discover --history</code> and <code>analyze</code>) call no AI provider. On an employer repo, check that your company's policy allows your Claude plan to read its code.</div>
-<div class="scope"><strong>Self-directed only.</strong> The skill assesses the person running it, nobody else. Tricorder's <a href="https://github.com/dhk/tricorder/blob/main/CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people">constitution §6</a> rules out performance-review use with one narrow exception: you run it on yourself, you own the output, and no colleague is ranked.</div>
-
-<section class="step" id="prereqs">
-<div class="step-head"><span class="step-num">01</span><h2>Check prerequisites</h2></div>
-<div class="tbl"><table>
-<thead><tr><th>You need</th><th>Check with</th><th>Required</th></tr></thead>
-<tbody>
-<tr><td>Python 3.9+</td><td><code>python3 --version</code></td><td class="req"><span class="pill yes">for tricorder</span></td></tr>
-<tr><td>git</td><td><code>git --version</code></td><td class="req"><span class="pill yes">yes</span></td></tr>
-<tr><td>GitHub CLI, signed in</td><td><code>gh auth status</code></td><td class="req"><span class="pill yes">strongly</span></td></tr>
-<tr><td>Claude Code, or Claude.ai with code execution on</td><td><code>claude --version</code></td><td class="req"><span class="pill yes">yes</span></td></tr>
-</tbody></table></div>
-<p>Without the GitHub CLI or a token, pull request and review data are invisible, and for senior roles review is often the strongest evidence.</p>
-</section>
+<p class="lede"><code>impact-advocate</code> turns your commits, pull requests and reviews into a document for a self-review, promotion case or manager 1:1. It shows where you exceed and where you meet the expectations of your role. Every claim is linked or counted.</p>
+<div class="meta"><span>3 steps</span><span>Claude Code</span><span>No API key, no Python</span><span><a href="https://github.com/dhk/tricorder/blob/main/docs/IMPACT-ADVOCATE.md">Markdown version</a></span></div>
+<div class="scope"><strong>Private by design.</strong> It runs inside your own Claude Code session with your own GitHub sign-in. No server, no telemetry, no API key. It reads your repositories and changes nothing in them. On an employer's repository, check that company policy lets your Claude plan read the code.</div>
+<div class="scope"><strong>Only for yourself.</strong> It assesses the person running it and declines to assess anyone else (<a href="https://github.com/dhk/tricorder/blob/main/CONSTITUTION.md#6-study-the-system-not-the-worth-of-the-people">constitution §6</a>).</div>
 
 <section class="step" id="install">
-<div class="step-head"><span class="step-num">02</span><h2>Install tricorder</h2></div>
-<p>Clone the repository rather than installing from a package URL. The skill lives in the repository, not in the Python package.</p>
-<div class="code"><pre><code>git clone https://github.com/dhk/tricorder.git
-cd tricorder
-python3 -m venv .venv
-source .venv/bin/activate          <span class="c"># Windows: .venv\Scripts\activate</span>
-python -m pip install --upgrade pip
-python -m pip install -e .
-tricorder --version</code></pre></div>
-<p>The virtual environment keeps tricorder out of your system Python. Run <code>source .venv/bin/activate</code> again in each new terminal. Avoid <code>npm install dhk/tricorder</code> unless you want npm to run <code>pip install</code> in whichever Python environment it finds.</p>
-</section>
-
-<section class="step" id="configure">
-<div class="step-head"><span class="step-num">03</span><h2>Configure access</h2></div>
-<h3>GitHub</h3>
-<p>The skill and tricorder both use the GitHub CLI:</p>
-<div class="code"><pre><code>gh auth login
-gh auth status</code></pre></div>
-<p>Prefer a token? Create a <a href="https://github.com/settings/personal-access-tokens">fine-grained personal access token</a> with read-only access to Contents, Pull requests, Issues and Metadata on the repositories you'll analyze. Tricorder checks <code>GITHUB_TOKEN</code> first, then <code>gh auth token</code>. Organizations with SSO need the token authorized for them.</p>
-<div class="code"><pre><code>export GITHUB_TOKEN=...            <span class="c"># never commit it</span></code></pre></div>
-
-
-<h3>Keep artifacts out of git</h3>
-<p>Tricorder writes to <code>.tricorder/</code> inside the repository you analyze, and those files can name colleagues. Exclude it locally:</p>
-<div class="code"><pre><code>echo ".tricorder/" >> .git/info/exclude</code></pre></div>
-</section>
-
-<section class="step" id="skill">
-<div class="step-head"><span class="step-num">04</span><h2>Install the skill</h2></div>
-<h3>Claude Code</h3>
-<p>From the tricorder clone, copy the skill into your personal skills directory so it's available in every project:</p>
-<div class="code"><pre><code>mkdir -p ~/.claude/skills
-cp -rf skills/impact-advocate ~/.claude/skills/</code></pre></div>
-<p>Claude Code picks up new skills without a restart. If <code>~/.claude/skills</code> didn't exist when your session started, run <code>/reload-skills</code>. To scope the skill to one repository, copy it to that repository's <code>.claude/skills/</code> instead. (<a href="https://code.claude.com/docs/en/skills">Claude Code skills docs</a>)</p>
-<h3>Claude.ai</h3>
-<p>Turn on code execution first: Settings → Capabilities on Free, Pro and Max; on Team and Enterprise an admin enables skills. Zip the folder so <code>impact-advocate/</code> is the top level, then upload it under Customize → Skills → Upload a skill. (<a href="https://support.claude.com/en/articles/12512180-using-skills-in-claude">Using skills in Claude</a>)</p>
-<div class="code"><pre><code>cd skills &amp;&amp; zip -r ../impact-advocate.zip impact-advocate &amp;&amp; cd ..</code></pre></div>
-<p>Claude.ai can't read your local clones, so you lose the git-history half of the evidence. Use Claude Code when you can.</p>
-<h3>Any other agent</h3>
-<p>Give it <code>skills/impact-advocate/SKILL.md</code> as instructions and the four files in <code>references/</code> as context.</p>
-</section>
-
-<section class="step" id="inputs">
-<div class="step-head"><span class="step-num">05</span><h2>Gather your inputs</h2></div>
-<p>The skill interviews you before it runs anything. With these ready, the interview takes a few minutes.</p>
-<ul class="checklist">
-<li><input type="checkbox" id="in-window"><label for="in-window"><strong>Lookback window</strong>: usually your last review date to today.</label></li>
-<li><input type="checkbox" id="in-ids"><label for="in-ids"><strong>Every GitHub login and commit email</strong> from that window. List them with <code>git log --format='%ae' | sort -u</code>.</label></li>
-<li><input type="checkbox" id="in-repos"><label for="in-repos"><strong>Repositories, cloned with full history.</strong> Shallow clones undercount silently. Check with <code>git rev-parse --is-shallow-repository</code>; fix with <code>git fetch --unshallow</code>.</label></li>
-<li><input type="checkbox" id="in-level"><label for="in-level"><strong>Level to assess against</strong>: current for a self-review, next for a promotion case.</label></li>
-<li><input type="checkbox" id="in-ladder"><label for="in-ladder"><strong>Leveling guide or career ladder.</strong> If you don't have one, the skill offers a public ladder you choose and labels every rating with it.</label></li>
-<li><input type="checkbox" id="in-okr"><label for="in-okr"><strong>KPIs or OKRs</strong> for the window, with targets.</label></li>
-<li><input type="checkbox" id="in-proud"><label for="in-proud"><strong>The 2–4 pieces of work you're proudest of</strong>, in rough notes.</label></li>
-<li><input type="checkbox" id="in-conv"><label for="in-conv"><strong>Conventions that skew counts</strong>: squash merges, stacked PRs, pairing, bots or AI agents that open PRs for you.</label></li>
-</ul>
+<div class="step-head"><span class="step-num">01</span><h2>Install</h2></div>
+<p>In Claude Code (v2.1.275 or later), run:</p>
+<div class="code"><pre><code>/plugin install impact-advocate --marketplace dhk/tricorder</code></pre></div>
+<p>Confirm the marketplace, pick <strong>Install for you</strong>, and you're done. No clone, no Python.</p>
+<details><summary>Older Claude Code, or installing from your shell</summary>
+<div class="code"><pre><code>claude plugin marketplace add dhk/tricorder
+claude plugin install impact-advocate@tricorder</code></pre></div>
+<p>The second command installs it for the next session; in an open one, run <code>/reload-plugins</code>.</p>
+</details>
 </section>
 
 <section class="step" id="run">
-<div class="step-head"><span class="step-num">06</span><h2>Run the skill</h2></div>
-<p>Start Claude Code in a working directory outside the repositories you're analyzing; the document is written there.</p>
-<div class="code"><pre><code>mkdir -p ~/impact &amp;&amp; cd ~/impact
-claude</code></pre></div>
-<p>Invoke the skill directly, or just ask:</p>
-<div class="code"><pre><code>/impact-advocate</code></pre></div>
-<div class="code"><pre><code>Review season is coming up. Help me pull together my self-review from GitHub for the last six months.</code></pre></div>
+<div class="step-head"><span class="step-num">02</span><h2>Run</h2></div>
+<p>Open Claude Code in a repository you work on (or anywhere) and type:</p>
+<div class="code"><pre><code>/impact-advocate:impact-advocate</code></pre></div>
+<p>Typing <code>/impact</code> is enough to find it. You can also just ask, for example <em>"help me write my self-review from GitHub"</em>. The skill takes it from there, and you'll always see where you are:</p>
+<div class="code prompt"><pre><code>Step 2 of 4: Confirm  ·  Next: build the document  ·  Undo: say "start over"</code></pre></div>
 <ol class="flow">
-<li><div><strong>Interview.</strong> Three short rounds: scope and yardstick, what mattered, then context the repository can't show. Nothing runs until you say "go". To skip it, paste your answers from step 5 into the first message and say so; the skill lists every assumption at the top of the document.</div></li>
-<li><div><strong>Harvest.</strong> It reads <code>gh</code> and local git history and logs the command behind every number.</div></li>
-<li><div><strong>Rate.</strong> Each expectation gets <em>Exceeds</em>, <em>Meets</em>, or <em>Not visible in GitHub</em>. There's no "below": a repository shows that evidence exists far better than it shows that a behavior is missing.</div></li>
-<li><div><strong>Write.</strong> You get <code>impact-&lt;login&gt;-&lt;start&gt;-to-&lt;end&gt;.md</code>: headline, scorecard, where you exceed, where you meet, goals, numbers, what isn't visible, next-level gap for promotion cases, tricorder suggestions, and a methodology appendix.</div></li>
+<li><div><strong>Check.</strong> It reads what's already set up: GitHub sign-in, your login and commit emails, local clones, incomplete (shallow) clones. Read-only. You do nothing.</div></li>
+<li><div><strong>Confirm.</strong> It shows what it found, then asks only what it couldn't find out: time window, purpose and level, what to measure against, your proudest work. One question at a time, each with a recommended answer you can accept in a word.</div></li>
+<li><div><strong>Build.</strong> It gathers the evidence, rates each expectation <em>Exceeds</em>, <em>Meets</em> or <em>Not visible in GitHub</em>, and writes <code>impact-&lt;login&gt;-&lt;start&gt;-to-&lt;end&gt;.md</code>.</div></li>
+<li><div><strong>Review.</strong> It tells you what to check before you share. Ask for changes in plain words.</div></li>
 </ol>
-</section>
-
-<section class="step" id="tricorder">
-<div class="step-head"><span class="step-num">07</span><h2>Add tricorder evidence</h2></div>
-<p>Counts flatten review work, which is often where senior impact lives. Two commands fill that gap. Run them from inside a repository you're analyzing, with the virtual environment active, and inspect <code>.tricorder/</code> after each.</p>
-<div class="tbl"><table>
-<thead><tr><th>Command</th><th>Access</th><th>Adds to your case</th></tr></thead>
-<tbody>
-<tr><td><code>tricorder discover --history</code></td><td>Local</td><td>Contributors, hotspots and timeline: evidence for the areas you own</td></tr>
-<tr><td><code>tricorder analyze OWNER/REPO --since 2026-04-01</code></td><td>GitHub sign-in</td><td>Review observations, an expertise map, and a local copy of every review and inline comment in the window</td></tr>
-</tbody></table></div>
-<p>Set <code>--since</code> to the start of your window; <code>analyze</code> fetches PRs merged on or after it and excludes AI reviewers such as Copilot and CodeRabbit by default. Then let the skill do the reading. In the same Claude Code session, ask:</p>
-<div class="code prompt"><pre><code>Read ~/src/REPO/.tricorder/OWNER__REPO/expertise-map.json and my reviews and inline comments
-under ~/src/REPO/.tricorder/OWNER__REPO/.raw/reviews/ and .raw/comments/. Characterize how I
-review: which areas, what I consistently push for, how often my approvals carry comments.
-Cite PRs.</code></pre></div>
-<p>Use the real path to your clone; the session from step 6 runs in a different directory. Every point comes back traced to a PR you can link, and the data goes only to the Claude session you're already using. Tricorder's other commands are for team-level analysis, not a personal packet; see <a href="https://github.com/dhk/tricorder/blob/main/HOWTO.md">HOWTO.md</a> if you want them.</p>
+<p>Your answers are saved to <code>impact-profile.md</code>, after you see them. Next time, setup is one question. Edit that file to change an answer; delete it to start fresh.</p>
+<p><strong>Not signed in to GitHub?</strong> It still works from local git history, but reviews and PR timing will be missing. The skill tells you when that's the case; run <code>gh auth login</code> and say "re-check".</p>
 </section>
 
 <section class="step" id="review">
-<div class="step-head"><span class="step-num">08</span><h2>Review before you share</h2></div>
+<div class="step-head"><span class="step-num">03</span><h2>Review before you share</h2></div>
 <ul class="checklist">
-<li><input type="checkbox" id="rv-links"><label for="rv-links">Open every link. You're accountable for the document.</label></li>
-<li><input type="checkbox" id="rv-rerun"><label for="rv-rerun">Re-run two or three commands from the methodology appendix and check the numbers match.</label></li>
+<li><input type="checkbox" id="rv-links"><label for="rv-links">Open every link. The skill never invents evidence, but your name is on the document.</label></li>
+<li><input type="checkbox" id="rv-rerun"><label for="rv-rerun">Re-run two or three commands from the methodology appendix and check the numbers.</label></li>
 <li><input type="checkbox" id="rv-names"><label for="rv-names">Check that no colleague is named, ranked or quoted.</label></li>
-<li><input type="checkbox" id="rv-coauth"><label for="rv-coauth">Check how co-authored and AI-assisted commits are described. The document discloses them because anyone can see the trailers in the log.</label></li>
-<li><input type="checkbox" id="rv-nv"><label for="rv-nv">Fill the <em>Not visible in GitHub</em> section with what you'll bring instead: design docs, incident records, dashboards, peer quotes.</label></li>
-<li><input type="checkbox" id="rv-private"><label for="rv-private">Keep <code>.tricorder/</code> to yourself. Its review cache holds colleagues' names and comments.</label></li>
+<li><input type="checkbox" id="rv-coauth"><label for="rv-coauth">Check how co-authored and AI-assisted commits are described. The document discloses them because anyone can see them in the log.</label></li>
+<li><input type="checkbox" id="rv-nv"><label for="rv-nv">Fill <em>Not visible in GitHub</em> with what you'll bring instead: design docs, incident records, peer feedback.</label></li>
 </ul>
+</section>
+
+<section class="step" id="stronger">
+<div class="step-head"><span class="step-num">Optional</span><h2>Make it stronger with tricorder</h2></div>
+<p>Counts flatten code review, which is often where senior impact shows. After the document is written, the skill may offer <a href="https://github.com/dhk/tricorder">tricorder</a>, a separate tool that maps ownership, expertise and how you review. It names which of your ratings tricorder would help with and installs it with one command if you agree. Skip it and the document is still complete.</p>
+</section>
+
+<section class="step" id="undo">
+<div class="step-head"><span class="step-num">Undo</span><h2>Undo and uninstall</h2></div>
+<div class="tbl"><table>
+<thead><tr><th>To</th><th>Do</th></tr></thead>
+<tbody>
+<tr><td>Change an answer</td><td>Say "change the window to 12 months", or edit <code>impact-profile.md</code></td></tr>
+<tr><td>Start setup over</td><td>Say "start over", or delete <code>impact-profile.md</code></td></tr>
+<tr><td>Remove the document</td><td>Delete the <code>impact-…md</code> file; nothing else was written</td></tr>
+<tr><td>Uninstall the skill</td><td><code>/plugin uninstall impact-advocate@tricorder</code></td></tr>
+<tr><td>Uninstall tricorder</td><td><code>pipx uninstall tricorder</code> or <code>uv tool uninstall tricorder</code></td></tr>
+</tbody></table></div>
 </section>
 
 <section class="step" id="trouble">
@@ -262,15 +202,16 @@ Cite PRs.</code></pre></div>
 <div class="tbl"><table>
 <thead><tr><th>Symptom</th><th>Fix</th></tr></thead>
 <tbody>
-<tr><td><code>tricorder: command not found</code></td><td>Activate the virtual environment in the tricorder clone.</td></tr>
-<tr><td>Commit counts look low</td><td>The clone is shallow or an email is missing. Run <code>git fetch --unshallow</code> and add every email from <code>git log --format='%ae' | sort -u</code>.</td></tr>
-<tr><td>No review or PR timing data</td><td>The skill had no GitHub access. Run <code>gh auth login</code> and ask it to re-harvest.</td></tr>
-<tr><td><code>No GitHub token found</code></td><td>Set <code>GITHUB_TOKEN</code> or run <code>gh auth login</code>.</td></tr>
-<tr><td>The skill can't find <code>.tricorder/OWNER__REPO/</code></td><td>Run <code>tricorder analyze</code> from inside that repository, and give the skill the full path.</td></tr>
-<tr><td>The skill doesn't trigger</td><td>Invoke it with <code>/impact-advocate</code>, or check that <code>~/.claude/skills/impact-advocate/SKILL.md</code> exists.</td></tr>
-<tr><td>Claude.ai rejects the upload</td><td>The zip's top level must be the <code>impact-advocate/</code> folder.</td></tr>
-<tr><td>The skill won't assess a colleague</td><td>Working as designed: it only builds your own packet.</td></tr>
+<tr><td><code>/plugin install … --marketplace</code> isn't recognized</td><td>Update Claude Code, or use the two shell commands under Install.</td></tr>
+<tr><td><code>/impact</code> shows nothing</td><td>Run <code>/reload-plugins</code>, then check <code>claude plugin list</code> shows <code>impact-advocate@tricorder</code>.</td></tr>
+<tr><td>No review or PR timing data</td><td>It had no GitHub access. Run <code>gh auth login</code>, then say "re-check".</td></tr>
+<tr><td>Commit counts look low</td><td>It flags shallow clones and unknown emails during Check; accept its fix, or add the email to <code>impact-profile.md</code>.</td></tr>
+<tr><td>It won't assess a colleague</td><td>Working as designed: it only builds your own packet.</td></tr>
 </tbody></table></div>
+<details><summary>Other agents and Claude.ai</summary>
+<p><strong>Claude.ai.</strong> Turn on code execution (Settings → Capabilities; on Team and Enterprise an admin enables skills). Download <a href="https://github.com/dhk/tricorder/tree/main/skills/impact-advocate"><code>skills/impact-advocate</code></a>, zip it so <code>impact-advocate/</code> is the top level, and upload it under Customize → Skills. Claude.ai can't see your local clones, so it works only from GitHub data. (<a href="https://support.claude.com/en/articles/12512180-using-skills-in-claude">Using skills in Claude</a>)</p>
+<p><strong>Any other agent.</strong> Give it <code>skills/impact-advocate/SKILL.md</code> as instructions and the files in <code>references/</code> as context.</p>
+</details>
 <p><strong>Limits.</strong> GitHub isn't the whole job: incidents, design reviews and mentoring often leave little trace. Team comparisons need several contributors; in a solo repository the skill reports no baseline. The skill has been evaluated on two scenarios, both on a single-contributor repository using git only.</p>
 </section>
 
