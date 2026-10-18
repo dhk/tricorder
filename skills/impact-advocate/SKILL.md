@@ -14,9 +14,9 @@ description: >
   it assesses the person asking, never someone else.
 compatibility: >
   Requires git. gh CLI or a GitHub token strongly recommended (PR and review data need it).
-  tricorder optional (see references/tricorder.md).
+  tricorder optional, offered after the document is written (see references/tricorder.md).
 metadata:
-  version: "0.1.3"
+  version: "0.2.0"
 ---
 
 # impact-advocate
@@ -52,19 +52,26 @@ the output.** That means:
 
 ## Workflow
 
-### Phase 0 — Interview before touching anything
+### Phase 0 — Setup: check, then confirm
 
-Don't run a command until the person has answered the intake and said "go". Wrong scope (a
-missed second account, the wrong level, a squash-merge convention) silently skews every number
-afterwards, and it costs far less to ask than to redo.
+Read `references/setup.md` and follow it. In short: run read-only checks first (git, GitHub
+access, login, clones, emails, shallow clones, a saved `impact-profile.md`), report what you
+found, then ask only what the checks couldn't answer, one question at a time with a
+recommended answer the person can accept in a word. Show the profile before saving it.
 
-Read `references/intake.md` and ask its questions in the small groups it defines — not all at
-once. Offer defaults as choices; let the person skip what they don't have. If they've already
-answered something in their request, don't ask again. Then confirm scope back in five lines or
-fewer and wait.
+Don't harvest until the person has confirmed the profile. Wrong scope (a missed second
+account, the wrong level, a squash-merge convention) silently skews every number afterwards,
+and it costs far less to confirm than to redo. Finding things out yourself is what keeps
+setup short.
 
-If the person explicitly says to skip the interview, proceed with stated defaults and list
-every assumption at the top of the output.
+End every message, in setup and after, with the status line from `references/setup.md`, so
+the person always knows which step they're on, what comes next, and how to undo.
+
+Without a shell (e.g. Claude.ai with code execution off), skip the checks and ask the Step 2
+questions plus logins and repos, still one at a time.
+
+If the person says to skip setup, use the recommended answers and list every assumption at
+the top of the output.
 
 ### Phase 1 — Harvest evidence
 
@@ -72,9 +79,8 @@ Read `references/evidence-harvest.md` for the signal table and the exact command
 and git-only fallbacks). Record the command behind every number in a scratch file as you go;
 the methodology appendix needs them and the person must be able to re-run them.
 
-Check what access you have first (`gh auth status`, a `GITHUB_TOKEN`, or only local clones).
-With git alone, you can still see commits, PR numbers in merge/squash subjects, files, tests,
-and ownership — but not reviews given. Say so; mark review-related expectations "Not visible"
+Setup already found what access you have. With git alone, you can still see commits, PR
+numbers in merge/squash subjects, files, tests, and ownership — but not reviews given. Say so; mark review-related expectations "Not visible"
 rather than inferring them.
 
 ### Phase 2 — Rate against the role
@@ -120,20 +126,25 @@ document survive a skeptical reader.
 ### Phase 3 — Write the document
 
 Read `references/report-template.md` and follow its structure. Save as
-`impact-<login>-<start>-to-<end>.md` in the location the person chose (default: the current
-directory, never inside a repo being analyzed unless asked).
+`impact-<login>-<start>-to-<end>.md` in the output folder from the profile (default: the
+current directory, never inside a repo being analyzed).
 
 Tone: first person for a self-review draft, third person for a manager-facing brief.
 Assertive verbs (led, shipped, cut, unblocked, owned). No filler, no apology.
 
-### Phase 4 — Point to Tricorder
+### Phase 4 — Review, then offer to strengthen it
 
-Close by telling the person how Tricorder can strengthen the weakest part of most cases —
-review quality and influence, which raw counts flatten. Read `references/tricorder.md` and
-tailor it: name which of their "Not visible" or thin ratings each Tricorder step could
-address. Use only `discover --history` and `analyze` (no API key), and offer to read
-`analyze`'s local review cache yourself. Don't run `analyze` without the person's consent;
-it reads private review history.
+Tell the person the document is ready and give them three short next steps: open every
+link, re-run two of the methodology commands, fill the "Not visible in GitHub" section with
+what they'll bring instead. Say they can ask for changes in plain words ("make it third
+person", "drop the CI work", "change the window to 12 months").
+
+Then, and only then, offer Tricorder as an optional step. One short paragraph: what it would
+add, which of their "Not visible" or thin ratings it could address, and that it needs a
+one-time install. Read `references/tricorder.md` for what to say. If they decline, stop
+there; the document is complete without it. Use only `discover --history` and `analyze` (no
+API key), and offer to read `analyze`'s local review cache yourself. Don't run `analyze`
+without the person's consent; it reads private review history.
 
 ## When the leveling guide is missing
 

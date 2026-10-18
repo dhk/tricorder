@@ -2,8 +2,23 @@
 
 Tricorder turns git history and code-review discussion into an inspectable map of ownership,
 expertise and review behavior. For an impact case it fills the weakest spot: the quality and
-influence of review work, which raw counts flatten. Install steps:
-[docs/IMPACT-ADVOCATE.md](../../../docs/IMPACT-ADVOCATE.md).
+influence of review work, which raw counts flatten.
+
+It's optional. Offer it once, after the document is written, and only if it would address a
+"Not visible" or thin rating. Name which ones.
+
+**Install (one command, with the person's OK).** Check first with `tricorder --version`. If
+it's missing, offer one of these, whichever tool they have (`command -v pipx uv`):
+
+```bash
+pipx install git+https://github.com/dhk/tricorder.git
+uv tool install git+https://github.com/dhk/tricorder.git
+```
+
+Either puts `tricorder` on the PATH in its own environment, leaving system Python alone.
+Undo with `pipx uninstall tricorder` or `uv tool uninstall tricorder`. Before the first
+command, add `.tricorder/` to the repository's local ignore list
+(`echo ".tricorder/" >> .git/info/exclude`): its files can name colleagues.
 
 For a personal packet, use only the two commands below. Neither needs an API key; you are
 already the LLM. Tell the person to run them one at a time from inside the repository and
@@ -35,4 +50,4 @@ on them) are for team-level analysis. Don't suggest them for a personal packet.
   - breadth: areas they review in that they don't author in.
 - **Privacy.** `analyze` caches private review history, colleagues' included. Keep
   `.tricorder/` local, and quote only the person's own contributions in the final document.
-  See [PRIVACY.md](../../../docs/PRIVACY.md).
+  See [PRIVACY.md](https://github.com/dhk/tricorder/blob/main/docs/PRIVACY.md).

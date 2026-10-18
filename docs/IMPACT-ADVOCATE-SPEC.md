@@ -1,6 +1,6 @@
 # Impact Advocate System Spec
 
-*As of 2026-10-09 · skill version 0.1.3 · how-to: [IMPACT-ADVOCATE.md](IMPACT-ADVOCATE.md)*
+*As of 2026-10-17 · skill version 0.2.0 · how-to: [IMPACT-ADVOCATE.md](IMPACT-ADVOCATE.md)*
 
 Impact-advocate is an agent skill that turns one person's own GitHub record into an
 evidence-led impact document, rated against their role and level, with optional ownership
@@ -39,11 +39,11 @@ evidence sources and writing one file.
 
 ```mermaid
 flowchart LR
-    you["You<br/>answer the interview, say go,<br/>review, then share"]
+    you["You<br/>confirm setup,<br/>review, then share"]
     gh["GitHub<br/>PRs, reviews, issues via gh"]
     subgraph machine["Your machine"]
         subgraph agent["Agent session (Claude Code, your Claude plan)"]
-            skill["impact-advocate skill<br/>SKILL.md: phases 0-4, rules<br/>references: intake, harvest,<br/>report template, tricorder"]
+            skill["impact-advocate skill<br/>SKILL.md: phases 0-4, rules<br/>references: setup, harvest,<br/>report template, tricorder"]
         end
         clones["Local git clones<br/>full history, read with git log"]
         tc["Tricorder CLI (optional)<br/>discover --history, analyze<br/>writes a .tricorder/ cache"]
@@ -69,8 +69,8 @@ person's agent against tools they already have.
 | Component | What it is | Interface | Required? |
 | --- | --- | --- | --- |
 | Agent runtime | Claude Code (or Claude.ai, or any LLM chat) on the person's own plan | Loads the skill; runs shell commands; reads files | Yes |
-| Skill: `SKILL.md` | The workflow, scope boundary and evidence rules ([source](../skills/impact-advocate/SKILL.md)) | Frontmatter `name` + `description` trigger it; `/impact-advocate` invokes it | Yes |
-| Skill references | `intake.md`, `evidence-harvest.md`, `report-template.md`, `tricorder.md`, loaded per phase | Read by the agent when a phase says so | Yes |
+| Skill: `SKILL.md` | The workflow, scope boundary and evidence rules ([source](../skills/impact-advocate/SKILL.md)) | Frontmatter `name` + `description` trigger it; `/impact-advocate:impact-advocate` invokes it | Yes |
+| Skill references | `setup.md`, `evidence-harvest.md`, `report-template.md`, `tricorder.md`, loaded per phase | Read by the agent when a phase says so | Yes |
 | GitHub | PRs, reviews, issues, timing | `gh` CLI or `GITHUB_TOKEN` (read-only) | Strongly recommended |
 | Local git clones | Commits, files, tests, co-author trailers, ownership | `git log`, full history (not shallow) | Yes |
 | Tricorder CLI | `discover --history` and `analyze` only | Writes JSON under `.tricorder/` in the analyzed repo | Optional |
@@ -84,11 +84,11 @@ end of phase 0.
 
 | Phase | Input | What the agent does | Output | Gate |
 | --- | --- | --- | --- | --- |
-| 0. Interview | The person's request | Asks three rounds: scope and yardstick; what mattered; context the repo can't show. Skips anything already answered. Plays scope back in five lines or fewer. | Confirmed scope | Person says "go" (or "skip the interview": then every assumption is listed in the output) |
-| 1. Harvest | Scope | Checks access (`gh auth status`, token, or git only). Runs `gh` and `git log` queries per the harvest reference. Logs the command behind every number. | Signals table + command log | None |
+| 0. Setup | The person's request, a saved `impact-profile.md` if any | Runs read-only checks (git, GitHub access, login, clones, emails, shallow clones, squash merges, co-author trailers). Reports findings. Asks only what the checks left open, one question at a time with a recommended answer. Shows the profile before saving it. Ends every message with a step / next / undo status line. | Confirmed profile | Person confirms the profile (or says "skip setup": then every assumption is listed in the output) |
+| 1. Harvest | Profile | Runs `gh` and `git log` queries per the harvest reference. Logs the command behind every number. | Signals table + command log | None |
 | 2. Rate | Signals + yardstick | Rates each expectation Exceeds / Meets / Not visible in GitHub. Each rating cites two pieces of evidence, or one plus a number. | Scorecard | None |
 | 3. Write | Ratings + evidence | Fills the report template, outcome first. First person for a self-review, third for a manager brief. | `impact-….md` | None |
-| 4. Point to tricorder | Thin or Not visible ratings | Names which ones `discover --history` and `analyze` could back up; offers to read `analyze`'s review cache. Runs nothing credentialed without consent. | Tailored suggestions | Person's consent before `analyze` |
+| 4. Review, offer tricorder | Thin or Not visible ratings | Gives three review steps. Then offers tricorder once, as optional: names which ratings `discover --history` and `analyze` could back up; offers to read `analyze`'s review cache. Runs nothing credentialed without consent. | Tailored suggestions | Person's consent before `analyze` |
 
 After phase 4 the person reviews the document: open every link, re-run two or three
 commands, confirm no colleague is named.
@@ -151,15 +151,16 @@ on Claude); no separate AI provider or API key is involved.
 
 ## Interfaces
 
-The system takes twelve interview answers and produces one Markdown file with ten sections.
+The system takes a profile (mostly detected, the rest confirmed) and produces one Markdown file
+with ten sections.
 
-**Input: the interview** ([intake.md](../skills/impact-advocate/references/intake.md))
+**Input: the profile** ([setup.md](../skills/impact-advocate/references/setup.md)), saved as
+`impact-profile.md` after the person sees it
 
-| Round | Fields |
+| Source | Fields |
 | --- | --- |
-| 1. Scope and yardstick | Lookback window · GitHub logins and every commit email · Repos (discover all, or a list; exclusions) · Level to assess against (current or next) · Leveling guide or ladder · KPIs / OKRs |
-| 2. What mattered | The 2–4 pieces of work they're proudest of · Role description and explicit expectations |
-| 3. Context | Audience · Conventions that skew counts (squash merges, stacked PRs, bots) · How to describe AI and co-authored commits · Off-GitHub impact to look for |
+| Detected (read-only) | GitHub login · commit emails · local clones · shallow clones · squash-merge convention · co-author trailer count · GitHub access |
+| Asked, one at a time | Confirm findings · Lookback window · Purpose and level (current or next) · Yardstick (leveling guide, role description, public ladder, or skip) with optional KPIs / OKRs · Proudest work (optional) |
 
 **Output: the document** ([report-template.md](../skills/impact-advocate/references/report-template.md)),
 sections in this order:
@@ -176,9 +177,11 @@ sections in this order:
 10. Appendix: methodology (window, identities, repos, access, conventions, co-authorship,
     small-sample flags)
 
-**Invocation.** Natural-language request, or `/impact-advocate` in Claude Code. Install path:
-`~/.claude/skills/impact-advocate/` (personal) or `.claude/skills/impact-advocate/` (one
-repo).
+**Invocation.** Natural-language request, or `/impact-advocate:impact-advocate` in Claude
+Code. Install: `/plugin install impact-advocate --marketplace dhk/tricorder`, from the
+marketplace in [`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json), whose
+plugin root is `skills/impact-advocate/`. Copying the folder to `~/.claude/skills/` still
+works.
 
 ## Degraded modes and failure handling
 
@@ -188,11 +191,11 @@ inference.
 | Condition | Behavior |
 | --- | --- |
 | No `gh` or token (git only) | Harvests commits, PR numbers from merge/squash subjects, files, tests, ownership. Rates review-related expectations Not visible; methodology states what access hid. |
-| Shallow clone | Checks `git rev-parse --is-shallow-repository`; deepens with `git fetch --shallow-since` before counting. |
-| Missing commit email | Counts silently undercount; prevented by asking for every email in the interview. |
+| Shallow clone | Setup checks `git rev-parse --is-shallow-repository` and offers `git fetch --unshallow`, or skipping the clone and relying on `gh`. Runs nothing without consent. |
+| Missing commit email | Setup lists emails from the log and asks about any matching author name with an unlisted email. |
 | No leveling guide | Offers a public ladder the person picks, or the role description alone; labels every rating with its yardstick. Never reconstructs an employer ladder from memory. |
 | Single-contributor repo | No baseline; says so; sole ownership becomes a scope claim. |
-| Person skips the interview | Proceeds on stated defaults; lists every assumption at the top of the document. |
+| Person skips setup | Proceeds on stated defaults; lists every assumption at the top of the document. |
 | `gh search` hits its 1,000-result cap | Splits the window into smaller ranges. |
 | Asked to assess someone else | Declines and explains the constitution's limit; points to tricorder's team-level analysis instead. |
 | Tricorder not installed | Skips phase 4's commands; the document still stands on `gh` and git evidence. |
@@ -209,8 +212,8 @@ passed), but the test was small and self-graded.
 
 **Gaps**
 
-- [ ] Re-test after the interview change (yardstick moved to round 1, proudest-work question
-      added): not yet run.
+- [ ] Re-test after the setup change (detect first, one question at a time, saved profile):
+      not yet run. The "Interview before acting" result above predates it.
 - [ ] Test on a multi-contributor repo with `gh` access, with an independent grader: not yet
       run.
 - [ ] Report template: carry over the "why it mattered" storytelling the run without the

@@ -205,9 +205,14 @@ you run it on yourself, you own the output, and no colleague is ranked.
 server, no telemetry, no extra AI provider.** On an employer repo, check that your company's
 policy allows your Claude plan to read its code.
 
-Step-by-step guide,
-from installing tricorder to reviewing the finished document:
-[web version](https://dhk.github.io/tricorder/docs/impact-advocate/) ·
+Install it in Claude Code with one command, then type `/impact` and the skill walks you
+through the rest. No clone, no Python:
+
+```text
+/plugin install impact-advocate --marketplace dhk/tricorder
+```
+
+Guide: [web version](https://dhk.github.io/tricorder/docs/impact-advocate/) ·
 [Markdown](docs/IMPACT-ADVOCATE.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development and test instructions and

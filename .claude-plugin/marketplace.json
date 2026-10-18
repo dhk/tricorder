@@ -1,0 +1,17 @@
+{
+  "name": "tricorder",
+  "owner": {
+    "name": "dhk",
+    "url": "https://github.com/dhk"
+  },
+  "description": "Skills from the tricorder project.",
+  "plugins": [
+    {
+      "name": "impact-advocate",
+      "source": "./skills/impact-advocate",
+      "description": "Turns your own GitHub record into an evidence-led impact document for a self-review or promotion case.",
+      "category": "productivity",
+      "keywords": ["self-review", "promotion", "impact", "github"]
+    }
+  ]
+}
